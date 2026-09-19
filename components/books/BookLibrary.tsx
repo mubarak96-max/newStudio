@@ -9,18 +9,17 @@ import { BookUploadDialog } from './BookUploadDialog';
 
 export function BookLibrary() {
   const [books, setBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isFirebaseConfigured);
+  const [error, setError] = useState<string | null>(
+    isFirebaseConfigured ? null : 'Firebase is not configured. Set NEXT_PUBLIC_FIREBASE_* in .env.'
+  );
   const [search, setSearch] = useState('');
   const [uploadOpen, setUploadOpen] = useState(false);
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
-      setLoading(false);
-      setError('Firebase is not configured. Set NEXT_PUBLIC_FIREBASE_* in .env.');
       return;
     }
-    setLoading(true);
     const unsub = subscribeBooks(
       (next) => {
         setBooks(next);
@@ -40,8 +39,9 @@ export function BookLibrary() {
     if (!q) return books;
     return books.filter(
       (b) =>
-        b.name.toLowerCase().includes(q) ||
+        b.title.toLowerCase().includes(q) ||
         b.author.toLowerCase().includes(q) ||
+        b.description.toLowerCase().includes(q) ||
         b.genres.some((g) => g.toLowerCase().includes(q))
     );
   }, [books, search]);
@@ -131,18 +131,32 @@ export function BookLibrary() {
                 className='group flex h-full flex-col rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring'
               >
                 <div className='flex items-start gap-3'>
-                  <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600 text-white shadow'>
-                    <BookOpen aria-hidden='true' className='h-5 w-5' />
-                  </div>
+                  {book.coverPhotoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={book.coverPhotoUrl}
+                      alt={`Cover of ${book.title}`}
+                      className='h-11 w-11 shrink-0 rounded-lg object-cover shadow'
+                    />
+                  ) : (
+                    <div className='flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600 text-white shadow'>
+                      <BookOpen aria-hidden='true' className='h-5 w-5' />
+                    </div>
+                  )}
                   <div className='min-w-0'>
                     <p className='truncate font-semibold group-hover:text-primary'>
-                      {book.name}
+                      {book.title}
                     </p>
                     <p className='truncate text-sm text-muted-foreground'>
                       by {book.author}
                     </p>
                   </div>
                 </div>
+                {book.description && (
+                  <p className='mt-3 line-clamp-2 text-sm text-muted-foreground'>
+                    {book.description}
+                  </p>
+                )}
                 {book.genres.length > 0 && (
                   <div className='mt-3 flex flex-wrap gap-1.5'>
                     {book.genres.slice(0, 4).map((genre) => (

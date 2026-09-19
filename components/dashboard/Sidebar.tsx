@@ -5,12 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home } from 'lucide-react';
 import {
-  BatteryFull,
-  ClipboardList,
-  Package,
-  ReceiptText,
-  Store,
-  UserCog,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -24,12 +19,7 @@ type SidebarProps = {
 };
 
 const navIcons: Record<DashboardNavItem['icon'], LucideIcon> = {
-  battery: BatteryFull,
-  inventory: Package,
-  orders: ClipboardList,
-  users: UserCog,
-  shop: Store,
-  receipt: ReceiptText,
+  extraction: FileText,
 };
 
 function isActiveRoute(pathname: string | null, route: string) {

@@ -10,10 +10,12 @@ type BookUploadDialogProps = {
 };
 
 export function BookUploadDialog({ open, onClose, onUploaded }: BookUploadDialogProps) {
-  const [name, setName] = useState('');
+  const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [genresRaw, setGenresRaw] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [description, setDescription] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,10 +23,12 @@ export function BookUploadDialog({ open, onClose, onUploaded }: BookUploadDialog
   if (!open) return null;
 
   const reset = () => {
-    setName('');
+    setTitle('');
     setAuthor('');
     setGenresRaw('');
-    setFile(null);
+    setDescription('');
+    setPdfFile(null);
+    setCoverFile(null);
     setProgress(0);
     setUploading(false);
     setError(null);
@@ -39,7 +43,7 @@ export function BookUploadDialog({ open, onClose, onUploaded }: BookUploadDialog
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!file) {
+    if (!pdfFile) {
       setError('Choose a PDF file to upload.');
       return;
     }
@@ -47,7 +51,14 @@ export function BookUploadDialog({ open, onClose, onUploaded }: BookUploadDialog
     setProgress(0);
     try {
       await uploadBook(
-        { name, author, genres: parseGenres(genresRaw), file },
+        {
+          title,
+          author,
+          genres: parseGenres(genresRaw),
+          description,
+          pdfFile,
+          coverFile,
+        },
         (pct) => setProgress(pct)
       );
       reset();
@@ -69,20 +80,21 @@ export function BookUploadDialog({ open, onClose, onUploaded }: BookUploadDialog
       <div aria-hidden='true' onClick={handleClose} className='absolute inset-0 bg-black/60 backdrop-blur-sm' />
       <form
         onSubmit={handleSubmit}
-        className='relative w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-xl'
+        className='relative max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-xl'
       >
         <div>
           <h2 className='text-lg font-semibold'>Upload a book</h2>
           <p className='mt-1 text-sm text-muted-foreground'>
-            The PDF is stored in Firebase Storage; metadata lives in Firestore.
+            Writes one doc to <code className='font-mono text-xs'>books/{'{bookId}'}</code> and
+            stores the PDF + cover in Storage.
           </p>
         </div>
 
         <label className='block space-y-1.5'>
-          <span className='text-sm font-medium'>Book name *</span>
+          <span className='text-sm font-medium'>Title *</span>
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             required
             maxLength={200}
             placeholder='e.g. The Silent Sea'
@@ -114,17 +126,44 @@ export function BookUploadDialog({ open, onClose, onUploaded }: BookUploadDialog
         </label>
 
         <label className='block space-y-1.5'>
+          <span className='text-sm font-medium'>Description</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={2000}
+            rows={3}
+            placeholder='Short blurb about the book…'
+            className='w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring'
+          />
+        </label>
+
+        <label className='block space-y-1.5'>
+          <span className='text-sm font-medium'>Cover photo</span>
+          <input
+            type='file'
+            accept='image/*'
+            onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+            className='w-full rounded-lg border border-border bg-background px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground'
+          />
+          {coverFile && (
+            <span className='block text-xs text-muted-foreground'>
+              {(coverFile.size / 1024 / 1024).toFixed(2)} MB — {coverFile.name}
+            </span>
+          )}
+        </label>
+
+        <label className='block space-y-1.5'>
           <span className='text-sm font-medium'>PDF file *</span>
           <input
             type='file'
             accept='application/pdf,.pdf'
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
             required
             className='w-full rounded-lg border border-border bg-background px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground'
           />
-          {file && (
+          {pdfFile && (
             <span className='block text-xs text-muted-foreground'>
-              {(file.size / 1024 / 1024).toFixed(2)} MB — {file.name}
+              {(pdfFile.size / 1024 / 1024).toFixed(2)} MB — {pdfFile.name}
             </span>
           )}
         </label>

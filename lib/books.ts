@@ -21,23 +21,30 @@ import {
 } from 'firebase/storage';
 import { db, ensureAnonymousAuth, isFirebaseConfigured, storage } from './firebase';
 
+/**
+ * Firestore shape: books/{bookId} — one doc per book.
+ *   { metaData: { title, author, genres[], description, coverPhotoUrl, storagePath } }
+ * Plus server timestamps (createdAt/updatedAt) for ordering.
+ * metaData.storagePath is the Storage object path of the source PDF.
+ */
 export type Book = {
   id: string;
-  name: string;
+  title: string;
   author: string;
   genres: string[];
-  pdfUrl: string;
+  description: string;
+  coverPhotoUrl: string;
   storagePath: string;
-  fileName: string;
-  fileSize: number;
   createdAt?: Date | null;
 };
 
 export type NewBookInput = {
-  name: string;
+  title: string;
   author: string;
   genres: string[];
-  file: File;
+  description: string;
+  pdfFile: File;
+  coverFile?: File | null;
 };
 
 const BOOKS_COLLECTION = 'books';
@@ -45,15 +52,18 @@ const BOOKS_COLLECTION = 'books';
 function snapToBook(snap: QueryDocumentSnapshot<DocumentData>): Book {
   const data = snap.data();
   const createdAt = data.createdAt?.toDate?.() ?? null;
+  const meta: DocumentData =
+    data.metaData && typeof data.metaData === 'object' ? data.metaData : data;
+  const genres = meta.genres ?? data.genres;
   return {
     id: snap.id,
-    name: data.name ?? 'Untitled',
-    author: data.author ?? 'Unknown',
-    genres: Array.isArray(data.genres) ? data.genres : [],
-    pdfUrl: data.pdfUrl ?? '',
-    storagePath: data.storagePath ?? '',
-    fileName: data.fileName ?? '',
-    fileSize: data.fileSize ?? 0,
+    // Fall back to legacy top-level `title`/`name` so older docs still list.
+    title: meta.title ?? data.title ?? data.name ?? 'Untitled',
+    author: meta.author ?? data.author ?? 'Unknown',
+    genres: Array.isArray(genres) ? genres : [],
+    description: meta.description ?? data.description ?? '',
+    coverPhotoUrl: meta.coverPhotoUrl ?? data.coverPhotoUrl ?? '',
+    storagePath: meta.storagePath ?? data.storagePath ?? '',
     createdAt,
   };
 }
@@ -82,8 +92,41 @@ export async function getBook(id: string): Promise<Book | null> {
   return snapToBook(snap as QueryDocumentSnapshot<DocumentData>);
 }
 
+/** Resolve a Storage object path (book.storagePath) to a download URL for the PDF. */
+export async function getPdfDownloadUrl(storagePath: string): Promise<string> {
+  if (!storage) throw new Error('Firebase is not configured.');
+  await ensureAnonymousAuth();
+  if (!storagePath) throw new Error('This book has no PDF attached.');
+  // Legacy docs stored a full download URL in storagePath/pdfUrl — pass it through.
+  if (/^https?:\/\//.test(storagePath)) return storagePath;
+  return getDownloadURL(ref(storage, storagePath));
+}
+
 function sanitizeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'book.pdf';
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'file';
+}
+
+function uploadWithProgress(
+  path: string,
+  file: File,
+  contentType: string,
+  onProgress?: (fraction: number) => void
+): Promise<void> {
+  if (!storage) throw new Error('Firebase is not configured.');
+  const storageRef = ref(storage, path);
+  return new Promise<void>((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file, { contentType });
+    task.on(
+      'state_changed',
+      (snapshot: UploadTaskSnapshot) => {
+        if (snapshot.totalBytes > 0) {
+          onProgress?.(snapshot.bytesTransferred / snapshot.totalBytes);
+        }
+      },
+      (err) => reject(err),
+      () => resolve()
+    );
+  });
 }
 
 export async function uploadBook(
@@ -93,48 +136,62 @@ export async function uploadBook(
   if (!db || !storage) throw new Error('Firebase is not configured.');
   await ensureAnonymousAuth();
 
-  const name = input.name.trim();
+  const title = input.title.trim();
   const author = input.author.trim();
-  if (!name) throw new Error('Book name is required.');
+  const description = input.description.trim();
+  if (!title) throw new Error('Book title is required.');
   if (!author) throw new Error('Author is required.');
-  if (!input.file) throw new Error('A PDF file is required.');
-  if (input.file.type !== 'application/pdf' && !input.file.name.toLowerCase().endsWith('.pdf')) {
+  if (!input.pdfFile) throw new Error('A PDF file is required.');
+  if (
+    input.pdfFile.type !== 'application/pdf' &&
+    !input.pdfFile.name.toLowerCase().endsWith('.pdf')
+  ) {
     throw new Error('Only PDF files are allowed.');
   }
+  if (input.coverFile && !input.coverFile.type.startsWith('image/')) {
+    throw new Error('The cover must be an image file.');
+  }
 
+  // 1. Create books/{bookId} with the metaData shape.
   const docRef = await addDoc(collection(db, BOOKS_COLLECTION), {
-    name,
-    author,
-    genres: input.genres,
-    pdfUrl: '',
-    storagePath: '',
-    fileName: input.file.name,
-    fileSize: input.file.size,
+    metaData: {
+      title,
+      author,
+      genres: input.genres,
+      description,
+      coverPhotoUrl: '',
+      storagePath: '',
+    },
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
-  const storagePath = `books/${docRef.id}/${Date.now()}-${sanitizeFileName(input.file.name)}`;
-  const storageRef = ref(storage, storagePath);
-
-  await new Promise<void>((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, input.file, {
-      contentType: 'application/pdf',
-    });
-    task.on(
-      'state_changed',
-      (snapshot: UploadTaskSnapshot) => {
-        if (snapshot.totalBytes > 0) {
-          onProgress?.(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
-        }
-      },
-      (err) => reject(err),
-      () => resolve()
-    );
+  // 2. Upload the source PDF to Storage.
+  const pdfPath = `books/${docRef.id}/source-${Date.now()}-${sanitizeFileName(input.pdfFile.name)}`;
+  await uploadWithProgress(pdfPath, input.pdfFile, 'application/pdf', (f) => {
+    // PDF is the bulk of the work; reserve the tail for the cover.
+    onProgress?.(Math.round(f * (input.coverFile ? 85 : 100)));
   });
 
-  const pdfUrl = await getDownloadURL(storageRef);
-  await updateDoc(docRef, { pdfUrl, storagePath, updatedAt: serverTimestamp() });
+  // 3. Upload the cover photo (if any) and resolve its download URL.
+  let coverPhotoUrl = '';
+  if (input.coverFile) {
+    const coverPath = `books/${docRef.id}/cover-${Date.now()}-${sanitizeFileName(input.coverFile.name)}`;
+    await uploadWithProgress(
+      coverPath,
+      input.coverFile,
+      input.coverFile.type || 'image/jpeg',
+      (f) => onProgress?.(Math.round(85 + f * 15))
+    );
+    coverPhotoUrl = await getDownloadURL(ref(storage, coverPath));
+  }
+
+  // 4. Point the doc at both Storage objects.
+  await updateDoc(docRef, {
+    'metaData.storagePath': pdfPath,
+    'metaData.coverPhotoUrl': coverPhotoUrl,
+    updatedAt: serverTimestamp(),
+  });
 
   const created = await getDoc(docRef);
   return snapToBook(created as QueryDocumentSnapshot<DocumentData>);
@@ -143,11 +200,18 @@ export async function uploadBook(
 export async function deleteBook(book: Book): Promise<void> {
   if (!db || !storage) throw new Error('Firebase is not configured.');
   await ensureAnonymousAuth();
-  if (book.storagePath) {
+  if (book.storagePath && !/^https?:\/\//.test(book.storagePath)) {
     try {
       await deleteObject(ref(storage, book.storagePath));
     } catch {
       // Storage object may already be gone; still delete the Firestore doc.
+    }
+  }
+  if (book.coverPhotoUrl) {
+    try {
+      await deleteObject(ref(storage, book.coverPhotoUrl));
+    } catch {
+      // Cover may already be gone or be an external URL — ignore.
     }
   }
   await deleteDoc(doc(db, BOOKS_COLLECTION, book.id));
