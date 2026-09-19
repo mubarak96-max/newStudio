@@ -5,14 +5,11 @@ import Link from 'next/link';
 import { ArrowLeft, BookOpen, ExternalLink } from 'lucide-react';
 import { DashboardFrame } from '@/components/dashboard/DashboardFrame';
 import { getBook, getPdfDownloadUrl, type Book } from '@/lib/books';
-import { BookExtraction } from './BookExtraction';
-
-type DashboardTab = 'overview' | 'extraction';
+import { bookNavItems } from '@/lib/navigation';
 
 export function BookDashboard({ bookId }: { bookId: string }) {
   const [book, setBook] = useState<Book | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [tab, setTab] = useState<DashboardTab>('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +47,12 @@ export function BookDashboard({ bookId }: { bookId: string }) {
 
   if (loading) {
     return (
-      <DashboardFrame companyName='Bookward' displayName='Partner' roleLabel='Administrator'>
+      <DashboardFrame
+        companyName='Bookward'
+        displayName='Partner'
+        roleLabel='Administrator'
+        navItems={bookNavItems(bookId)}
+      >
         <div className='dashboard-skeleton space-y-4'>
           <div className='h-8 w-48 animate-pulse rounded-lg bg-muted' />
           <div className='h-40 animate-pulse rounded-xl border border-border bg-card' />
@@ -61,7 +63,12 @@ export function BookDashboard({ bookId }: { bookId: string }) {
 
   if (error || !book) {
     return (
-      <DashboardFrame companyName='Bookward' displayName='Partner' roleLabel='Administrator'>
+      <DashboardFrame
+        companyName='Bookward'
+        displayName='Partner'
+        roleLabel='Administrator'
+        navItems={bookNavItems(bookId)}
+      >
         <Link href='/' className='inline-flex items-center gap-2 text-sm text-primary hover:underline'>
           <ArrowLeft className='h-4 w-4' aria-hidden='true' />
           Back to library
@@ -75,7 +82,12 @@ export function BookDashboard({ bookId }: { bookId: string }) {
   }
 
   return (
-    <DashboardFrame companyName={book.title} displayName={book.author} roleLabel='Book dashboard'>
+    <DashboardFrame
+      companyName={book.title}
+      displayName={book.author}
+      roleLabel='Book dashboard'
+      navItems={bookNavItems(bookId)}
+    >
       <section className='space-y-6'>
         <Link
           href='/'
@@ -136,52 +148,18 @@ export function BookDashboard({ bookId }: { bookId: string }) {
           </div>
         </div>
 
-        <div
-          role='tablist'
-          aria-label='Book sections'
-          className='inline-flex rounded-lg border border-border bg-card p-1 text-sm shadow-sm'
-        >
-          {(
-            [
-              { key: 'overview', label: 'Overview' },
-              { key: 'extraction', label: 'Extraction' },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.key}
-              type='button'
-              role='tab'
-              aria-selected={tab === item.key}
-              onClick={() => setTab(item.key)}
-              className={`rounded-md px-4 py-1.5 font-medium transition-colors ${
-                tab === item.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div>
+          <p className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
+            Dashboard
+          </p>
+          <h3 className='mt-2 text-xl font-semibold tracking-tight'>Your Shops</h3>
         </div>
 
-        {tab === 'overview' ? (
-          <>
-            <div>
-              <p className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
-                Dashboard
-              </p>
-              <h3 className='mt-2 text-xl font-semibold tracking-tight'>Your Shops</h3>
-            </div>
-
-            <div className='rounded-lg border border-border bg-card p-6 text-card-foreground'>
-              <p className='text-sm text-muted-foreground'>
-                Shop content not copied — wire up your data source here.
-              </p>
-            </div>
-          </>
-        ) : (
-          book && <BookExtraction book={book} />
-        )}
+        <div className='rounded-lg border border-border bg-card p-6 text-card-foreground'>
+          <p className='text-sm text-muted-foreground'>
+            Shop content not copied — wire up your data source here.
+          </p>
+        </div>
       </section>
     </DashboardFrame>
   );

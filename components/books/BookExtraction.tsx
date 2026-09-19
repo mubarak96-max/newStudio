@@ -167,8 +167,9 @@ export function BookExtraction({ book }: { book: Book }) {
             <div>
               <h3 className='text-lg font-semibold tracking-tight'>Full-text extraction</h3>
               <p className='mt-1 max-w-2xl text-sm text-muted-foreground'>
-                Extracts every page of the uploaded PDF in order — no page or character
-                limits. Nothing is saved; results stay in your browser until you download them.
+                Reads every page in order — native PDF text first, automatic on-device
+                OCR for pages without embedded text. No page or character limits.
+                Nothing is saved; results stay in your browser until you download them.
               </p>
             </div>
           </div>
@@ -217,9 +218,13 @@ export function BookExtraction({ book }: { book: Book }) {
               />
             </div>
             <p className='text-xs text-muted-foreground'>
-              Page {formatCount(progress.currentPage)} of {formatCount(progress.totalPages)} —{' '}
-              {progress.percent}%
+              {progress.stage === 'ocr' && !progress.ocrNote
+                ? `OCR-ing page ${formatCount(progress.currentPage)} of ${formatCount(progress.totalPages)} — ${progress.percent}% (scanned pages read slower)`
+                : `Page ${formatCount(progress.currentPage)} of ${formatCount(progress.totalPages)} — ${progress.percent}%`}
             </p>
+            {progress.stage === 'ocr' && progress.ocrNote && (
+              <p className='text-xs text-muted-foreground'>{progress.ocrNote}</p>
+            )}
           </div>
         )}
 
@@ -233,11 +238,15 @@ export function BookExtraction({ book }: { book: Book }) {
 
       {result && phase === 'done' && (
         <>
-          <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+          <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-5'>
             {[
               { label: 'Pages extracted', value: formatCount(result.totalPages) },
               { label: 'Characters', value: formatCount(result.totalChars) },
               { label: 'Words', value: formatCount(result.totalWords) },
+              {
+                label: 'Pages via OCR',
+                value: formatCount(result.ocrPages),
+              },
               {
                 label: 'Pages without text',
                 value: formatCount(result.emptyPages),
@@ -258,14 +267,18 @@ export function BookExtraction({ book }: { book: Book }) {
               <AlertTriangle className='mt-0.5 h-4 w-4 shrink-0 text-amber-600' aria-hidden='true' />
               <div>
                 <p className='font-medium'>
-                  {result.emptyPages === result.totalPages
-                    ? 'No embedded text found — this looks like a scanned PDF.'
-                    : `${formatCount(result.emptyPages)} of ${formatCount(result.totalPages)} pages contain no embedded text.`}
+                  {result.ocrPages > 0
+                    ? `${formatCount(result.emptyPages)} ${result.emptyPages === 1 ? 'page remains' : 'pages remain'} without text after OCR.`
+                    : result.emptyPages === result.totalPages
+                      ? 'No embedded text found — this looks like a scanned PDF.'
+                      : `${formatCount(result.emptyPages)} of ${formatCount(result.totalPages)} pages contain no embedded text.`}
                 </p>
                 <p className='mt-1 text-muted-foreground'>
-                  {result.emptyPages === result.totalPages
-                    ? 'Every page is images-only, so there is no text to extract. Those pages need OCR (optical character recognition) before their text can be recovered.'
-                    : 'Those pages are likely scanned images or blank. Their numbers are listed so you can verify against the book, and OCR would be needed to recover them.'}
+                  {result.ocrPages > 0
+                    ? `On-device OCR already recovered ${formatCount(result.ocrPages)} ${result.ocrPages === 1 ? 'page' : 'pages'}. The remaining ${result.emptyPages === 1 ? 'page is' : 'pages are'} likely blank or unreadable — verify against the book.`
+                    : result.emptyPages === result.totalPages
+                      ? 'Every page is images-only, so there is no text to extract. Those pages need OCR (optical character recognition) before their text can be recovered.'
+                      : 'Those pages are likely scanned images or blank. Their numbers are listed so you can verify against the book, and OCR would be needed to recover them.'}
                 </p>
                 {result.emptyPageNumbers.length > 0 && result.emptyPages < result.totalPages && (
                   <p className='mt-2 text-xs text-muted-foreground'>
@@ -275,6 +288,14 @@ export function BookExtraction({ book }: { book: Book }) {
                   </p>
                 )}
               </div>
+            </div>
+          )}
+
+          {result.emptyPages === 0 && result.ocrPages > 0 && (
+            <div className='rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground'>
+              {formatCount(result.ocrPages)} of {formatCount(result.totalPages)} pages were
+              read from images with on-device OCR (marked OCR in Per page view). OCR text
+              can misread characters — proofread those pages before trusting them.
             </div>
           )}
 
@@ -407,7 +428,11 @@ export function BookExtraction({ book }: { book: Book }) {
                       {result.pages.map((page, index) => (
                         <option key={page.pageNumber} value={index}>
                           {page.pageNumber} of {result.totalPages}
-                          {page.isEmpty ? ' (no text)' : ''}
+                          {page.isEmpty
+                            ? ' (no text)'
+                            : page.method === 'ocr'
+                              ? ` (OCR${page.confidence != null ? ` · ${page.confidence}%` : ''})`
+                              : ''}
                         </option>
                       ))}
                     </select>
@@ -430,6 +455,14 @@ export function BookExtraction({ book }: { book: Book }) {
                 <p className='text-xs text-muted-foreground'>
                   Page {activePage?.pageNumber} — {formatCount(activePage?.charCount ?? 0)}{' '}
                   characters, {formatCount(countWords(activePage?.text ?? ''))} words.
+                  {activePage && !activePage.isEmpty && (
+                    <>
+                      {' '}·{' '}
+                      {activePage.method === 'ocr'
+                        ? `OCR${activePage.confidence != null ? ` (confidence ${activePage.confidence}%)` : ''}`
+                        : 'Native text'}
+                    </>
+                  )}
                 </p>
               </div>
             )}

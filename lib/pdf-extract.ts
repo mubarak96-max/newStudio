@@ -1,15 +1,20 @@
 'use client';
 
 /**
- * Lossless client-side PDF text extraction (pdf.js).
+ * Unified client-side PDF text extraction: native text first, OCR fallback.
  *
- * Design goal: every recoverable text character from every page ends up in
- * the result. Nothing is capped, sampled, or reordered:
- * - pages are processed sequentially from 1 to numPages (no page cap),
- * - text items stay in pdf.js content order (no layout re-sorting),
- * - separators are only ever *added* between spans (never dropped chars),
- * - page breaks are preserved as form-feed characters in the full text.
+ * One method handles both PDF kinds. Every page is read with pdf.js first —
+ * the exact same path as native-only extraction, so text PDFs never touch
+ * OCR code. Only pages whose native text is below `minNativeChars` are
+ * rendered to an image and read with on-device OCR (tesseract.js, lazy-loaded
+ * on first use). Each page records which method produced its text.
+ *
+ * Other guarantees: nothing is capped, sampled, or reordered (pages run
+ * 1..numPages sequentially, items stay in content order, separators are only
+ * ever *added* between spans), and page breaks survive as form feeds.
  */
+
+export type PageMethod = 'native' | 'ocr';
 
 export type ExtractedPage = {
   pageNumber: number;
@@ -17,12 +22,18 @@ export type ExtractedPage = {
   charCount: number;
   itemCount: number;
   isEmpty: boolean;
+  method: PageMethod;
+  /** Mean tesseract confidence (0-100) for OCR pages, otherwise null. */
+  confidence: number | null;
 };
 
 export type ExtractionProgress = {
   currentPage: number;
   totalPages: number;
   percent: number;
+  stage: 'reading' | 'ocr';
+  /** Extra context while stage is 'ocr' (e.g. one-time engine download). */
+  ocrNote?: string;
 };
 
 export type ExtractionResult = {
@@ -34,8 +45,23 @@ export type ExtractionResult = {
   totalPages: number;
   totalChars: number;
   totalWords: number;
+  /** Pages with no text after all attempts (blank or unreadable). */
   emptyPages: number;
   emptyPageNumbers: number[];
+  ocrPages: number;
+  ocrPageNumbers: number[];
+  nativePages: number;
+};
+
+export type OcrOptions = {
+  /** Default true: the unified method. Set false for native-only (old) behavior. */
+  enabled?: boolean;
+  /** Native text shorter than this (chars, trimmed) triggers OCR. Default 50. */
+  minNativeChars?: number;
+  /** Render scale for OCR images (2 ≈ 190 dpi). Default 2. */
+  scale?: number;
+  /** Tesseract language code. Default 'eng'. */
+  language?: string;
 };
 
 export type ExtractOptions = {
@@ -43,6 +69,7 @@ export type ExtractOptions = {
   signal?: AbortSignal;
   /** Yield to the event loop every N pages so progress paints on huge books. */
   yieldEveryPages?: number;
+  ocr?: OcrOptions;
 };
 
 type RawTextItem = {
@@ -99,7 +126,12 @@ export function joinTextItems(items: RawTextItem[]): string {
     }
     if (hasEOL) out += '\n';
   }
-  return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return normalizeTextBlock(out);
+}
+
+/** Shared tail normalization for both native and OCR text. */
+export function normalizeTextBlock(text: string): string {
+  return text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 export function countWords(text: string): number {
@@ -129,11 +161,51 @@ function throwIfAborted(signal?: AbortSignal): void {
   }
 }
 
+const OCR_MIN_NATIVE_CHARS = 50;
+const OCR_RENDER_SCALE = 2;
+const OCR_LANGUAGE = 'eng';
+
+type OcrEngine = {
+  recognize: (
+    image: HTMLCanvasElement
+  ) => Promise<{ data: { text: string; confidence: number } }>;
+  terminate: () => Promise<unknown>;
+};
+
+/**
+ * Lazy-load tesseract.js only when the first OCR-needy page appears, so
+ * text PDFs never download or execute OCR code.
+ */
+async function loadOcrEngine(language: string): Promise<OcrEngine> {
+  const { createWorker } = await import('tesseract.js');
+  return (await createWorker(language)) as unknown as OcrEngine;
+}
+
+function reportProgress(
+  onProgress: ExtractOptions['onProgress'],
+  currentPage: number,
+  totalPages: number,
+  stage: ExtractionProgress['stage'],
+  ocrNote?: string
+): void {
+  onProgress?.({
+    currentPage,
+    totalPages,
+    percent: Math.round((currentPage / totalPages) * 100),
+    stage,
+    ocrNote,
+  });
+}
+
 export async function extractPdfFullText(
   data: ArrayBuffer | Uint8Array,
   options: ExtractOptions = {}
 ): Promise<ExtractionResult> {
-  const { onProgress, signal, yieldEveryPages = 10 } = options;
+  const { onProgress, signal, yieldEveryPages = 10, ocr } = options;
+  const ocrEnabled = ocr?.enabled !== false;
+  const minNativeChars = ocr?.minNativeChars ?? OCR_MIN_NATIVE_CHARS;
+  const ocrScale = ocr?.scale ?? OCR_RENDER_SCALE;
+  const ocrLanguage = ocr?.language ?? OCR_LANGUAGE;
   const pdfjs = await loadPdfJs();
   throwIfAborted(signal);
 
@@ -146,6 +218,7 @@ export async function extractPdfFullText(
   });
 
   const pdf = await loadingTask.promise;
+  let ocrEngine: OcrEngine | null = null;
   try {
     const totalPages = pdf.numPages;
     const pages: ExtractedPage[] = [];
@@ -156,23 +229,71 @@ export async function extractPdfFullText(
       try {
         const content = await page.getTextContent();
         const items = content.items.filter(isTextItem);
-        const text = joinTextItems(items);
+        let text = joinTextItems(items);
+        let method: PageMethod = 'native';
+        let confidence: number | null = null;
+
+        // Fallback: pages with almost no native text are image-only (scanned)
+        // and need OCR. The longer text wins, so a good native layer is never
+        // replaced by worse OCR output.
+        if (
+          ocrEnabled &&
+          text.trim().length < minNativeChars &&
+          typeof document !== 'undefined'
+        ) {
+          if (!ocrEngine) {
+            reportProgress(
+              onProgress,
+              pageNumber,
+              totalPages,
+              'ocr',
+              'Loading OCR engine (one-time download)…'
+            );
+            ocrEngine = await loadOcrEngine(ocrLanguage);
+            throwIfAborted(signal);
+          }
+          reportProgress(onProgress, pageNumber, totalPages, 'ocr');
+          const viewport = page.getViewport({ scale: ocrScale });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          if (!canvas.getContext('2d')) {
+            throw new Error('Canvas 2D is unavailable in this browser.');
+          }
+          await page.render({ canvas, viewport }).promise;
+          const { data: ocrData } = await ocrEngine.recognize(canvas);
+          canvas.width = 0;
+          canvas.height = 0;
+          throwIfAborted(signal);
+          const ocrText = normalizeTextBlock(ocrData.text ?? '');
+          if (ocrText.length > text.trim().length) {
+            text = ocrText;
+            method = 'ocr';
+            confidence =
+              typeof ocrData.confidence === 'number'
+                ? Math.round(ocrData.confidence)
+                : null;
+          }
+        }
+
         pages.push({
           pageNumber,
           text,
           charCount: text.length,
           itemCount: items.length,
           isEmpty: text.length === 0,
+          method,
+          confidence,
         });
+        reportProgress(
+          onProgress,
+          pageNumber,
+          totalPages,
+          method === 'ocr' ? 'ocr' : 'reading'
+        );
       } finally {
         page.cleanup();
       }
-
-      onProgress?.({
-        currentPage: pageNumber,
-        totalPages,
-        percent: Math.round((pageNumber / totalPages) * 100),
-      });
 
       if (pageNumber % yieldEveryPages === 0) {
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -181,6 +302,9 @@ export async function extractPdfFullText(
 
     const { fullText, pageOffsets } = buildFullText(pages);
     const emptyPageNumbers = pages.filter((p) => p.isEmpty).map((p) => p.pageNumber);
+    const ocrPageNumbers = pages
+      .filter((p) => p.method === 'ocr')
+      .map((p) => p.pageNumber);
 
     return {
       pages,
@@ -191,8 +315,14 @@ export async function extractPdfFullText(
       totalWords: countWords(fullText),
       emptyPages: emptyPageNumbers.length,
       emptyPageNumbers,
+      ocrPages: ocrPageNumbers.length,
+      ocrPageNumbers,
+      nativePages: totalPages - ocrPageNumbers.length,
     };
   } finally {
+    if (ocrEngine) {
+      await ocrEngine.terminate().catch(() => undefined);
+    }
     await loadingTask.destroy();
   }
 }

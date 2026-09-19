@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { SidebarProvider } from './SidebarContext';
 import { SidebarTrigger } from './SidebarTrigger';
 import { PageTransition } from './PageTransition';
+import type { DashboardNavItem } from '@/lib/navigation';
 
 type DashboardFrameProps = {
   children: ReactNode;
@@ -12,6 +13,8 @@ type DashboardFrameProps = {
   showSidebar?: boolean;
   displayName?: string | null;
   roleLabel?: string | null;
+  /** Page-scoped sidebar items (e.g. the current book's Extraction). */
+  navItems?: DashboardNavItem[];
 };
 
 /**
@@ -25,6 +28,7 @@ export function DashboardFrame({
   showSidebar = true,
   displayName,
   roleLabel,
+  navItems,
 }: DashboardFrameProps) {
   const content = (
     <>
@@ -55,7 +59,7 @@ export function DashboardFrame({
             : 'relative flex-1'
         }>
         {showSidebar && (
-          <Sidebar displayName={displayName} roleLabel={roleLabel} />
+          <Sidebar displayName={displayName} roleLabel={roleLabel} extraItems={navItems} />
         )}
         <main
           className={

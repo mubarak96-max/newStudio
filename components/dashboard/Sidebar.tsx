@@ -16,6 +16,8 @@ type SidebarProps = {
   className?: string;
   displayName?: string | null;
   roleLabel?: string | null;
+  /** Page-scoped items (e.g. the current book's Extraction) rendered after Home. */
+  extraItems?: DashboardNavItem[];
 };
 
 const navIcons: Record<DashboardNavItem['icon'], LucideIcon> = {
@@ -50,6 +52,7 @@ export function Sidebar({
   className = '',
   displayName,
   roleLabel,
+  extraItems = [],
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -147,7 +150,7 @@ export function Sidebar({
               </div>
             </Link>
 
-            {dashboardNavItems.map((item) => {
+            {[...dashboardNavItems, ...extraItems].map((item) => {
               const isActive = isActiveRoute(pathname, item.route);
               const Glyph = navIcons[item.icon];
 
