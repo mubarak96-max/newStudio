@@ -1,0 +1,1439 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+Starting unattended P1 — reading scoped plan and status.
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead src/features/auth
+[0m→ [0mRead src/services/firebase
+[0m→ [0mRead package.json
+[0m→ [0mRead src/proxy.ts
+[0m→ [0mRead src/app/studio/layout.tsx
+[0m→ [0mRead src/features/library/components/studio-dashboard.tsx
+[0m→ [0mRead src/features/auth/constants.ts
+[0m→ [0mRead src/features/auth/session.ts
+[0m→ [0mRead src/features/auth/allowlist.ts
+[0m→ [0mRead src/features/auth/index.ts
+[0m→ [0mRead src/services/firebase/client.ts
+[0m→ [0mRead src/services/firebase/use-live.ts
+[0m→ [0mRead src/services/firebase/admin.ts
+[0m→ [0mRead tests/smoke/smoke-workflow-contract.mjs
+[0m→ [0mRead tests/smoke/smoke-operations.mts
+[0m→ [0mRead src/features/auth/components/sign-in-panel.tsx
+[0m✱ [0mGlob "src/app/api/auth/**/*"[90m 1 match[0m
+[0m→ [0mRead src/features/auth/components/sign-out-button.tsx
+[0m→ [0mRead src/app/page.tsx
+[0m→ [0mRead src/components/layout/studio-shell.tsx
+[0m✱ [0mGlob "src/app/api/books/route.ts"[90m 1 match[0m
+[0m→ [0mRead src/app/api/auth/session/route.ts
+[0m→ [0mRead src/components/layout/sidebar.tsx
+[0m
+[0m$ [0mgit status --porcelain=v1 | head -50; echo ---TRACKED-DIFF---; git diff --stat; echo ---UNTRACKED---; git ls-files --others --exclude-standard | head -30
+AM docs/features/25d-schema-foundation/.run/inflight
+A  docs/features/25d-schema-foundation/.runinfo
+AM docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log
+AM docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+MM docs/features/25d-schema-foundation/status.md
+M  src/features/images/components/image-studio.tsx
+A  src/features/images/components/studio-canon-editor.tsx
+A  src/features/images/components/studio-episode-images.tsx
+A  src/features/images/components/studio-reference.tsx
+A  src/features/images/components/studio-stage.tsx
+M  tests/smoke/smoke-operations.mts
+M  tests/smoke/smoke-workflow-contract.mjs
+M  worker/index.mts
+A  worker/jobs/dispatch.mts
+A  worker/jobs/job-store.mts
+A  worker/jobs/queue.mts
+A  worker/jobs/recovery.mts
+?? .patches/
+?? docs/features/25d-schema-foundation/.run/P0.result
+?? docs/features/25d-schema-foundation/.run/settled.P0
+?? docs/features/25d-schema-foundation/logs/P0-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P1-attempt1-171139.log
+---TRACKED-DIFF---
+warning: in the working copy of 'docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log', LF will be replaced by CRLF the next time Git touches it
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../logs/P0-attempt1-170300.log                    | 100 +++++++++++++++++++++
+ .../loop-run-20260918-171500.log                   |   8 ++
+ docs/features/25d-schema-foundation/status.md      |   3 +-
+ 4 files changed, 111 insertions(+), 2 deletions(-)
+---UNTRACKED---
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-171500.log', LF will be replaced by CRLF the next time Git touches it
+.patches/P0-new-files/dispatch.mts
+.patches/P0-new-files/job-store.mts
+.patches/P0-new-files/queue.mts
+.patches/P0-new-files/recovery.mts
+.patches/P0-new-files/studio-canon-editor.tsx
+.patches/P0-new-files/studio-episode-images.tsx
+.patches/P0-new-files/studio-reference.tsx
+.patches/P0-new-files/studio-stage.tsx
+.patches/P0-studio.patch
+docs/features/25d-schema-foundation/.run/P0.result
+docs/features/25d-schema-foundation/.run/settled.P0
+docs/features/25d-schema-foundation/logs/P0-gate-attempt1.log
+docs/features/25d-schema-foundation/logs/P1-attempt1-171139.log
+[0m
+Baseline recorded; P0 dependency is done. Inspecting auth boundaries before implementation.
+[0m→ [0mRead src/app/api/books/route.ts[90m [limit=80][0m
+[0m
+[0m$ [0mls "node_modules/next/dist/docs" && echo --- && ls "node_modules/next/dist/docs/"* 2>/dev/null | head -60
+01-app
+02-pages
+03-architecture
+04-community
+index.md
+---
+node_modules/next/dist/docs/index.md
+
+node_modules/next/dist/docs/01-app:
+01-getting-started
+02-guides
+03-api-reference
+04-glossary.md
+index.md
+
+node_modules/next/dist/docs/02-pages:
+01-getting-started
+02-guides
+03-building-your-application
+04-api-reference
+index.md
+
+node_modules/next/dist/docs/03-architecture:
+accessibility.md
+fast-refresh.md
+index.md
+nextjs-compiler.md
+supported-browsers.md
+
+node_modules/next/dist/docs/04-community:
+01-contribution-guide.md
+02-rspack.md
+index.md
+[0m
+[0m✗ [0mRead node_modules/next/dist/docs/01-app/02-guides/middleware.md failed
+[91m[1mError: [0mFile not found: C:\Users\800sa\studio\node_modules\next\dist\docs\01-app\02-guides\middleware.md
+[0m
+[0m$ [0mls "node_modules/next/dist/docs/01-app/02-guides" && echo --- && ls "node_modules/next/dist/docs/01-app/03-api-reference"
+adopting-partial-prefetching.md
+ai-agents.md
+analytics.md
+authentication.md
+backend-for-frontend.md
+building.md
+caching-without-cache-components.md
+cdn-caching.md
+ci-build-caching.md
+content-security-policy.md
+css-in-js.md
+custom-server.md
+data-security.md
+debugging.md
+deploying-to-platforms.md
+draft-mode.md
+environment-variables.md
+forms.md
+how-revalidation-works.md
+incremental-static-regeneration.md
+incremental-static-regeneration-cache-components.md
+index.md
+instant-navigation.md
+instrumentation.md
+interactive-apps.md
+internationalization.md
+json-ld.md
+lazy-loading.md
+local-development.md
+mcp.md
+mdx.md
+memory-usage.md
+migrating
+migrating-to-cache-components.md
+multi-tenant.md
+multi-zones.md
+offline-support.md
+open-telemetry.md
+package-bundling.md
+ppr-platform-guide.md
+prefetching.md
+preserving-ui-state.md
+preventing-flash-before-hydration.md
+production-checklist.md
+progressive-web-apps.md
+public-static-pages.md
+redirecting.md
+rendering-philosophy.md
+runtime-prefetching.md
+sass.md
+scripts.md
+self-hosting.md
+server-actions.md
+single-page-applications.md
+static-exports.md
+streaming.md
+tailwind-v3-css.md
+testing
+third-party-libraries.md
+upgrading
+videos.md
+view-transitions.md
+---
+01-directives
+02-components
+03-file-conventions
+04-functions
+05-config
+06-cli
+07-adapters
+07-edge.md
+08-turbopack.md
+index.md
+[0m
+[0m→ [0mRead node_modules/next/dist/docs/01-app/02-guides/authentication.md[90m [limit=120][0m
+[0m
+[0m$ [0mrg -l "export function proxy|proxy\.ts" "node_modules/next/dist/docs" | head; echo ---; ls "node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions" | head -40
+/usr/bin/bash: line 1: rg: command not found
+---
+01-metadata
+02-route-segment-config
+default.md
+dynamic-routes.md
+error.md
+forbidden.md
+index.md
+instrumentation.md
+instrumentation-client.md
+intercepting-routes.md
+layout.md
+loading.md
+mdx-components.md
+middleware.md
+not-found.md
+page.md
+parallel-routes.md
+proxy.md
+public-folder.md
+route.md
+route-groups.md
+src-folder.md
+template.md
+unauthorized.md
+[0m
+[0m→ [0mRead node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md[90m [limit=100][0m
+[0m→ [0mRead firestore.rules
+[0m✱ [0mGrep "use-live|useFirebaseUser|onAuthStateChanged|SignOutButton|isAuthDisabled|getSession"[90m 69 matches[0m
+[0m→ [0mRead tests/smoke/smoke-editorial-ui.mjs
+Design settled: pure auth mode/policy modules, trusted server mode endpoint, dev-only automatic Firebase identity endpoint, bypass-aware browser readiness. Reading remaining consumers.
+[0m→ [0mRead src/features/library/components/book-detail.tsx[90m [limit=80][0m
+[0m→ [0mRead src/features/sources/components/extraction-editor.tsx[90m [limit=70][0m
+Now implementing. Creating pure auth mode/policy modules first (test seam, no Next/Firebase deps).
+[0m
+[0m← [0mWrite src/features/auth/mode.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/auth/policy.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/features/auth/constants.ts
+Index: C:/Users/800sa/studio/src/features/auth/constants.ts
+===================================================================
+--- C:/Users/800sa/studio/src/features/auth/constants.ts
++++ C:/Users/800sa/studio/src/features/auth/constants.ts
+@@ -1,15 +1,21 @@
++import { resolveAuthMode, type AuthMode } from "./mode";
++
+ export const SESSION_COOKIE = "studio_session";
+ export const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+ 
++/** Trusted server auth-mode decision shared by layout, routes and Proxy. */
++export function getAuthMode(): AuthMode {
++  return resolveAuthMode({
++    nodeEnv: process.env.NODE_ENV,
++    flag: process.env.STUDIO_AUTH_DISABLED,
++  });
++}
++
+ /**
+  * True when Studio auth is bypassed. Defaults to on outside production
+- * (`next dev`) so local development needs no sign-in; production stays
+- * protected unless explicitly forced. Override with STUDIO_AUTH_DISABLED:
+- * "1"/"true" forces the bypass on, "0"/"false" forces it off.
++ * (`next dev`) so local development needs no sign-in. Production always
++ * stays protected: the bypass flag cannot enable it there.
+  */
+ export function isAuthDisabled(): boolean {
+-  const flag = process.env.STUDIO_AUTH_DISABLED?.trim().toLowerCase();
+-  if (flag === "1" || flag === "true") return true;
+-  if (flag === "0" || flag === "false") return false;
+-  return process.env.NODE_ENV !== "production";
++  return getAuthMode() === "development-bypass";
+ }
+
+[0m
+[0m← [0mEdit src/features/auth/session.ts
+Index: C:/Users/800sa/studio/src/features/auth/session.ts
+===================================================================
+--- C:/Users/800sa/studio/src/features/auth/session.ts
++++ C:/Users/800sa/studio/src/features/auth/session.ts
+@@ -1,8 +1,10 @@
+ import { cookies } from "next/headers";
+ 
+ import { allowlistedEmails, isAllowlisted } from "@/features/auth/allowlist";
+ import { isAuthDisabled, SESSION_COOKIE, SESSION_MAX_AGE_MS } from "@/features/auth/constants";
++import { DEV_SESSION_UID } from "@/features/auth/mode";
++import { acceptSession } from "@/features/auth/policy";
+ import { adminAuth } from "@/services/firebase/admin";
+ 
+ export type StudioSession = {
+   uid: string;
+
+[0m
+[0m← [0mEdit src/features/auth/session.ts
+Index: C:/Users/800sa/studio/src/features/auth/session.ts
+===================================================================
+--- C:/Users/800sa/studio/src/features/auth/session.ts
++++ C:/Users/800sa/studio/src/features/auth/session.ts
+@@ -40,19 +40,24 @@
+ }
+ 
+ export async function getSession(): Promise<StudioSession | null> {
+   if (isAuthDisabled()) {
+-    return { uid: "dev", email: allowlistedEmails()[0] ?? "dev@localhost" };
++    return { uid: DEV_SESSION_UID, email: allowlistedEmails()[0] ?? "dev@localhost" };
+   }
+ 
+   const store = await cookies();
+   const cookie = store.get(SESSION_COOKIE)?.value;
+   if (!cookie) return null;
+ 
+   try {
+     const decoded = await adminAuth().verifySessionCookie(cookie, true);
+-    if (!isAllowlisted(decoded.email)) return null;
+-    return { uid: decoded.uid, email: decoded.email as string };
++    // Reject any development identity at the production session boundary,
++    // even if a dev-marked cookie somehow reaches this check.
++    return acceptSession({
++      mode: "authenticated",
++      session: { uid: decoded.uid, email: decoded.email ?? "" },
++      isAllowlisted: isAllowlisted(decoded.email),
++    });
+   } catch {
+     return null;
+   }
+ }
+
+[0m
+[0m← [0mEdit src/proxy.ts
+Index: C:/Users/800sa/studio/src/proxy.ts
+===================================================================
+--- C:/Users/800sa/studio/src/proxy.ts
++++ C:/Users/800sa/studio/src/proxy.ts
+@@ -1,17 +1,23 @@
+ import { NextResponse } from "next/server";
+ import type { NextRequest } from "next/server";
+ 
+-import { isAuthDisabled, SESSION_COOKIE } from "@/features/auth/constants";
++import { getAuthMode, SESSION_COOKIE } from "@/features/auth/constants";
++import { proxyDecision } from "@/features/auth/policy";
+ 
+ /**
+  * Optimistic check only — the cookie is verified against Firebase in the
+  * Studio layout. This just avoids rendering Studio for obvious signed-out hits.
+- * Skipped entirely when auth is disabled for development.
++ * The development-bypass branch follows the same trusted server auth-mode
++ * decision as the layout; production always requires the session cookie,
++ * even when a bypass flag is set.
+  */
+ export function proxy(request: NextRequest) {
+-  if (isAuthDisabled()) return NextResponse.next();
+-  if (request.cookies.has(SESSION_COOKIE)) return NextResponse.next();
++  const decision = proxyDecision({
++    mode: getAuthMode(),
++    hasSessionCookie: request.cookies.has(SESSION_COOKIE),
++  });
++  if (decision === "next") return NextResponse.next();
+ 
+   const signIn = new URL("/", request.url);
+   signIn.searchParams.set("next", request.nextUrl.pathname);
+   return NextResponse.redirect(signIn);
+
+[0m
+Now the trusted mode endpoint and dev-only automatic identity endpoint.
+[0m← [0mWrite src/app/api/auth/mode/route.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/app/api/auth/dev-token/route.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/app/api/auth/session/route.ts
+Index: C:/Users/800sa/studio/src/app/api/auth/session/route.ts
+===================================================================
+--- C:/Users/800sa/studio/src/app/api/auth/session/route.ts
++++ C:/Users/800sa/studio/src/app/api/auth/session/route.ts
+@@ -4,14 +4,23 @@
+   clearSession,
+   createSession,
+   NotAllowlistedError,
+ } from "@/features/auth/session";
++import { isDevelopmentMarker } from "@/features/auth/policy";
+ 
+ export async function POST(request: Request) {
+   const { idToken } = (await request.json()) as { idToken?: string };
+   if (!idToken) {
+     return NextResponse.json({ error: "Missing idToken." }, { status: 400 });
+   }
++  // Reject development markers at the session boundary: only a real
++  // provider-signed token from an allowlisted editor may mint a session.
++  if (isDevelopmentMarker(idToken)) {
++    return NextResponse.json(
++      { error: "Development identities cannot mint editor sessions." },
++      { status: 403 },
++    );
++  }
+ 
+   try {
+     const session = await createSession(idToken);
+     return NextResponse.json({ email: session.email });
+
+[0m
+Now the browser readiness layer.
+[0m← [0mWrite src/services/firebase/dev-identity.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/services/firebase/use-live.ts
+Index: C:/Users/800sa/studio/src/services/firebase/use-live.ts
+===================================================================
+--- C:/Users/800sa/studio/src/services/firebase/use-live.ts
++++ C:/Users/800sa/studio/src/services/firebase/use-live.ts
+@@ -10,8 +10,9 @@
+ } from "firebase/firestore";
+ import { useEffect, useState } from "react";
+ 
+ import { getClientAuth } from "@/services/firebase/client";
++import { ensureDevelopmentIdentity } from "@/services/firebase/dev-identity";
+ 
+ export function millis(value: unknown): number | null {
+   return value instanceof Timestamp ? value.toMillis() : null;
+ }
+@@ -28,8 +29,122 @@
+   );
+   return signedIn;
+ }
+ 
++export type AuthModeState = {
++  bypassed: boolean | null;
++  error: string | null;
++};
++
++let cachedModePromise: Promise<AuthModeState> | null = null;
++
++function fetchAuthMode(): Promise<AuthModeState> {
++  if (!cachedModePromise) {
++    cachedModePromise = fetch("/api/auth/mode")
++      .then(async (response) => {
++        if (!response.ok) throw new Error(`mode request failed: ${response.status}`);
++        const body = (await response.json()) as { bypass?: boolean };
++        return { bypassed: body.bypass === true, error: null };
++      })
++      .catch(
++        (): AuthModeState => ({
++          bypassed: null,
++          error:
++            "Studio could not reach the local development server. " +
++            "Start it with “npm.cmd run dev”, then reload.",
++        }),
++      );
++  }
++  return cachedModePromise;
++}
++
++/**
++ * Trusted server auth-mode decision for browser readiness (ADR-005).
++ * Resolves once per page load; null while unknown.
++ */
++export function useAuthMode(): AuthModeState {
++  const [state, setState] = useState<AuthModeState>({ bypassed: null, error: null });
++  useEffect(() => {
++    let cancelled = false;
++    fetchAuthMode().then((next) => {
++      if (!cancelled) setState(next);
++    });
++    return () => {
++      cancelled = true;
++    };
++  }, []);
++  return state;
++}
++
++export type StudioReadiness = {
++  /** True when Firestore subscriptions are expected to work. */
++  ready: boolean;
++  /** True when the server runs in development-bypass mode. */
++  bypassed: boolean;
++  /** Actionable connection failure, or null while loading/healthy. */
++  error: string | null;
++};
++
++/**
++ * Browser data readiness (ADR-005).
++ *
++ * In development-bypass mode the hook signs the browser in automatically
++ * with the server-minted development identity, so Studio opens without an
++ * interactive login. In production it waits for the editor's Firebase user.
++ * Failures carry the exact owner-configured step that unblocks them.
++ */
++export function useStudioReadiness(): StudioReadiness {
++  const { bypassed, error: modeError } = useAuthMode();
++  const signedIn = useFirebaseUser();
++  const [identityError, setIdentityError] = useState<string | null>(null);
++
++  useEffect(() => {
++    if (bypassed !== true || signedIn !== false) return;
++    let cancelled = false;
++    setIdentityError(null);
++    ensureDevelopmentIdentity().then((result) => {
++      if (!cancelled && !result.ok) setIdentityError(result.error);
++    });
++    return () => {
++      cancelled = true;
++    };
++  }, [bypassed, signedIn]);
++
++  if (modeError) return { ready: false, bypassed: false, error: modeError };
++  if (identityError) {
++    return { ready: false, bypassed: bypassed === true, error: identityError };
++  }
++  if (signedIn !== true) {
++    // Production without a Firebase user: interactive sign-in is required.
++    // Development-bypass: the automatic identity is still being issued.
++    const waiting =
++      bypassed === false
++        ? "Your browser session with Firebase expired. Sign out and sign in again to reload live data."
++        : null;
++    return { ready: false, bypassed: bypassed === true, error: waiting };
++  }
++  return { ready: true, bypassed: bypassed === true, error: null };
++}
++
++/**
++ * Wraps a Firestore subscription failure with the step that unblocks it.
++ * Development-bypass failures almost always mean the owner-configured
++ * development identity cannot read yet; production failures mean sign-in.
++ */
++export function describeDataError(bypassed: boolean, message: string): string {
++  if (bypassed) {
++    return (
++      `Live data is unreachable: ${message} ` +
++      "Development bypass is on, so confirm the owner-configured development " +
++      "Firebase project and STUDIO_ALLOWED_EMAILS, then reload."
++    );
++  }
++  return (
++    `Live data is unreachable: ${message} ` +
++    "Sign out and sign in again with the allowlisted editor account."
++  );
++}
++
+ export function useLiveDoc<T>(
+   ready: boolean,
+   ref: () => DocumentReference,
+   map: (id: string, data: DocumentData) => T,
+
+[0m
+Now updating the dashboard to use the unified readiness hook.
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -1,7 +1,6 @@
+ "use client";
+ 
+-import { onAuthStateChanged } from "firebase/auth";
+ import {
+   collection,
+   collectionGroup,
+   doc,
+@@ -14,9 +13,10 @@
+ import Link from "next/link";
+ import { useRouter } from "next/navigation";
+ import { useEffect, useRef, useState } from "react";
+ 
+-import { getClientAuth, getClientDb } from "@/services/firebase/client";
++import { getClientDb } from "@/services/firebase/client";
++import { describeDataError, useStudioReadiness } from "@/services/firebase/use-live";
+ import {
+   COLLECTIONS,
+   isWorkerOnline,
+   WORKER_PRESENCE_DOC,
+
+[0m
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -79,9 +79,11 @@
+ };
+ 
+ export default function StudioDashboard() {
+   const router = useRouter();
+-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
++  // Unified readiness (ADR-005): development-bypass signs the browser in
++  // automatically; production waits for the editor's Firebase user.
++  const { ready, bypassed, error: readinessError } = useStudioReadiness();
+   const [books, setBooks] = useState<Book[]>([]);
+   const [jobs, setJobs] = useState<Job[]>([]);
+   const [presence, setPresence] = useState<WorkerPresence | null>(null);
+   const [now, setNow] = useState(() => Date.now());
+
+[0m
+[0m✗ [0mEdit src/features/library/components/studio-dashboard.tsx failed
+[91m[1mError: [0mCould not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
+[0m→ [0mRead src/features/library/components/studio-dashboard.tsx[90m [limit=65, offset=78][0m
+[0m
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -92,23 +92,16 @@
+ const fileInput = useRef<HTMLInputElement>(null);
+ const [busy, setBusy] = useState(false);
+ const [error, setError] = useState<string | null>(null);
+ 
+-useEffect(() => onAuthStateChanged(getClientAuth(), (user) => setSignedIn(!!user)), []);
+-
+ useEffect(() => {
+-  const id = setInterval(() => setNow(Date.now()), 60_000);
+-  return () => clearInterval(id);
+-}, []);
+-
+-useEffect(() => {
+-  if (!signedIn) return;
++  if (!ready) return;
+   const db = getClientDb();
+ 
+   const unsubBooks = onSnapshot(
+     query(collection(db, COLLECTIONS.books), orderBy("createdAt", "desc")),
+     (snap) => setBooks(snap.docs.map((d) => toBook(d.id, d.data()))),
+-    (err) => setError(err.message),
++    (err) => setError(describeDataError(bypassed, err.message)),
+   );
+ 
+   const unsubJobs = onSnapshot(
+     collectionGroup(db, COLLECTIONS.jobs),
+
+[0m
+I dropped the clock effect — restoring it.
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -93,8 +93,13 @@
+ const [busy, setBusy] = useState(false);
+ const [error, setError] = useState<string | null>(null);
+ 
+ useEffect(() => {
++  const id = setInterval(() => setNow(Date.now()), 60_000);
++  return () => clearInterval(id);
++}, []);
++
++useEffect(() => {
+   if (!ready) return;
+   const db = getClientDb();
+ 
+   const unsubBooks = onSnapshot(
+
+[0m
+[0m→ [0mRead src/features/library/components/studio-dashboard.tsx[90m [limit=65, offset=103][0m
+[0m
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -119,9 +119,9 @@
+       .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+       .slice(0, 25);
+     setJobs(next);
+   },
+-  (err) => setError(err.message),
++  (err) => setError(describeDataError(bypassed, err.message)),
+ );
+ 
+ const unsubWorker = onSnapshot(
+   doc(db, COLLECTIONS.system, WORKER_PRESENCE_DOC),
+
+[0m
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -136,17 +136,17 @@
+             }
+           : null,
+       );
+     },
+-    (err) => setError(err.message),
++    (err) => setError(describeDataError(bypassed, err.message)),
+   );
+ 
+   return () => {
+     unsubBooks();
+     unsubJobs();
+     unsubWorker();
+   };
+-}, [signedIn]);
++}, [ready, bypassed]);
+ 
+ async function uploadBook() {
+   const file = selectedFile;
+   if (!file) return;
+
+[0m
+[0m→ [0mRead src/features/library/components/studio-dashboard.tsx[90m [limit=30, offset=184][0m
+[0m
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -184,18 +184,12 @@
+ }
+ 
+ const workerOnline = isWorkerOnline(presence, now);
+ const queuedCount = jobs.filter((job) => job.status === "queued").length;
++// Actionable connection failure (readiness or subscription); the library
++// still renders so partial state stays visible.
++const connectionError = readinessError ?? error;
+ 
+-if (signedIn === false) {
+-  return (
+-    <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+-      Your browser session with Firebase expired. Sign out and sign in again
+-      to reload live data.
+-    </p>
+-  );
+-}
+-
+ return (
+   <div className="flex flex-col gap-8">
+     <header className="surface-card relative overflow-hidden p-6 sm:p-8">
+       <div className="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full bg-blue-500/10 blur-3xl" />
+
+[0m
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -221,13 +221,22 @@
+         : 'Start the worker with "npm run worker" before enqueueing jobs.'}
+   </span>
+ </section>
+ 
+-{error && (
++{connectionError && (
+   <p
+     role="alert"
+     className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+   >
++    {connectionError}
++  </p>
++)}
++
++{error && error !== connectionError && (
++  <p
++    role="alert"
++    className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
++  >
+     {error}
+   </p>
+ )}
+ 
+
+[0m
+Simplifying to a single alert block.
+[0m← [0mEdit src/features/library/components/studio-dashboard.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
++++ C:/Users/800sa/studio/src/features/library/components/studio-dashboard.tsx
+@@ -230,17 +230,8 @@
+     {connectionError}
+   </p>
+ )}
+ 
+-{error && error !== connectionError && (
+-  <p
+-    role="alert"
+-    className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+-  >
+-    {error}
+-  </p>
+-)}
+-
+ <section className="surface-card flex flex-col gap-4 p-5 sm:p-6">
+   <div>
+     <p className="eyebrow">Start a project</p>
+     <h2 className="mt-1 text-xl font-semibold tracking-tight">Upload a book</h2>
+
+[0m
+[0m$ [0mnode -e "const fs=require('fs');const s=fs.readFileSync('src/features/library/components/studio-dashboard.tsx','utf8');for(const t of ['signedIn','onAuthStateChanged','getClientAuth']){console.log(t, s.includes(t));}"
+signedIn false
+onAuthStateChanged false
+getClientAuth false
+[0m
+[0m← [0mEdit src/features/library/components/book-detail.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/book-detail.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/book-detail.tsx
++++ C:/Users/800sa/studio/src/features/library/components/book-detail.tsx
+@@ -5,9 +5,9 @@
+ import { useRouter } from 'next/navigation';
+ import { useRef, useState } from 'react';
+ 
+ import { getClientDb } from '@/services/firebase/client';
+-import { useFirebaseUser, useLiveCollection, useLiveDoc } from '@/services/firebase/use-live';
++import { useLiveCollection, useLiveDoc, useStudioReadiness } from '@/services/firebase/use-live';
+ import { toJobs } from '@/features/jobs/mappers';
+ import {
+   ALL_JOBS_DOC,
+   canCancelJob,
+
+[0m
+[0m← [0mEdit src/features/sources/components/extraction-editor.tsx
+Index: C:/Users/800sa/studio/src/features/sources/components/extraction-editor.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/sources/components/extraction-editor.tsx
++++ C:/Users/800sa/studio/src/features/sources/components/extraction-editor.tsx
+@@ -11,9 +11,9 @@
+ import JobProgress from "@/features/jobs/components/job-progress";
+ import ParagraphRow from "@/features/sources/components/paragraph-row";
+ import UncertaintyPanel from "@/features/sources/components/uncertainty-panel";
+ import { getClientDb } from "@/services/firebase/client";
+-import { useFirebaseUser, useLiveCollection, useLiveDoc } from "@/services/firebase/use-live";
++import { useLiveCollection, useLiveDoc, useStudioReadiness } from "@/services/firebase/use-live";
+ import { toJobs } from "@/features/jobs/mappers";
+ import { ALL_JOBS_DOC } from "@/features/jobs/types";
+ import type { EditOp } from "@/features/sources/edit-ops";
+ import { toChapter, toSource, toUncertainty } from "@/features/sources/mappers";
+
+[0m
+[0m← [0mEdit src/features/sources/components/extraction-editor.tsx
+Index: C:/Users/800sa/studio/src/features/sources/components/extraction-editor.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/sources/components/extraction-editor.tsx
++++ C:/Users/800sa/studio/src/features/sources/components/extraction-editor.tsx
+@@ -37,10 +37,11 @@
+   sourceId: string;
+   initialTab: WorkflowTab;
+ }) {
+   const router = useRouter();
+-  const signedIn = useFirebaseUser();
+-  const ready = signedIn === true;
++  // Unified readiness (ADR-005): development-bypass signs the browser in
++  // automatically; production waits for the editor's Firebase user.
++  const { ready } = useStudioReadiness();
+   const [busy, setBusy] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+   const base = ["books", bookId, "sources", sourceId] as const;
+ 
+
+[0m
+[0m← [0mEdit src/features/library/components/book-detail.tsx
+Index: C:/Users/800sa/studio/src/features/library/components/book-detail.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/features/library/components/book-detail.tsx
++++ C:/Users/800sa/studio/src/features/library/components/book-detail.tsx
+@@ -38,10 +38,11 @@
+   cancelled: 'Cancelled',
+ };
+ 
+ export default function BookDetail({ bookId }: { bookId: string }) {
+-  const signedIn = useFirebaseUser();
+-  const ready = signedIn === true;
++  // Unified readiness (ADR-005): development-bypass signs the browser in
++  // automatically; production waits for the editor's Firebase user.
++  const { ready } = useStudioReadiness();
+   const [actingOnJob, setActingOnJob] = useState<string | null>(null);
+   const [jobActionError, setJobActionError] = useState<string | null>(null);
+ 
+   const book = useLiveDoc(
+
+[0m
+Now hiding sign-out when bypassed.
+[0m← [0mEdit src/app/studio/layout.tsx
+Index: C:/Users/800sa/studio/src/app/studio/layout.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/app/studio/layout.tsx
++++ C:/Users/800sa/studio/src/app/studio/layout.tsx
+@@ -1,13 +1,21 @@
+ import { redirect } from "next/navigation";
+ 
+ import StudioShell from "@/components/layout/studio-shell";
++import { getAuthMode } from "@/features/auth/constants";
+ import { getSession } from "@/features/auth/session";
+ 
+ export default async function StudioLayout({
+   children,
+ }: LayoutProps<"/studio">) {
+   const session = await getSession();
+   if (!session) redirect("/");
+ 
+-  return <StudioShell email={session.email}>{children}</StudioShell>;
++  // Development-bypass has no interactive session, so there is nothing to
++  // sign out of; the shell hides the sign-out control in that mode.
++  const bypassed = getAuthMode() === "development-bypass";
++  return (
++    <StudioShell email={session.email} bypassed={bypassed}>
++      {children}
++    </StudioShell>
++  );
+ }
+
+[0m
+[0m← [0mEdit src/components/layout/sidebar.tsx
+Index: C:/Users/800sa/studio/src/components/layout/sidebar.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/components/layout/sidebar.tsx
++++ C:/Users/800sa/studio/src/components/layout/sidebar.tsx
+@@ -11,13 +11,14 @@
+ import ThemeToggle from "./theme-toggle";
+ 
+ interface SidebarProps {
+   email: string;
++  bypassed: boolean;
+   isOpen: boolean;
+   onClose: () => void;
+ }
+ 
+-export default function Sidebar({ email, isOpen, onClose }: SidebarProps) {
++export default function Sidebar({ email, bypassed, isOpen, onClose }: SidebarProps) {
+   const pathname = usePathname();
+   const searchParams = useSearchParams();
+   const context = useMemo(() => routeContext(pathname), [pathname]);
+   const view = searchParams.get("view") ?? (context.sourceId ? "episodes" : null);
+
+[0m
+[0m← [0mEdit src/components/layout/studio-shell.tsx
+Index: C:/Users/800sa/studio/src/components/layout/studio-shell.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/components/layout/studio-shell.tsx
++++ C:/Users/800sa/studio/src/components/layout/studio-shell.tsx
+@@ -3,15 +3,15 @@
+ import { Suspense, useState, type ReactNode } from "react";
+ 
+ import Sidebar from "./sidebar";
+ 
+-export default function StudioShell({ children, email }: { children: ReactNode; email: string }) {
++export default function StudioShell({ children, email, bypassed }: { children: ReactNode; email: string; bypassed: boolean }) {
+   const [sidebarOpen, setSidebarOpen] = useState(false);
+ 
+   return (
+     <div className="studio-canvas flex h-screen min-h-0 flex-1 overflow-hidden">
+       <Suspense fallback={<SidebarFallback />}>
+-        <Sidebar email={email} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
++        <Sidebar email={email} bypassed={bypassed} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+       </Suspense>
+       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+         <header className="flex h-16 shrink-0 items-center border-b border-slate-200 bg-white/90 px-4 backdrop-blur-xl lg:hidden dark:border-slate-800 dark:bg-slate-950/90">
+           <button
+
+[0m
+[0m← [0mEdit src/components/layout/sidebar.tsx
+Index: C:/Users/800sa/studio/src/components/layout/sidebar.tsx
+===================================================================
+--- C:/Users/800sa/studio/src/components/layout/sidebar.tsx
++++ C:/Users/800sa/studio/src/components/layout/sidebar.tsx
+@@ -170,9 +170,10 @@
+         <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+           {email}
+         </span>
+         <ThemeToggle compact />
+-        <SignOutButton compact />
++        {/* Development-bypass has no interactive session to end. */}
++        {bypassed ? null : <SignOutButton compact />}
+       </div>
+     </div>
+   </div>
+ </aside>
+
+[0m
+Now the smoke:auth gate.
+[0m← [0mWrite tests/smoke/smoke-auth.mts
+Wrote file successfully.
+[0m
+[0m← [0mEdit package.json
+Index: C:/Users/800sa/studio/package.json
+===================================================================
+--- C:/Users/800sa/studio/package.json
++++ C:/Users/800sa/studio/package.json
+@@ -7,8 +7,9 @@
+ "build": "next build",
+ "start": "next start",
+ "worker": "node --experimental-strip-types --env-file=.env worker/index.mts",
+ "smoke:workflow": "node tests/smoke/smoke-workflow-contract.mjs",
++"smoke:auth": "node --experimental-strip-types tests/smoke/smoke-auth.mts",
+ "smoke:ui": "node tests/smoke/smoke-editorial-ui.mjs",
+ "smoke:episodes": "node --experimental-strip-types tests/smoke/smoke-episode-map.mts",
+ "smoke:bible": "node --experimental-strip-types tests/smoke/smoke-bible.mts",
+ "smoke:moments": "node --experimental-strip-types tests/smoke/smoke-moments.mts",
+
+[0m
+[0m← [0mEdit tests/smoke/smoke-auth.mts
+Index: C:/Users/800sa/studio/tests/smoke/smoke-auth.mts
+===================================================================
+--- C:/Users/800sa/studio/tests/smoke/smoke-auth.mts
++++ C:/Users/800sa/studio/tests/smoke/smoke-auth.mts
+@@ -51,9 +51,9 @@
+ ['Session minting rejects development markers', sessionRoute.includes('isDevelopmentMarker')],
+ ['Dev identity endpoint is unreachable outside bypass mode', /canMintDevelopmentIdentity/.test(devTokenRoute) && /status: 404/.test(devTokenRoute)],
+ ['Dev identity endpoint never sets a Studio session cookie', !/SESSION_COOKIE/.test(devTokenRoute) && !/cookies\(\)/.test(devTokenRoute)],
+ ['Dev identity minting carries no shipped credentials', !/AIza/.test(devTokenRoute) && !/private_key/.test(devTokenRoute)],
+-['Trusted mode endpoint only reveals the mode', modeRoute.includes('/api/auth/mode') === false && /bypass/.test(modeRoute) && !/SESSION_COOKIE/.test(modeRoute)],
++['Trusted mode endpoint only reveals the mode', !/SESSION_COOKIE/.test(modeRoute) && !/createCustomToken/.test(modeRoute) && /bypass/.test(modeRoute)],
+ ['Browser readiness uses the trusted server mode, not a flag guess', useLive.includes('/api/auth/mode') && useLive.includes('useStudioReadiness')],
+ ['Browser issues the development identity automatically, with actionable failures', useLive.includes('ensureDevelopmentIdentity') && devIdentity.includes('signInWithCustomToken') && devIdentity.includes('/api/auth/dev-token')],
+ ['Dashboard subscriptions wait on unified readiness, not a raw auth listener', dashboard.includes('useStudioReadiness') && !dashboard.includes('onAuthStateChanged')],
+ ['Dashboard surfaces actionable connection failures', dashboard.includes('role="alert"') && dashboard.includes('describeDataError')],
+
+[0m
+[0m$ [0mnpm.cmd run smoke:auth
+> editorial-studio@0.1.0 smoke:auth
+> node --experimental-strip-types tests/smoke/smoke-auth.mts
+
+(node:11424) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/auth/mode.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+node:internal/modules/esm/resolve:271
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\800sa\studio\src\features\auth\mode' imported from C:\Users\800sa\studio\src\features\auth\policy.ts
+    at finalizeResolution (node:internal/modules/esm/resolve:271:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)
+    at #resolve (node:internal/modules/esm/loader:683:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:253:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/800sa/studio/src/features/auth/mode'
+}
+
+Node.js v24.18.0
+[0m
+[0m$ [0mnode -e "console.log(require('fs').readFileSync('tsconfig.json','utf8'))"
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+[0m
+`allowImportingTsExtensions` is on — using explicit `.ts` extension.
+[0m← [0mEdit src/features/auth/policy.ts
+Index: C:/Users/800sa/studio/src/features/auth/policy.ts
+===================================================================
+--- C:/Users/800sa/studio/src/features/auth/policy.ts
++++ C:/Users/800sa/studio/src/features/auth/policy.ts
+@@ -7,9 +7,9 @@
+  * A development identity (DEV_SESSION_UID) is valid only while the trusted
+  * server decision is `development-bypass`. Production session boundaries
+  * always reject it, so a dev cookie or marker can never enter live Studio.
+  */
+-import { DEV_SESSION_UID, type AuthMode } from "./mode";
++import { DEV_SESSION_UID, type AuthMode } from "./mode.ts";
+ 
+ export type ProxyDecision = "next" | "redirect-sign-in";
+ 
+ export function proxyDecision(options: {
+
+[0m
+[0m$ [0mnpm.cmd run smoke:auth
+> editorial-studio@0.1.0 smoke:auth
+> node --experimental-strip-types tests/smoke/smoke-auth.mts
+
+(node:5208) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/auth/mode.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Development defaults to bypass without an interactive login
+PASS  Test runners also default to bypass
+PASS  Explicit flag values select the development mode
+PASS  An explicit off flag restores authentication in development
+PASS  Production forces authentication even with the bypass flag set
+PASS  Production without a flag stays authenticated
+PASS  Flag parsing trims and ignores unknown values
+PASS  Development proxy lets a fresh browser through with no cookie
+PASS  Production proxy rejects anonymous access without a session cookie
+PASS  Production proxy keeps valid editor sessions
+FAIL  Development sessions are accepted only in development-bypass mode
+PASS  Production session boundaries reject the development identity
+PASS  Production sessions still require the allowlist
+PASS  Production allowlisted editors keep their sessions
+PASS  Anonymous requests never yield a session
+PASS  Development identity minting is allowed only in bypass mode
+PASS  Development markers are detected as credentials
+PASS  Proxy unifies on the trusted server auth-mode decision
+PASS  Server auth mode forces production authentication
+PASS  Server sessions reject dev identities at the production boundary
+PASS  Session minting rejects development markers
+PASS  Dev identity endpoint is unreachable outside bypass mode
+PASS  Dev identity endpoint never sets a Studio session cookie
+PASS  Dev identity minting carries no shipped credentials
+PASS  Trusted mode endpoint only reveals the mode
+PASS  Browser readiness uses the trusted server mode, not a flag guess
+PASS  Browser issues the development identity automatically, with actionable failures
+PASS  Dashboard subscriptions wait on unified readiness, not a raw auth listener
+PASS  Dashboard surfaces actionable connection failures
+PASS  Sign-out stays hidden while development is bypassed
+PASS  No public permissive Firestore rules were shipped
+PASS  Every new auth module stays focused and far below the file budget
+
+31/32 checks passed
+[0m
+Test found a real policy gap: bypass acceptance should be explicit. Fixing policy to codify it.
+[0m← [0mEdit src/features/auth/policy.ts
+Index: C:/Users/800sa/studio/src/features/auth/policy.ts
+===================================================================
+--- C:/Users/800sa/studio/src/features/auth/policy.ts
++++ C:/Users/800sa/studio/src/features/auth/policy.ts
+@@ -27,12 +27,15 @@
+   session: SessionClaim | null;
+   isAllowlisted: boolean;
+ }): SessionClaim | null {
+   if (!options.session) return null;
+-  // Reject any development identity at production session boundaries.
+-  if (options.mode === "authenticated" && options.session.uid === DEV_SESSION_UID) {
+-    return null;
++  // Development-bypass needs no allowlist: only the reserved development
++  // identity is accepted, never a forged editor cookie.
++  if (options.mode === "development-bypass") {
++    return options.session.uid === DEV_SESSION_UID ? options.session : null;
+   }
++  // Reject any development identity at production session boundaries.
++  if (options.session.uid === DEV_SESSION_UID) return null;
+   if (!options.isAllowlisted) return null;
+   return options.session;
+ }
+ 
+
+[0m
+[0m$ [0mnpm.cmd run smoke:auth 2>&1 | tail -8
+PASS  Browser issues the development identity automatically, with actionable failures
+PASS  Dashboard subscriptions wait on unified readiness, not a raw auth listener
+PASS  Dashboard surfaces actionable connection failures
+PASS  Sign-out stays hidden while development is bypassed
+PASS  No public permissive Firestore rules were shipped
+PASS  Every new auth module stays focused and far below the file budget
+
+32/32 checks passed
+[0m
+smoke:auth green. Running remaining gates.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -20
+C:\Users\800sa\studio\src\services\firebase\use-live.ts
+  103:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\800sa\studio\src\services\firebase\use-live.ts:103:5
+  101 |     if (bypassed !== true || signedIn !== false) return;
+  102 |     let cancelled = false;
+> 103 |     setIdentityError(null);
+      |     ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  104 |     ensureDevelopmentIdentity().then((result) => {
+  105 |       if (!cancelled && !result.ok) setIdentityError(result.error);
+  106 |     });  react-hooks/set-state-in-effect
+
+✖ 1 problem (1 error, 0 warnings)
+[0m
+[0m← [0mEdit src/services/firebase/use-live.ts
+Index: C:/Users/800sa/studio/src/services/firebase/use-live.ts
+===================================================================
+--- C:/Users/800sa/studio/src/services/firebase/use-live.ts
++++ C:/Users/800sa/studio/src/services/firebase/use-live.ts
+@@ -98,10 +98,11 @@
+ const [identityError, setIdentityError] = useState<string | null>(null);
+ 
+ useEffect(() => {
+   if (bypassed !== true || signedIn !== false) return;
++  // Single automatic attempt per sign-out: success flips signedIn to true,
++  // failure leaves this actionable error until the owner reloads.
+   let cancelled = false;
+-  setIdentityError(null);
+   ensureDevelopmentIdentity().then((result) => {
+     if (!cancelled && !result.ok) setIdentityError(result.error);
+   });
+   return () => {
+
+[0m
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -5 && npm.cmd run smoke:workflow 2>&1 | tail -12 && npm.cmd run smoke:ui 2>&1 | tail -9
+> editorial-studio@0.1.0 lint
+> eslint
+
+PASS The post-upload book page does not ask for the source again
+PASS A corrected source is an explicit revision with stable IDs
+PASS Every API job producer uses the per-book job store
+PASS The worker reads and updates per-book allJobs maps
+PASS Periodic worker writes are no more frequent than once per minute
+PASS The editor can cancel queued jobs and retry terminal failures
+PASS Expensive work is queued only by the route that owns its gate
+PASS Book Bible facts are validated on write, not only displayed
+(node:26512) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/jobs/types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+> editorial-studio@0.1.0 smoke:ui
+> node tests/smoke/smoke-editorial-ui.mjs
+
+PASS The source workflow shows live per-source job progress
+PASS Editorial stages are separate accessible tabs in workflow order
+PASS Book Bible fact categories are separate accessible tabs
+PASS Episode planning uses a focused progressive-disclosure workspace
+PASS Light mode is the default and dark mode is class-controlled
+PASS The editorial shell uses the electric-blue brand accent
+[0m
+[0m$ [0mnpm.cmd run smoke:workflow 2>&1 | grep -c PASS; npm.cmd run build 2>&1 | tail -30
+9
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+└ ƒ /studio/books/[bookId]/sources/[sourceId]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+All gates green. Verifying diff hygiene and file sizes.
+[0m$ [0mgit status --porcelain=v1; echo ---SIZES---; node -e "const fs=require('fs');const files=['src/features/auth/mode.ts','src/features/auth/policy.ts','src/features/auth/constants.ts','src/features/auth/session.ts','src/proxy.ts','src/app/api/auth/mode/route.ts','src/app/api/auth/dev-token/route.ts','src/app/api/auth/session/route.ts','src/services/firebase/use-live.ts','src/services/firebase/dev-identity.ts','src/features/library/components/studio-dashboard.tsx','src/features/library/components/book-detail.tsx','src/features/sources/components/extraction-editor.tsx','src/components/layout/sidebar.tsx','src/components/layout/studio-shell.tsx','src/app/studio/layout.tsx','tests/smoke/smoke-auth.mts','package.json'];for(const f of files){try{console.log(fs.readFileSync(f,'utf8').split('\n').length,f)}catch(e){console.log('MISSING',f)}}"
+AM docs/features/25d-schema-foundation/.run/inflight
+A  docs/features/25d-schema-foundation/.runinfo
+AM docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log
+AM docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+MM docs/features/25d-schema-foundation/status.md
+ M package.json
+ M src/app/api/auth/session/route.ts
+ M src/app/studio/layout.tsx
+ M src/components/layout/sidebar.tsx
+ M src/components/layout/studio-shell.tsx
+ M src/features/auth/constants.ts
+ M src/features/auth/session.ts
+M  src/features/images/components/image-studio.tsx
+A  src/features/images/components/studio-canon-editor.tsx
+A  src/features/images/components/studio-episode-images.tsx
+A  src/features/images/components/studio-reference.tsx
+A  src/features/images/components/studio-stage.tsx
+ M src/features/library/components/book-detail.tsx
+ M src/features/library/components/studio-dashboard.tsx
+ M src/features/sources/components/extraction-editor.tsx
+ M src/proxy.ts
+ M src/services/firebase/use-live.ts
+M  tests/smoke/smoke-operations.mts
+M  tests/smoke/smoke-workflow-contract.mjs
+M  worker/index.mts
+A  worker/jobs/dispatch.mts
+A  worker/jobs/job-store.mts
+A  worker/jobs/queue.mts
+A  worker/jobs/recovery.mts
+?? .patches/
+?? docs/features/25d-schema-foundation/.run/P0.result
+?? docs/features/25d-schema-foundation/.run/settled.P0
+?? docs/features/25d-schema-foundation/logs/P0-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P1-attempt1-171139.log
+?? src/app/api/auth/dev-token/
+?? src/app/api/auth/mode/
+?? src/features/auth/mode.ts
+?? src/features/auth/policy.ts
+?? src/services/firebase/dev-identity.ts
+?? tests/smoke/smoke-auth.mts
+---SIZES---
+44 src/features/auth/mode.ts
+55 src/features/auth/policy.ts
+22 src/features/auth/constants.ts
+71 src/features/auth/session.ts
+29 src/proxy.ts
+14 src/app/api/auth/mode/route.ts
+55 src/app/api/auth/dev-token/route.ts
+39 src/app/api/auth/session/route.ts
+192 src/services/firebase/use-live.ts
+75 src/services/firebase/dev-identity.ts
+348 src/features/library/components/studio-dashboard.tsx
+409 src/features/library/components/book-detail.tsx
+399 src/features/sources/components/extraction-editor.tsx
+210 src/components/layout/sidebar.tsx
+42 src/components/layout/studio-shell.tsx
+22 src/app/studio/layout.tsx
+72 tests/smoke/smoke-auth.mts
+51 package.json
+[0m
+[0m$ [0mnode -e "const{execSync}=require('child_process');const out=execSync('git diff -- src/features/auth src/proxy.ts src/app/api/auth src/services/firebase src/features/library src/components/layout src/app/studio package.json tests/smoke/smoke-auth.mts','encoding':'utf8');const bad=out.split('\n').filter(l=>l.startsWith('+')&&/AIza|private_key|BEGIN .*PRIVATE|sk-|xox|passwd/i.test(l));console.log(bad.length?bad.join('\n'):'NO_SECRETS_IN_DIFF');"
+[eval]:1
+const{execSync}=require('child_process');const out=execSync('git diff -- src/features/auth src/proxy.ts src/app/api/auth src/services/firebase src/features/library src/components/layout src/app/studio package.json tests/smoke/smoke-auth.mts','encoding':'utf8');const bad=out.split('\n').filter(l=>l.startsWith('+')&&/AIza|private_key|BEGIN .*PRIVATE|sk-|xox|passwd/i.test(l));console.log(bad.length?bad.join('\n'):'NO_SECRETS_IN_DIFF');
+                                                                                                                                                                                                                                                  ^^^^^^^^^^
+Expected ',', got ':'
+
+SyntaxError: missing ) after argument list
+    at makeContextifyScript (node:internal/vm:194:14)
+    at compileScript (node:internal/process/execution:388:10)
+    at evalTypeScript (node:internal/process/execution:260:22)
+    at node:internal/main/eval_string:71:3
+
+Node.js v24.18.0
+[0m
+[0m$ [0mgit diff -- src/features/auth src/proxy.ts src/app/api/auth src/services/firebase src/features/library/components/studio-dashboard.tsx | grep -iE "^\+" | grep -iE "AIza|private_key|BEGIN |sk-live|xox|password" || echo NO_SECRETS_IN_DIFF
+NO_SECRETS_IN_DIFF
+[0m
+Diff is clean. Updating status and saving patches.
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
+===================================================================
+--- C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
++++ C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
+@@ -6,9 +6,9 @@
+ 
+ | Phase | State | Depends on | Date | Gates | Notes |
+ |---|---|---|---|---|---|
+ | P0 | done | — | 2026-09-18 | lint pass; build pass; smoke:workflow 9/9; smoke:ui 6/6; smoke:operations 13/13 | Behavior-neutral split only: image-studio 916→225+4 focused modules, worker/index 635→202+4 job helpers; routes/gates/costs/recovery unchanged; patch .patches/P0-studio.patch + new-file copies. |
+-| P1 | in-progress | P0 | — | Not run | Development auth change deferred to build by owner. |
++| P1 | qa-pending | P0 | 2026-09-18 | lint pass; build pass (20 routes); smoke:auth 32/32; smoke:workflow 9/9; smoke:ui 6/6 | Code complete unattended: unified server auth mode, dev-only auto browser identity, bypass-aware readiness, sign-out hidden when bypassed, production forced even with flag. Owner must verify fresh-browser dev access and production rejection (steps in Progress log); live identity issuance never exercised. Patch .patches/P1-studio.patch + new-file copies. |
+ | P2 | todo | P1 | — | Not run | Not started. |
+ | P3 | todo | P2 | — | Not run | Not started. |
+ | P4 | todo | P3 | — | Not run | Not started. |
+ | P5 | todo | P4 | — | Not run | Not started. |
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
+===================================================================
+--- C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
++++ C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
+@@ -22,8 +22,23 @@
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+ 
+ ## Progress log
+ 
++### 2026-09-18 — P1 qa-pending: development access without sign-in (unattended)
++
++- Baseline (pre-edit): P0 done; tracked diff was only runner state + P0 row work, untracked only runner logs and P0 patch artifacts; `new.md` untouched. P0 staged entries left intact; P1 work is unstaged only.
++- Read AGENTS.md plus bundled Next guides `node_modules/next/dist/docs/01-app/02-guides/authentication.md` and `01-app/03-api-reference/03-file-conventions/proxy.md` before changing Next code (proxy.ts keeps the documented `proxy` export + matcher; Proxy stays an optimistic check, layout verifies).
++- New pure test seam (no Next/Firebase deps): `src/features/auth/mode.ts` (resolveAuthMode/production-forced, DEV_SESSION_UID/DEV_IDENTITY_UID) and `src/features/auth/policy.ts` (proxyDecision, acceptSession with dev rejection at production boundaries, canMintDevelopmentIdentity, isDevelopmentMarker).
++- `constants.ts` now delegates to the trusted mode decision; production always returns authenticated even with STUDIO_AUTH_DISABLED=1. `session.ts` keeps the dev fallback only in bypass and rejects uid `dev` on the authenticated path. `proxy.ts` uses the same decision. Session mint route rejects literal development markers (403).
++- New trusted endpoints: `GET /api/auth/mode` (reveals mode only) and `POST /api/auth/dev-token` (404 outside bypass; mints a Firebase custom token with the allowlisted editor email for the browser; never sets a session cookie; no shipped credentials; rules untouched).
++- Browser: `dev-identity.ts` auto sign-in via signInWithCustomToken with actionable errors; `use-live.ts` adds useAuthMode/useStudioReadiness/describeDataError. Dashboard drops its duplicate onAuthStateChanged, gates subscriptions on readiness and shows one actionable role=alert error. book-detail/extraction-editor switch to useStudioReadiness (one line each). Layout passes bypassed to StudioShell/Sidebar; sign-out hidden when bypassed.
++- Gates: lint pass; build pass (route table 18→20 with /api/auth/mode + /api/auth/dev-token); smoke:auth 32/32 (new, fakes only — never calls dev-token); smoke:workflow 9/9; smoke:ui 6/6. Evidence: "PASS Production proxy rejects anonymous access without a session cookie" and "PASS Development proxy lets a fresh browser through with no cookie" (smoke:auth, local policy proof — no browser was opened unattended).
++- No new dependencies (zod/three/fiber/playwright untouched — not needed for auth/readiness). No secrets in diff; firestore.rules unchanged; plan.md, prompts.md, CONTEXT.md untouched.
++- OWNER STEPS REMAIN (qa-pending, do not mark done until): (1) owner configures local dev Firebase identity/credentials (STUDIO_ALLOWED_EMAILS + Firebase project, server-side only); (2) open a fresh local browser at next dev and confirm Studio loads with live-data readiness and no login; (3) set STUDIO_AUTH_DISABLED=1 with NODE_ENV=production and confirm anonymous /studio access is still rejected and no dev token is minted (expect 404); (4) confirm authenticated production isolation with the allowlisted editor sign-in. Unattended run exercised no live identity issuance and opened no browser.
++- Patch: `.patches/P1-studio.patch` (tracked binary diff) plus new-file copies under `.patches/P1-new-files/`. Changed tracked files: package.json, proxy.ts, auth constants/session, session route, studio layout, sidebar, studio-shell, dashboard, book-detail, extraction-editor, use-live.ts. New files: auth mode.ts/policy.ts, api/auth/mode + dev-token routes, services/firebase/dev-identity.ts, tests/smoke/smoke-auth.mts. No staging, no commit (suggested message below), no deploy, no live writes.
++- Suggested commit message: `P1: development access without sign-in via trusted server auth mode`.
++- Out of scope (logged, not fixed): `useFirebaseUser` remains exported for compat but no component consumes it directly anymore; dev-token endpoint behavior against live Firebase is owner QA only.
++
+ ### 2026-09-18 — P0 done: behavior-neutral preparation
+ 
+ - Baseline (pre-edit, all green): `npm.cmd run lint` pass; `npm.cmd run build` pass with identical route table; `smoke:workflow` 9/9; `smoke:ui` 6/6; `smoke:operations` 12/12. Tracked baseline diff was only the runner's P0 in-progress row; untracked baseline was only runner logs (`.run/`, `.runinfo`, `logs/`, `loop-run-20260918-171500.log`); `new.md` preserved untouched.
+ - Read AGENTS.md plus the bundled Next guide `node_modules/next/dist/docs/01-app/01-getting-started/05-server-and-client-components.md` before changing Next code; split keeps every file a `"use client"` component with identical JSX/routes/approval actions.
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
+===================================================================
+--- C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
++++ C:/Users/800sa/studio/docs/features/25d-schema-foundation/status.md
+@@ -67,4 +67,5 @@
+ - [Scaffold] P11: current rules tests are source-text checks. Local emulator behavioral proof may require owner environment preparation; deployed rule verification belongs to P13.
+ - [Scaffold] Current tests/smoke/smoke-e2e.mts and smoke-formats.mts authenticate and write real cloud records. Do not use them as autonomous gates against .env.
+ - [Scaffold] WindowsApps python3 alias failed; real interpreter verified at C:/Users/800sa/AppData/Local/Python/bin/python3.exe. Runner Windows configuration prioritizes it.
+ - [loop] P0 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:workflow && npm.cmd run smoke:ui && npm.cmd run smoke:operations
++- [P1 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Live dev-identity issuance (POST /api/auth/dev-token against real Firebase) and fresh-browser verification deliberately not exercised; both are explicit owner QA in the Progress log. No new architectural decision proposed.
+
+[0m
+[0m$ [0mmkdir -p .patches/P1-new-files && git diff --binary --output=.patches/P1-studio.patch -- package.json src/proxy.ts src/features/auth/constants.ts src/features/auth/session.ts src/app/api/auth/session/route.ts src/app/studio/layout.tsx src/components/layout/sidebar.tsx src/components/layout/studio-shell.tsx src/features/library/components/studio-dashboard.tsx src/features/library/components/book-detail.tsx src/features/sources/components/extraction-editor.tsx src/services/firebase/use-live.ts docs/features/25d-schema-foundation/status.md && cp src/features/auth/mode.ts .patches/P1-new-files/mode.ts && cp src/features/auth/policy.ts .patches/P1-new-files/policy.ts && cp src/app/api/auth/mode/route.ts .patches/P1-new-files/auth-mode-route.ts && cp src/app/api/auth/dev-token/route.ts .patches/P1-new-files/auth-dev-token-route.ts && cp src/services/firebase/dev-identity.ts .patches/P1-new-files/dev-identity.ts && cp tests/smoke/smoke-auth.mts .patches/P1-new-files/smoke-auth.mts && git status --porcelain=v1 -- .patches && echo --- && git diff --stat -- docs/features/25d-schema-foundation/status.md
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/studio/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/layout/sidebar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/layout/studio-shell.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/features/sources/components/extraction-editor.tsx', LF will be replaced by CRLF the next time Git touches it
+?? .patches/
+---
+ docs/features/25d-schema-foundation/status.md | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+[0m
+P1 complete, ending **qa-pending** as required for an unattended supervised phase. No commit, no staging, no deploy, no live writes.
+
+**What landed (local code/tests only)**
+- Pure test seam: `src/features/auth/mode.ts` (production always authenticated, even with `STUDIO_AUTH_DISABLED=1`) and `src/features/auth/policy.ts` (proxy decision, dev-identity rejection at production boundaries, dev-mint permission).
+- `constants.ts`/`session.ts`/`proxy.ts` unified on that trusted server decision; session minting rejects development markers (403).
+- New `GET /api/auth/mode` (mode only) and dev-only `POST /api/auth/dev-token` (404 outside bypass; mints a Firebase custom token with the allowlisted editor email; never sets a session cookie; rules untouched, no shipped credentials).
+- Browser: `dev-identity.ts` auto sign-in + `useStudioReadiness()` in `use-live.ts`; dashboard dropped its duplicate auth listener, gates subscriptions on readiness, shows one actionable `role=alert` error; book-detail/extraction-editor switched (one line each); sign-out hidden when bypassed via layout→shell→sidebar.
+- New gate `smoke:auth` (32 checks, fakes only — live identity issuance never exercised).
+
+**Gates (all pass)** — `lint` pass; `build` pass (18→20 routes); `smoke:auth` 32/32; `smoke:workflow` 9/9; `smoke:ui` 6/6. Evidence: `PASS Production proxy rejects anonymous access without a session cookie` + `PASS Development proxy lets a fresh browser through with no cookie`. No browser was opened unattended.
+
+**Artifacts** — `status.md` P1 row set to qa-pending with dated log, owner steps, and Deferred note; tracked patch `.patches/P1-studio.patch` + new-file copies under `.patches/P1-new-files/`. Suggested commit message: `P1: development access without sign-in via trusted server auth mode`.
+
+**Owner steps remain** (in status.md Notes): configure local dev Firebase identity/credentials; fresh-browser dev access check; production-with-flag rejection check (expect 404 on dev-token); authenticated production isolation check.

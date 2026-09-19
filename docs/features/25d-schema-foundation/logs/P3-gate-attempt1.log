@@ -1,0 +1,121 @@
+
+> editorial-studio@0.1.0 lint
+> eslint
+
+
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 1450ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 14.0s
+  Running TypeScript ...
+  Finished TypeScript in 26.6s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/11) ...
+  Generating static pages using 7 workers (2/11) 
+  Generating static pages using 7 workers (5/11) 
+  Generating static pages using 7 workers (8/11) 
+✓ Generating static pages using 7 workers (11/11) in 3.6s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> editorial-studio@0.1.0 smoke:schemas
+> node --experimental-strip-types tests/smoke/smoke-schemas.mts
+
+(node:13796) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/book-experience/schemas/beat.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Fixture source parses with story and classified non-story paragraphs
+PASS  Moment parses with three readingBeats in source order
+PASS  Every Beat parses through the canonical schema
+PASS  Composition parses with planes plus one depthMesh
+PASS  EpisodeBundle parse/compile round-trip is stable
+PASS  resolveFrame at 0 returns the camera from-pose
+PASS  resolveFrame at 1 returns the camera to-pose
+PASS  resolveFrame is deterministic
+PASS  Nearer depthMesh layer shifts more than the background plane
+PASS  Subtitle HTML carries the exact quote and escapes markup
+PASS  Camera zoom below 1 is rejected
+PASS  depthMesh without aligned depth is rejected
+PASS  Unsupported schemaVersion is rejected
+PASS  Coverage gaps are actionable, not silent
+
+14/14 checks passed
+
+> editorial-studio@0.1.0 smoke:canonical
+> node --experimental-strip-types tests/smoke/smoke-canonical.mts
+
+(node:30340) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/book-experience/schemas/source.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  First paragraph is p000000 with zero-based seq
+PASS  permanentParagraphId/revisionParagraphIds are p000000-based
+PASS  paragraphIdFor rejects ID-range overflow
+PASS  Story and classified non-story paragraphs all remain traceable
+PASS  Non-story material is classified, not deleted
+PASS  20-paragraph chunk projections with sourceId/hash lineage
+PASS  Chunk seq ranges are inclusive and contiguous
+PASS  Approval freezes IDs and moves the immutable source pointer
+PASS  Correction keeps history and marks dependent drafts outdated
+PASS  Old published bundles remain unchanged after correction
+PASS  Promotion interruption leaves the prior active pointer intact
+PASS  Invalid sources fail with actionable errors
+PASS  Every section-3 schema parses its canonical shape
+PASS  Unsupported versions fail instead of corrupting state
+PASS  Firestore Timestamp codec accepts Timestamp/Date/millis/ISO
+PASS  Extraction formats share one classified staging shape
+PASS  CanonicalError is actionable on bad approval
+
+17/17 checks passed
+
+> editorial-studio@0.1.0 smoke:pdf
+> node --experimental-strip-types tests/smoke/smoke-pdf-cleaning.mts
+
+PASS Multi-line running furniture is removed
+PASS Two-column layouts are flagged
+
+> editorial-studio@0.1.0 smoke:uncertainties
+> node --experimental-strip-types tests/smoke/smoke-ai-proposals.mts
+
+PASS OCR uncertainty accepts a text repair
+PASS Reading-order uncertainty accepts a constrained move
+PASS A structural uncertainty rejects an unrelated text action
+PASS Paragraph split points must sit inside the paragraph
+PASS Chapter boundary uncertainty accepts a chapter operation

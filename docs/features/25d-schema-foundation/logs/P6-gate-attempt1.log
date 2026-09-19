@@ -1,0 +1,158 @@
+
+> editorial-studio@0.1.0 lint
+> eslint
+
+
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 131ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.4s
+  Running TypeScript ...
+  Finished TypeScript in 15.4s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/11) ...
+  Generating static pages using 3 workers (2/11) 
+  Generating static pages using 3 workers (5/11) 
+  Generating static pages using 3 workers (8/11) 
+✓ Generating static pages using 3 workers (11/11) in 944ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/episodes
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> editorial-studio@0.1.0 smoke:story-planning
+> node --experimental-strip-types tests/smoke/smoke-story-planning.mts
+
+(node:8804) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8804) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/story-map/coverage.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  A gap-free Episode tiling approves
+PASS  A coverage gap is blocked and names the missing range
+PASS  An overlap is blocked with no manual-edit escape
+PASS  Non-contiguous order positions are blocked
+PASS  A range ending after the story is blocked
+PASS  An empty proposal is blocked
+PASS  Contiguous Moment ranges approve
+PASS  A Moment gap is blocked and named
+PASS  A Moment overlap is blocked
+PASS  AI StoryMap parses with acts, arcs, chronology and Episode ranges
+PASS  AI StoryMap without a rationale is rejected
+PASS  AI Episode plans with canonical ep_02 identity
+PASS  AI Episode ending before it starts is rejected
+PASS  AI Moments become ep_02_m01 scene containers
+PASS  Moment outlines with a gap are rejected, not coerced
+PASS  Moment outlines with an overlap are rejected
+PASS  Invalid gaps trigger bounded AI repair
+PASS  Repair budget exhaustion is explicit and blocking
+PASS  StoryMap approval is idempotent for the same fingerprint
+PASS  Moment approval is idempotent for the same fingerprint
+PASS  Publishing ep_01 never blocks ep_02 production
+PASS  Coverage gaps block approval and name the AI-repair action
+PASS  Valid proposal approves without changing boundaries manually
+PASS  Moments approval waits for the StoryMap
+PASS  Legacy EpisodePlan maps p000001 to canonical seq 0
+PASS  Legacy contiguous moment maps; non-contiguous needs AI replanning
+PASS  Worker StoryMap pass repairs then proposes
+PASS  Worker Episode planning waits for StoryMap approval
+PASS  Worker Moment planning stores contiguous scene containers
+PASS  Paragraph zero is p000000
+PASS  Canonical StoryMap and Episode parse through Zod
+
+31/31 checks passed
+
+> editorial-studio@0.1.0 smoke:episodes
+> node --experimental-strip-types tests/smoke/smoke-episode-map.mts
+
+(node:2484) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  A gap-free map approves
+PASS  A gapped map is blocked and names the missing paragraphs
+PASS  Paragraphs after the last episode are a gap
+PASS  An undeclared overlap is blocked
+PASS  An overlap marked as intended approves
+PASS  A non-adjacent unintended overlap is blocked
+PASS  An episode without a narrative purpose cannot approve
+PASS  An exclusion without a reason is blocked
+PASS  An excluded tail counts as covered
+PASS  An episode covering an excluded range is blocked
+PASS  A paragraph ID outside the source is blocked
+PASS  An empty map is blocked
+PASS  Moving a boundary pulls the neighbouring episode with it
+PASS  Moving an end boundary pushes the next episode's start
+PASS  A boundary that would empty a neighbour is refused
+PASS  An intended overlap keeps its own boundary
+PASS  A boundary outside the source is refused
+PASS  The AI planner receives source paragraphs and Book Bible facts
+
+18/18 checks passed
+
+> editorial-studio@0.1.0 smoke:moments
+> node --experimental-strip-types tests/smoke/smoke-moments.mts
+
+(node:2500) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2500) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/moments/types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  A fully mapped episode approves
+PASS  Many-to-many mapping is not an overlap problem
+PASS  An unmapped stretch is blocked and named
+PASS  An excluded stretch counts as covered
+PASS  An exclusion without a reason is blocked
+PASS  A paragraph both excluded and mapped is blocked
+PASS  A paragraph outside the episode is blocked
+PASS  A Story Moment with no source mapping is blocked
+PASS  A Story Moment without a visual intention is blocked
+PASS  An empty plan is blocked
+PASS  A hotspot plan on a scene is rejected at plan time
+PASS  A hotspot plan on an object is accepted
+PASS  Reordering swaps two positions
+PASS  Reordering past the first position changes nothing
+PASS  The active episode is the earliest unapproved one
+PASS  A fully approved book has no active episode
+PASS  Regeneration drops a hotspot plan a scene cannot carry
+PASS  A proposal mapping nothing in the episode is dropped
+PASS  A locked Story Moment survives regeneration and keeps its place
+PASS  Regeneration replaces only the unlocked Story Moments
+PASS  A proposal already covered by a locked Story Moment is dropped
+
+21/21 checks passed

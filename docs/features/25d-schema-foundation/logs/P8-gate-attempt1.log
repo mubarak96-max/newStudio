@@ -1,0 +1,164 @@
+
+> editorial-studio@0.1.0 lint
+> eslint
+
+
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 130ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.5s
+  Running TypeScript ...
+  Finished TypeScript in 14.6s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/11) ...
+  Generating static pages using 3 workers (2/11) 
+  Generating static pages using 3 workers (5/11) 
+  Generating static pages using 3 workers (8/11) 
+✓ Generating static pages using 3 workers (11/11) in 947ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/episodes
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/books/[bookId]/visuals
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> editorial-studio@0.1.0 smoke:visual-generation
+> node --experimental-strip-types tests/smoke/smoke-visual-generation.mts
+
+(node:476) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:476) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/visuals/references.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  Scene requests pin approved reference versions and keys
+PASS  Layers of one composition share the coordinate frame and reference versions
+PASS  Negative rules forbid baked-in text
+PASS  Fills are labelled as invented, never source facts
+PASS  Regeneration carries a distinct idempotency key
+PASS  Single and batch generation share the prompt path
+PASS  Empty visual selection is rejected
+PASS  Reference approval blocks premature scene generation
+PASS  Unknown identities cannot be pinned
+PASS  Single generation writes an immutable S3 key
+PASS  Single generation validates clean
+PASS  Generation records provenance, prompt, model and cost
+PASS  S3 keys are immutable once written
+PASS  Completed units are never double-charged
+PASS  Every selected target launches one independent child
+PASS  One failed child does not discard successful children
+PASS  Retry targets contain only failed children
+PASS  Retry regenerates only the failed target
+PASS  The existing bounded batch pool caps concurrency
+PASS  A clean background validates
+PASS  Frame mismatch is rejected
+PASS  Foregrounds need real alpha
+PASS  Hidden-coverage gaps are rejected
+PASS  Baked-in text is rejected
+PASS  Aligned 8-bit depth validates
+PASS  Honest 16-bit containers keep sourceBitDepth 8
+PASS  Fabricated depth precision is rejected
+PASS  Depth must use the near-white convention
+PASS  Depth records actual bit depth, never recovered detail
+PASS  Clean assets approve with continuity recorded
+PASS  Assets without checksums cannot approve
+PASS  Foreground generates with real alpha
+PASS  A foreground asset can be rejected
+PASS  Approved siblings are listed by immutable key
+PASS  Regeneration is a new billable attempt
+PASS  Regeneration reuses approved siblings
+PASS  Only the affected target regenerates
+PASS  Approved assets remain unchanged during sibling regeneration
+PASS  Reference changes flag dependent drafts
+PASS  Old generations keep their pinned reference provenance
+PASS  Immutable S3 keys follow the canonical asset path
+PASS  Legacy canon maps to a versioned visualProfile
+PASS  Legacy reference gating names the missing approval
+PASS  Only ready candidates map to canonical assets
+PASS  Ready candidates map without inventing depth
+PASS  Visual review offers multi-select generation
+PASS  Visual review exposes targeted regeneration
+PASS  Visual review approves without prompt or camera entry
+PASS  Visual route gates scenes on approved references
+PASS  Every new P8 file stays below 1000 lines
+
+50/50 checks passed
+
+> editorial-studio@0.1.0 smoke:images
+> node --experimental-strip-types tests/smoke/smoke-image-prompt.mts
+
+(node:16972) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Canon is included
+PASS  Story Moment facts are included
+PASS  Continuity facts and active reference are included
+PASS  A later appearance state is excluded with a warning
+PASS  Editor additions are appended after required constraints
+PASS  A scene defaults to portrait 4:5
+
+6/6 checks passed
+
+> editorial-studio@0.1.0 smoke:batch
+> node --experimental-strip-types tests/smoke/smoke-image-batch.mts
+
+(node:3436) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Every selected Story Moment launches one independent child
+PASS  No more than three children run concurrently
+PASS  One failed child does not discard successful children
+PASS  Retry targets contain only failed children
+
+4/4 checks passed
+
+> editorial-studio@0.1.0 smoke:visual
+> node --experimental-strip-types tests/smoke/smoke-visual-system.mts
+
+(node:1224) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  A complete canon can approve
+PASS  Prohibited tendencies are required
+PASS  Character states require a timeline position
+PASS  A later appearance state warns on an earlier Story Moment
+PASS  An unapproved character reference blocks image readiness
+PASS  An approved character reference clears the gate
+PASS  A character with no reference row at all blocks image readiness
+PASS  A location with no approved reference blocks image readiness
+PASS  An approved location reference clears the gate
+PASS  Reference names match without regard to case or padding
+
+10/10 checks passed

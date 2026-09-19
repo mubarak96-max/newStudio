@@ -1,0 +1,10 @@
+started=1789804652
+started_at=2026-09-19 11:57
+pid=5801
+agent=codex
+template=5
+max_parallel=1
+parallel_mode=waves
+strict_deps=0
+at_keyboard_mode=attempt
+force_forward=1

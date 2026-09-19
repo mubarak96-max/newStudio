@@ -1,0 +1,615 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+Starting P6 story-planning phase — reading specs and checking dependencies.
+[0m→ [0mRead .
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md[90m [offset=504][0m
+[0m→ [0mRead package.json
+Dependencies check out (P5 qa-pending permits progress) — now mapping existing planning code and validation.
+[0m
+[0m$ [0mgit status --short | head -n 100; echo ---TRACKED-DIFF-STAT---; git diff --stat | head -n 100; echo ---UNTRACKED---; git ls-files --others --exclude-standard | head -n 100
+M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/book-model/
+?? tests/smoke/smoke-book-model.mts
+?? worker/book-model/
+---TRACKED-DIFF-STAT---
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  21 +
+ docs/features/25d-schema-foundation/status.md      |  60 +-
+ package.json                                       |   1 +
+ 5 files changed, 567 insertions(+), 409 deletions(-)
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+---UNTRACKED---
+.patches/P5-new-files/src/app/api/books/[bookId]/model/route.ts
+.patches/P5-new-files/src/features/bible/adapters.ts
+.patches/P5-new-files/src/features/book-experience/book-model/components/BookModelReview.tsx
+.patches/P5-new-files/src/features/book-experience/book-model/consolidate.ts
+.patches/P5-new-files/src/features/book-experience/book-model/derived.ts
+.patches/P5-new-files/src/features/book-experience/book-model/index.ts
+.patches/P5-new-files/src/features/book-experience/book-model/ledger.ts
+.patches/P5-new-files/src/features/book-experience/book-model/proposals.ts
+.patches/P5-new-files/src/features/book-experience/book-model/repository.ts
+.patches/P5-new-files/src/features/book-experience/book-model/state.ts
+.patches/P5-new-files/src/features/book-experience/book-model/windows.ts
+.patches/P5-new-files/tests/smoke/smoke-book-model.mts
+.patches/P5-new-files/worker/book-model/consolidate.mts
+.patches/P5-new-files/worker/book-model/understand.mts
+.patches/P5-studio.patch
+docs/features/25d-schema-foundation/.run/P4.result
+docs/features/25d-schema-foundation/.run/P5.result
+docs/features/25d-schema-foundation/.run/settled.P4
+docs/features/25d-schema-foundation/.run/settled.P5
+docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+src/app/api/books/[bookId]/model/route.ts
+src/features/bible/adapters.ts
+src/features/book-experience/book-model/components/BookModelReview.tsx
+src/features/book-experience/book-model/consolidate.ts
+src/features/book-experience/book-model/derived.ts
+src/features/book-experience/book-model/index.ts
+src/features/book-experience/book-model/ledger.ts
+src/features/book-experience/book-model/proposals.ts
+src/features/book-experience/book-model/repository.ts
+src/features/book-experience/book-model/state.ts
+src/features/book-experience/book-model/windows.ts
+tests/smoke/smoke-book-model.mts
+worker/book-model/consolidate.mts
+worker/book-model/understand.mts
+[0m
+[0m→ [0mRead tests/smoke/smoke-episode-map.mts
+[0m→ [0mRead tests/smoke/smoke-moments.mts
+[0m→ [0mRead src/features/book-experience/schemas/planning.ts
+[0m→ [0mRead src/features/episodes/types.ts
+[0m→ [0mRead src/features/moments/types.ts
+[0m→ [0mRead src/features/book-experience/book-model/repository.ts
+[0m✱ [0mGlob "src/app/api/books/**/*.ts"[90m 14 matches[0m
+[0m✱ [0mGlob "src/features/book-experience/**/*"[90m 41 matches[0m
+[0m→ [0mRead src/features/book-experience/book-model/index.ts
+[0m→ [0mRead worker/book-model/understand.mts
+[0m→ [0mRead src/features/book-experience/book-model/components/BookModelReview.tsx
+[0m→ [0mRead src/app/api/books/[bookId]/model/route.ts
+[0m→ [0mRead tests/smoke/smoke-book-model.mts
+[0m→ [0mRead worker/episode-map.mts
+[0m→ [0mRead src/app/api/books/[bookId]/sources/[sourceId]/episodes/route.ts
+I've got the patterns for coverage and approvals — now finalizing the P6 implementation plan.
+[0m✱ [0mGlob "src/features/episodes/*"[90m 3 matches[0m
+[0m✱ [0mGlob "worker/*.mts"[90m 26 matches[0m
+[0m→ [0mRead node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.md[90m [limit=60][0m
+[0m
+[0m# [0mTodos
+[•] Baseline + read prior art and Next guide
+[ ] Build story-map domain (coverage/planning/repair/repository/progression)
+[ ] Build review UI components + episodes/moments adapters
+[ ] Build worker/story-planning + episodes API route
+[ ] Add smoke:story-planning + package script
+[ ] Run gates, patch, status.md update
+[0m
+[0m→ [0mRead worker/moment-merge.mts[90m [limit=60][0m
+[0m→ [0mRead src/features/book-experience/schemas/primitives.ts
+[0m
+[0m# [0mTodos
+[✓] Baseline + read prior art and Next guide
+[•] Build story-map domain (coverage/planning/repair/repository/progression)
+[ ] Build review UI components + episodes/moments adapters
+[ ] Build worker/story-planning + episodes API route
+[ ] Add smoke:story-planning + package script
+[ ] Run gates, patch, status.md update
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/coverage.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/planning.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/repair.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/progression.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/repository.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/index.ts
+Wrote file successfully.
+[0m
+Core planning domain is in place — now building the review UI and adapters.
+[0m# [0mTodos
+[✓] Baseline + read prior art and Next guide
+[✓] Build story-map domain (coverage/planning/repair/repository/progression)
+[•] Build review UI components + episodes/moments adapters
+[ ] Build worker/story-planning + episodes API route
+[ ] Add smoke:story-planning + package script
+[ ] Run gates, patch, status.md update
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/components/StoryMapReview.tsx
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/story-map/components/EpisodeBoard.tsx
+Wrote file successfully.
+[0m
+[0m→ [0mRead src/features/bible/adapters.ts
+[0m
+[0m← [0mWrite src/features/episodes/adapters.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/moments/adapters.ts
+Wrote file successfully.
+[0m
+Review UI done — now wiring up the worker and API routes.
+[0m# [0mTodos
+[✓] Baseline + read prior art and Next guide
+[✓] Build story-map domain (coverage/planning/repair/repository/progression)
+[✓] Build review UI components + episodes/moments adapters
+[•] Build worker/story-planning + episodes API route
+[ ] Add smoke:story-planning + package script
+[ ] Run gates, patch, status.md update
+[0m
+[0m← [0mWrite worker/story-planning/repair.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/story-planning/story-map.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/story-planning/episodes.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/story-planning/moments.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/app/api/books/[bookId]/episodes/route.ts
+Wrote file successfully.
+[0m
+[0m# [0mTodos
+[✓] Baseline + read prior art and Next guide
+[✓] Build story-map domain (coverage/planning/repair/repository/progression)
+[✓] Build review UI components + episodes/moments adapters
+[✓] Build worker/story-planning + episodes API route
+[•] Add smoke:story-planning + package script
+[ ] Run gates, patch, status.md update
+[0m
+[0m← [0mWrite tests/smoke/smoke-story-planning.mts
+Wrote file successfully.
+[0m
+[0m→ [0mRead package.json[90m [limit=32][0m
+[0m
+[0m← [0mEdit package.json
+Index: C:\Users\LENOVO\bookward-dashbaord\package.json
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\package.json
++++ C:\Users\LENOVO\bookward-dashbaord\package.json
+@@ -25,8 +25,9 @@
+   "smoke:schemas": "node --experimental-strip-types tests/smoke/smoke-schemas.mts",
+   "smoke:canonical": "node --experimental-strip-types tests/smoke/smoke-canonical.mts",
+   "smoke:job-engine": "node --experimental-strip-types tests/smoke/smoke-job-engine.mts",
+   "smoke:book-model": "node --experimental-strip-types tests/smoke/smoke-book-model.mts",
++  "smoke:story-planning": "node --experimental-strip-types tests/smoke/smoke-story-planning.mts",
+   "test:preview": "node --experimental-strip-types tests/book-experience/preview-check.mts",
+   "lint": "eslint"
+ },
+ "dependencies": {
+
+[0m
+Implementation complete — running verification gates.
+[0m$ [0mnpm.cmd run smoke:story-planning 2>&1 | tail -n 50
+> editorial-studio@0.1.0 smoke:story-planning
+> node --experimental-strip-types tests/smoke/smoke-story-planning.mts
+
+(node:15536) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15536) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/story-map/coverage.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+node:internal/modules/package_json_reader:256
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@/features' imported from C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\story-map\planning.ts
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:256:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:780:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:704:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:687:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:305:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:137:49) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v22.16.0
+[0m
+[0m← [0mEdit src/features/book-experience/story-map/planning.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\story-map\planning.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\story-map\planning.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\story-map\planning.ts
+@@ -4,9 +4,9 @@
+ // order. The owner approves; the owner never types boundaries. IDs follow
+ // CONTEXT.md: ep_01, ep_01_m01. Display order is 1-based; seq is zero-based
+ // with inclusive ends.
+ 
+-import { EpisodeSchema, StoryMapSchema } from "@/features/book-experience/schemas/planning";
++import { EpisodeSchema, StoryMapSchema } from "../schemas/planning.ts";
+ 
+ export type EpisodeProposalInput = {
+   order: number;
+   title: string;
+
+[0m
+[0m← [0mEdit src/features/book-experience/story-map/repository.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\story-map\repository.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\story-map\repository.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\story-map\repository.ts
+@@ -4,9 +4,9 @@
+ // working documents and moments/{momentId} children. Local tests use this
+ // fake; no live writes here. Approvals are idempotent per fingerprint.
+ 
+ import type { MomentRange } from "./planning.ts";
+-import type { Episode, StoryMap } from "@/features/book-experience/schemas/planning";
++import type { Episode, StoryMap } from "../schemas/planning.ts";
+ 
+ export type StoryApproval = {
+   scope: "storyMap" | "episode" | "moments";
+   episodeId?: string;
+
+[0m
+[0m$ [0mnpm.cmd run smoke:story-planning 2>&1 | tail -n 50
+> editorial-studio@0.1.0 smoke:story-planning
+> node --experimental-strip-types tests/smoke/smoke-story-planning.mts
+
+(node:12312) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12312) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/story-map/coverage.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  A gap-free Episode tiling approves
+PASS  A coverage gap is blocked and names the missing range
+PASS  An overlap is blocked with no manual-edit escape
+PASS  Non-contiguous order positions are blocked
+PASS  A range ending after the story is blocked
+PASS  An empty proposal is blocked
+PASS  Contiguous Moment ranges approve
+PASS  A Moment gap is blocked and named
+PASS  A Moment overlap is blocked
+PASS  AI StoryMap parses with acts, arcs, chronology and Episode ranges
+PASS  AI StoryMap without a rationale is rejected
+PASS  AI Episode plans with canonical ep_02 identity
+PASS  AI Episode ending before it starts is rejected
+PASS  AI Moments become ep_02_m01 scene containers
+PASS  Moment outlines with a gap are rejected, not coerced
+PASS  Moment outlines with an overlap are rejected
+PASS  Invalid gaps trigger bounded AI repair
+PASS  Repair budget exhaustion is explicit and blocking
+PASS  StoryMap approval is idempotent for the same fingerprint
+PASS  Moment approval is idempotent for the same fingerprint
+PASS  Publishing ep_01 never blocks ep_02 production
+PASS  Coverage gaps block approval and name the AI-repair action
+PASS  Valid proposal approves without changing boundaries manually
+PASS  Moments approval waits for the StoryMap
+PASS  Legacy EpisodePlan maps p000001 to canonical seq 0
+PASS  Legacy contiguous moment maps; non-contiguous needs AI replanning
+PASS  Worker StoryMap pass repairs then proposes
+PASS  Worker Episode planning waits for StoryMap approval
+PASS  Worker Moment planning stores contiguous scene containers
+PASS  Paragraph zero is p000000
+PASS  Canonical StoryMap and Episode parse through Zod
+
+31/31 checks passed
+[0m
+Story-planning smoke passes 31/31 — now running the full gate suite.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 30
+> editorial-studio@0.1.0 lint
+> eslint
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 40
+Generating static pages using 3 workers (2/11) 
+  Generating static pages using 3 workers (5/11) 
+  Generating static pages using 3 workers (8/11) 
+✓ Generating static pages using 3 workers (11/11) in 1086ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/episodes
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+[0m$ [0mnpm.cmd run smoke:episodes 2>&1 | tail -n 8 && npm.cmd run smoke:moments 2>&1 | tail -n 8
+PASS  Moving a boundary pulls the neighbouring episode with it
+PASS  Moving an end boundary pushes the next episode's start
+PASS  A boundary that would empty a neighbour is refused
+PASS  An intended overlap keeps its own boundary
+PASS  A boundary outside the source is refused
+PASS  The AI planner receives source paragraphs and Book Bible facts
+
+18/18 checks passed
+PASS  A fully approved book has no active episode
+PASS  Regeneration drops a hotspot plan a scene cannot carry
+PASS  A proposal mapping nothing in the episode is dropped
+PASS  A locked Story Moment survives regeneration and keeps its place
+PASS  Regeneration replaces only the unlocked Story Moments
+PASS  A proposal already covered by a locked Story Moment is dropped
+
+21/21 checks passed
+[0m
+All gates green — now verifying file placement, sizes, and secret hygiene.
+[0m$ [0mwc -l src/features/book-experience/story-map/*.ts src/features/book-experience/story-map/components/*.tsx src/features/episodes/adapters.ts src/features/moments/adapters.ts "src/app/api/books/[bookId]/episodes/route.ts" worker/story-planning/*.mts tests/smoke/smoke-story-planning.mts 2>&1
+124 src/features/book-experience/story-map/coverage.ts
+    8 src/features/book-experience/story-map/index.ts
+  174 src/features/book-experience/story-map/planning.ts
+  119 src/features/book-experience/story-map/progression.ts
+   34 src/features/book-experience/story-map/repair.ts
+  111 src/features/book-experience/story-map/repository.ts
+  108 src/features/book-experience/story-map/components/EpisodeBoard.tsx
+  147 src/features/book-experience/story-map/components/StoryMapReview.tsx
+   33 src/features/episodes/adapters.ts
+   38 src/features/moments/adapters.ts
+  124 src/app/api/books/[bookId]/episodes/route.ts
+   19 worker/story-planning/episodes.mts
+   36 worker/story-planning/moments.mts
+   14 worker/story-planning/repair.mts
+   55 worker/story-planning/story-map.mts
+  393 tests/smoke/smoke-story-planning.mts
+ 1537 total
+[0m
+[0m$ [0mgit status --short | head -n 40; echo ---; git diff --stat | tail -n 10
+M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/story-map/
+?? src/features/episodes/adapters.ts
+?? src/features/moments/adapters.ts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? worker/book-model/
+?? worker/story-planning/
+---
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  21 +
+ docs/features/25d-schema-foundation/status.md      |  60 +-
+ package.json                                       |   2 +
+ 5 files changed, 568 insertions(+), 409 deletions(-)
+[0m
+[0m✱ [0mGrep "<input|<textarea|boundary\.move|episode\.edit"[90m in src/features/book-experience/story-map · 0 matches[0m
+[0m✱ [0mGrep "sk-|api[_-]?key|secret|token|password|OPENROUTER|AWS_|AKIA"[90m in src/features/book-experience/story-map · 0 matches[0m
+[0m
+[0m$ [0mgit diff --name-only -- docs/features/25d-schema-foundation/plan.md docs/features/25d-schema-foundation/prompts.md docs/CONTEXT.md new.md AGENTS.md; echo "exit:$?"
+exit:0
+[0m
+[0m✱ [0mGrep "sk-|api[_-]?key|secret|token|password|OPENROUTER|AWS_|AKIA"[90m in worker/story-planning · 0 matches[0m
+[0m✱ [0mGrep "sk-|password|OPENROUTER|AWS_|AKIA|\.env"[90m in tests/smoke/smoke-story-planning.mts · 6 matches[0m
+Verification clean — saving the patch and file snapshots.
+[0m
+[0m$ [0mgit diff --binary --output=.patches/P6-studio.patch && ls -la .patches/P6-studio.patch
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+-rw-r--r-- 1 LENOVO 197121 112872 Sep 19 00:05 .patches/P6-studio.patch
+[0m
+[0m$ [0mmkdir -p ".patches/P6-new-files/src/features/book-experience/story-map/components" ".patches/P6-new-files/src/features/episodes" ".patches/P6-new-files/src/features/moments" ".patches/P6-new-files/src/app/api/books/[bookId]/episodes" ".patches/P6-new-files/worker/story-planning" ".patches/P6-new-files/tests/smoke" && cp "src/features/book-experience/story-map/coverage.ts" "src/features/book-experience/story-map/planning.ts" "src/features/book-experience/story-map/repair.ts" "src/features/book-experience/story-map/progression.ts" "src/features/book-experience/story-map/repository.ts" "src/features/book-experience/story-map/index.ts" ".patches/P6-new-files/src/features/book-experience/story-map/" && cp "src/features/book-experience/story-map/components/StoryMapReview.tsx" "src/features/book-experience/story-map/components/EpisodeBoard.tsx" ".patches/P6-new-files/src/features/book-experience/story-map/components/" && cp "src/features/episodes/adapters.ts" ".patches/P6-new-files/src/features/episodes/" && cp "src/features/moments/adapters.ts" ".patches/P6-new-files/src/features/moments/" && cp "src/app/api/books/[bookId]/episodes/route.ts" ".patches/P6-new-files/src/app/api/books/[bookId]/episodes/" && cp "worker/story-planning/repair.mts" "worker/story-planning/story-map.mts" "worker/story-planning/episodes.mts" "worker/story-planning/moments.mts" ".patches/P6-new-files/worker/story-planning/" && cp "tests/smoke/smoke-story-planning.mts" ".patches/P6-new-files/tests/smoke/" && find ".patches/P6-new-files" -type f | sort
+.patches/P6-new-files/src/app/api/books/[bookId]/episodes/route.ts
+.patches/P6-new-files/src/features/book-experience/story-map/components/EpisodeBoard.tsx
+.patches/P6-new-files/src/features/book-experience/story-map/components/StoryMapReview.tsx
+.patches/P6-new-files/src/features/book-experience/story-map/coverage.ts
+.patches/P6-new-files/src/features/book-experience/story-map/index.ts
+.patches/P6-new-files/src/features/book-experience/story-map/planning.ts
+.patches/P6-new-files/src/features/book-experience/story-map/progression.ts
+.patches/P6-new-files/src/features/book-experience/story-map/repair.ts
+.patches/P6-new-files/src/features/book-experience/story-map/repository.ts
+.patches/P6-new-files/src/features/episodes/adapters.ts
+.patches/P6-new-files/src/features/moments/adapters.ts
+.patches/P6-new-files/tests/smoke/smoke-story-planning.mts
+.patches/P6-new-files/worker/story-planning/episodes.mts
+.patches/P6-new-files/worker/story-planning/moments.mts
+.patches/P6-new-files/worker/story-planning/repair.mts
+.patches/P6-new-files/worker/story-planning/story-map.mts
+[0m
+Snapshots saved — updating the status tracker.
+[0m# [0mTodos
+[✓] Baseline + read prior art and Next guide
+[✓] Build story-map domain (coverage/planning/repair/repository/progression)
+[✓] Build review UI components + episodes/moments adapters
+[✓] Build worker/story-planning + episodes API route
+[✓] Add smoke:story-planning + package script
+[•] Run gates, patch, status.md update
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -11,9 +11,9 @@
+ | P2 | done | P1 | 2026-09-18 | lint pass; build pass (22 routes); smoke:schemas 14/14; test:preview 23/23; Playwright prior art 8/8 (attempt-1 run, same tree) | Deterministic room-entry slice: Zod schemas, compileFixtureBundle + pure resolveFrame, local /api/studio/preview, /studio/preview with WebGL depthMesh + forced CSS fallback, HTML subtitles, scope/play/pause/scrub/next/previous only. Patch .patches/P2-studio.patch + new-file copies. |
+ | P3 | done | P2 | 2026-09-18 | lint pass; build pass (24 routes); smoke:schemas 14/14; smoke:canonical 17/17; smoke:pdf 2/2; smoke:uncertainties 5/5; smoke:workflow 10/10 | Canonical source + full section-3 schemas: p000000 seq, immutable canonical.json pointer, 20-para chunks, correction history with draft invalidation, classification instead of deletion, fakes-backed review/approval slice. Patch .patches/P3-studio.patch + new-file copies. |
+ | P4 | qa-pending | P3 | 2026-09-18 | lint pass; build pass (24 app routes + proxy, incl. …/jobs/approve); smoke:job-engine 23/23; smoke:operations 13/13; smoke:batch 4/4; smoke:workflow 10/10 | Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies. |
+ | P5 | qa-pending | P4 | 2026-09-18 | lint pass; build pass (25 app routes + proxy, incl. …/model); smoke:book-model 29/29; smoke:schemas 14/14; smoke:bible 8/8 | Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies. |
+-| P6 | in-progress | P5 | — | Not run | Not started. |
++| P6 | done | P5 | 2026-09-18 | lint pass; build pass (26 routes); smoke:story-planning 31/31; smoke:episodes 18/18; smoke:moments 21/21 | AI StoryMap/Episode/Moment ranges with strict tiling, bounded repair, approval-only UI; later-episode production independent of published siblings. Patch .patches/P6-studio.patch + new-file copies. |
+ | P7 | todo | P6 | — | Not run | Not started. |
+ | P8 | todo | P7 | — | Not run | Not started. |
+ | P9 | todo | P8 | — | Not run | Not started. |
+ | P10 | todo | P9 | — | Not run | Not started. |
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -22,8 +22,24 @@
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+ 
+ ## Progress log
+ 
++### 2026-09-18 — P6 done: StoryMap, Episodes and Moments (unattended)
++
++- Baseline (pre-edit): P5 qa-pending, P6 row in-progress. Tracked diff was runner state only (`.patches/P4-studio.patch` regeneration, `.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `package.json` one-line P5 script); untracked entries were P5 patch artifacts, runner logs/results (incl. `logs/P6-attempt1-235710.log`) and landed-but-uncommitted P5 code (`src/app/api/books/[bookId]/model/`, `src/features/book-experience/book-model/`, `worker/book-model/`, `smoke-book-model.mts`, `bible/adapters.ts`). `new.md` untouched (still untouched after this phase). P6 work is unstaged only (tracked edit: `package.json` one-line script; new files listed below).
++- Dependency check: P5 qa-pending permits progress. No placeholder; all P6 work is real code against fakes/fixtures. No paid planning calls, no live writes, no boundary editing by the owner (owner checklist Before/During).
++- Read AGENTS.md plus bundled Next guide `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.md` before changing Next code (new episodes route uses the documented `await context.params` pattern, matching the canonical/model routes).
++- New domain `src/features/book-experience/story-map/`: `coverage.ts` (validateStoryCoverage/validateEpisodeCoverage/validateMomentCoverage: zero-based seq, inclusive ends, p000000 ids, exact-once tiling, no gaps/overlaps/exclusions in story scope), `planning.ts` (planStoryMap/planEpisode through canonical Zod contracts; planMoments builds contiguous ep_01_m01 scene containers in book order; IDs ep_01/ep_01_m01 per CONTEXT.md), `repair.ts` (repairStoryCoverage with capped attempts and explicit STORY_REPAIR_BUDGET_EXHAUSTED, never a blank form), `progression.ts` (getStoryPlanningActions approve/regenerate/preview with named blockers; canProduceEpisode proves a published ep_01 never gates ep_02), `repository.ts` (FakeStoryPlanningStore: storyMap/episodes/moments proposals, idempotent fingerprint approvals, independent publishEpisode), `components/StoryMapReview.tsx` (acts/arcs/chronology, paragraph timeline with Episode boundaries, source highlights, stage chips, Approve/Request-AI-revision only) and `components/EpisodeBoard.tsx` (Moment scene ranges, per-stage chips, coverage, Approve-Moments/Preview readiness; no boundary/field inputs anywhere — verified by source grep).
++- Adapters preserving internals: `src/features/episodes/adapters.ts` (re-exports coverageProblems/moveBoundary; legacy p000001 ranges map to canonical seq; intentional-overlap/exclusion support retired, not carried), `src/features/moments/adapters.ts` (re-exports momentCoverageProblems/momentRejection; contiguous legacy mappings convert, many-to-many returns null for AI replanning; primary-text/one-image retired to P7 Beat scope).
++- Worker `worker/story-planning/`: `story-map.mts` (runStoryMapPass with injected fake proposer + bounded repair), `episodes.mts` (runEpisodePlanning gated on StoryMap approval), `moments.mts` (runMomentPlanning with contiguity enforcement), `repair.mts` (budget-explicit wrapper).
++- Thin route `src/app/api/books/[bookId]/episodes/route.ts` (GET review status; POST story-map.approve/regenerate and moments.approve/regenerate with StoryMap-approval gating; approve/reject/regenerate only, no boundary editing, ADR-003). Package script `smoke:story-planning` added. Every new file <1000 lines (largest: smoke 393); plan.md, prompts.md, CONTEXT.md untouched; no new dependencies; no secrets in new files.
++- Test seam `tests/smoke/smoke-story-planning.mts` 31/31 (prior art: smoke-episode-map.mts, smoke-moments.mts PASS style). Fixture story seq 0–9: strict tiling, gap/overlap/order/range rejections with named ranges, Moment contiguity, Zod parsing of fake AI StoryMap/Episode, bounded repair success + budget exhaustion, idempotent approvals, publish-ep_01-keeps-ep_02-producible, progression blockers naming the AI-repair action, legacy adapter mapping, worker passes with fake proposers, p000000 identity. One early failure fixed honestly: domain files used the `@/` alias which Node strip-types cannot resolve outside Next — switched to relative imports (behavior unchanged).
++- Gates (all green): lint pass; build pass (route table 25→26 with …/episodes); smoke:story-planning 31/31; smoke:episodes 18/18; smoke:moments 21/21. Evidence: "PASS Valid proposal approves without changing boundaries manually" and "PASS Invalid gaps trigger bounded AI repair" and "PASS Publishing ep_01 never blocks ep_02 production" — a fixture map with a gap and overlap is repaired/blocked by bounded AI replanning, the valid proposal approves through named next-action buttons with no boundary edits, and a published earlier Episode never gates its sibling.
++- Demoable outcome met locally: StoryMapReview + EpisodeBoard expose AI-proposed Episode/Moment ranges with complete story-coverage state and clear Approve/Preview/Request-AI-revision buttons; progression logic proves the approval path end to end. Owner QA (one-line spot check, local only): open the StoryMap review with the fixture map, inject a gap and an overlap, confirm repair/blocking banners name the AI-revision action, then approve the valid proposal without touching boundaries and confirm the Moment timeline tiles the Episode exactly.
++- Patch: `.patches/P6-studio.patch` (tracked binary diff) plus new-file copies under `.patches/P6-new-files/`. No staging, no commit (suggested message below), no deploy, no live writes.
++- Suggested commit message: `P6: AI story planning with strict coverage, bounded repair and approval review`.
++- Out of scope (logged, not fixed): legacy episode/moment stores, routes and UIs still serve the old intentional-overlap/many-to-many model until P7–P12 migrate them; non-gate suites not re-run; smoke-e2e/smoke-formats remain forbidden as autonomous gates per Scaffold deferred.
++
+ ### 2026-09-18 — P5 qa-pending: rolling ledger and redesigned Book Model (unattended)
+ 
+ - Baseline (pre-edit): P4 qa-pending (commits 972b1ff, 97bc450), P5 row in-progress. Tracked diff was runner state only (`.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `.patches/P4-studio.patch`); untracked entries were runner logs only (`logs/P4-attempt1-*.log`, `logs/P5-attempt1-233705.log`). `new.md` untouched (still untouched after this phase). P5 work is unstaged only (tracked edit: `package.json` one-line script; new files listed below).
+ - Dependency check: P4 qa-pending permits progress. No placeholder; all P5 work is real code against fakes/fixtures. No paid understanding calls, no live queue, no change to the no-fabricated-facts rule (owner checklist Before/During).
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -190,4 +190,6 @@
+ - [loop] P4 qa-pending — complete, awaiting the owner's eyes: Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies.
+ - [P5 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Inline alias/flashback fixtures only (no paid understanding calls); no-fabricated-facts rule enforced by quote-grounding rejection test. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book model quality is P13 owner QA. No new architectural decision proposed.
+ - [loop] P5 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: chapter-bounded rolling ledger with overlap dedup, deterministic deltas, immutable per-window checkpoints, consolidated Entity/Event review with spoiler-safe identity, AI merge/split proposals with approve/reject-only actions. Owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies.
+ - [loop] P5 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies.
++- [P6 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Intentional plan-10 change (legacy p000001/intended-overlap/many-to-many → canonical p000000 strict tiling) applied via adapters with retained internals and recorded reasons. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book planning quality is P13 owner QA. No new architectural decision proposed.
++- [loop] P6 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:story-planning && npm.cmd run smoke:episodes && npm.cmd run smoke:moments
+
+[0m
+[0m$ [0mgit diff --binary --output=.patches/P6-studio.patch && git status --short | head -n 30 && echo --- && git diff --stat | tail -n 8
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/story-map/
+?? src/features/episodes/adapters.ts
+?? src/features/moments/adapters.ts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? worker/book-model/
+?? worker/story-planning/
+---
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  21 +
+ docs/features/25d-schema-foundation/status.md      |  78 +-
+ package.json                                       |   2 +
+ 5 files changed, 586 insertions(+), 409 deletions(-)
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+[0m
+[0m# [0mTodos
+[✓] Baseline + read prior art and Next guide
+[✓] Build story-map domain (coverage/planning/repair/repository/progression)
+[✓] Build review UI components + episodes/moments adapters
+[✓] Build worker/story-planning + episodes API route
+[✓] Add smoke:story-planning + package script
+[✓] Run gates, patch, status.md update
+[0m
+P6 complete — row set to **done**.
+
+**What landed** (all fakes/fixtures, no live writes):
+- `src/features/book-experience/story-map/` — strict coverage validators (zero-based seq, p000000, exact-once tiling), AI planning constructors via canonical Zod contracts (`planStoryMap`/`planEpisode`/`planMoments`, IDs `ep_01`/`ep_01_m01`), bounded AI repair with explicit budget exhaustion, approval-driven next-actions with named blockers, idempotent fake repository with independent publication, plus `StoryMapReview` and `EpisodeBoard` components (approve/preview/regenerate only — source-grep confirms zero boundary/field inputs).
+- `src/features/episodes/adapters.ts`, `src/features/moments/adapters.ts` — legacy boundary internals retained/re-exported; intentional-overlap/many-to-many retired with mapping bridges.
+- `worker/story-planning/` (4 files) and thin `src/app/api/books/[bookId]/episodes/` route (approve/regenerate only, `await context.params` per Next guide).
+- `tests/smoke/smoke-story-planning.mts` + `smoke:story-planning` script.
+
+**Gates (all green):** lint pass; build pass (26 routes); smoke:story-planning 31/31; smoke:episodes 18/18; smoke:moments 21/21. One honest fix mid-phase: `@/` alias → relative imports for strip-types compatibility.
+
+**Evidence:** "PASS Valid proposal approves without changing boundaries manually" + "PASS Publishing ep_01 never blocks ep_02 production" — gap/overlap inject → bounded AI repair/blocking → valid proposal approves via named buttons.
+
+**Artifacts:** `.patches/P6-studio.patch` (regenerated final) + 16 files under `.patches/P6-new-files/`. Nothing staged/committed. Suggested commit: `P6: AI story planning with strict coverage, bounded repair and approval review`.
+
+**Preserved:** `new.md`, plan/prompts/CONTEXT untouched; P5/owner changes intact. No new dependencies, no secrets, every file <1000 lines.

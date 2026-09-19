@@ -1,0 +1,918 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+Doing P8 visual generation — pulling plan and reference docs.
+[0m✗ [0mRead C:/Users/800sa/studio failed
+[91m[1mError: [0mFile not found: C:\Users\800sa\studio
+[0m
+[0m$ [0mpwd; ls -la; echo "---"; ls -la .. 2>&1 | head -n 50
+/c/Users/LENOVO/bookward-dashbaord
+total 764
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 .
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:23 ..
+-rw-r--r-- 1 LENOVO 197121   2926 Sep 18 00:46 .env
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:22 .git
+-rw-r--r-- 1 LENOVO 197121    678 Sep 18 00:47 .gitignore
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:24 .next
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:21 .patches
+-rw-r--r-- 1 LENOVO 197121    687 Aug 23 15:10 AGENTS.md
+-rw-r--r-- 1 LENOVO 197121   1505 Aug 23 15:10 apphosting.yaml
+-rw-r--r-- 1 LENOVO 197121   1816 Aug 23 15:10 backfill-delivery-url.mts
+-rw-r--r-- 1 LENOVO 197121     12 Aug 23 15:10 CLAUDE.md
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 docs
+-rw-r--r-- 1 LENOVO 197121    483 Aug 23 15:10 eslint.config.mjs
+-rw-r--r-- 1 LENOVO 197121    103 Aug 23 15:10 firebase.json
+-rw-r--r-- 1 LENOVO 197121     48 Aug 23 15:10 firestore.indexes.json
+-rw-r--r-- 1 LENOVO 197121   1040 Aug 23 15:10 firestore.rules
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 fixtures
+-rw-r--r-- 1 LENOVO 197121    813 Aug 23 15:10 issues.md
+-rw-r--r-- 1 LENOVO 197121  37778 Sep 18 22:00 new.md
+-rw-r--r-- 1 LENOVO 197121    140 Aug 23 15:10 next.config.ts
+-rw-r--r-- 1 LENOVO 197121    295 Sep 18 22:26 next-env.d.ts
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:05 node_modules
+-rw-r--r-- 1 LENOVO 197121   3079 Sep 19 00:14 package.json
+-rw-r--r-- 1 LENOVO 197121 406217 Sep 18 22:05 package-lock.json
+-rw-r--r-- 1 LENOVO 197121    663 Sep 18 22:00 playwright.config.ts
+-rw-r--r-- 1 LENOVO 197121    101 Aug 23 15:10 postcss.config.mjs
+drwxr-xr-x 1 LENOVO 197121      0 Aug 23 15:10 public
+-rw-r--r-- 1 LENOVO 197121   1486 Aug 23 15:10 README.md
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 src
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 test-results
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 tests
+-rw-r--r-- 1 LENOVO 197121    745 Aug 23 15:10 tsconfig.json
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:12 worker
+---
+total 32820
+drwxr-xr-x 1 LENOVO 197121        0 Sep 18 22:23 .
+drwxr-xr-x 1 LENOVO 197121        0 Jun  3  2025 ..
+drwxr-xr-x 1 LENOVO 197121        0 Jun 22 12:59 .agents
+drwxr-xr-x 1 LENOVO 197121        0 Aug  6  2025 .anaconda
+drwxr-xr-x 1 LENOVO 197121        0 Nov 19  2025 .antigravity
+drwxr-xr-x 1 LENOVO 197121        0 Jul  8  2025 .app-store
+drwxr-xr-x 1 LENOVO 197121        0 Sep 12  2025 .aws
+-rw-r--r-- 1 LENOVO 197121     3620 Sep 18 22:11 .bash_history
+drwxr-xr-x 1 LENOVO 197121        0 Sep 15 23:44 .cache
+drwxr-xr-x 1 LENOVO 197121        0 Sep 18 22:14 .claude
+-rw-r--r-- 1 LENOVO 197121    53531 Sep 18 22:23 .claude.json
+-rw-r--r-- 1 LENOVO 197121    46986 Jul 21 09:36 .claude.json.tmp.2160.31728f703f7a
+-rw-r--r-- 1 LENOVO 197121    50604 Jul 25 17:09 .claude.json.tmp.8736.dc21ac588c2e
+drwxr-xr-x 1 LENOVO 197121        0 Jul  6 09:04 .cline
+drwxr-xr-x 1 LENOVO 197121        0 Jun 15  2025 .cloudflared
+drwxr-xr-x 1 LENOVO 197121        0 Aug 16  2025 .codeium
+drwxr-xr-x 1 LENOVO 197121        0 Sep 19 00:20 .codex
+drwxr-xr-x 1 LENOVO 197121        0 Aug  3 17:50 .conda
+-rw-r--r-- 1 LENOVO 197121       25 Jul 31  2025 .condarc
+drwxr-xr-x 1 LENOVO 197121        0 Sep 15 23:44 .config
+drwxr-xr-x 1 LENOVO 197121        0 Aug 23  2025 .continue
+drwxr-xr-x 1 LENOVO 197121        0 Jul 31  2025 .continuum
+drwxr-xr-x 1 LENOVO 197121        0 Aug  3 22:24 .copilot
+drwxr-xr-x 1 LENOVO 197121        0 Mar 30 16:24 .cursor
+drwxr-xr-x 1 LENOVO 197121        0 Mar 29 13:52 .cursor-sandbox
+drwxr-xr-x 1 LENOVO 197121        0 Jun  4 19:37 .devin
+drwxr-xr-x 1 LENOVO 197121        0 Jan 19  2026 .expo
+drwxr-xr-x 1 LENOVO 197121        0 Jul 24 09:02 .gemini
+-rw-r--r-- 1 LENOVO 197121      186 Jun  6 17:04 .gitconfig
+drwxr-xr-x 1 LENOVO 197121        0 Jun  9 15:36 .ipynb_checkpoints
+drwxr-xr-x 1 LENOVO 197121        0 Jul 31  2025 .ipython
+drwxr-xr-x 1 LENOVO 197121        0 Aug  6  2025 .jupyter
+drwxr-xr-x 1 LENOVO 197121        0 Jul 22 13:39 .kimi
+drwxr-xr-x 1 LENOVO 197121        0 Sep 15 22:52 .kimi-code
+drwxr-xr-x 1 LENOVO 197121        0 May 10 15:09 .kiro
+-rw-r--r-- 1 LENOVO 197121       20 Oct 29  2025 .lesshst
+drwxr-xr-x 1 LENOVO 197121        0 Apr 13 02:04 .local
+drwxr-xr-x 1 LENOVO 197121        0 Sep 18 23:28 .loop-pilot
+drwxr-xr-x 1 LENOVO 197121        0 Aug  6  2025 .matplotlib
+drwxr-xr-x 1 LENOVO 197121        0 Jun 17 18:05 .mimocode
+drwxr-xr-x 1 LENOVO 197121        0 Jun  4  2025 .ms-ad
+-rw-r--r-- 1 LENOVO 197121        0 Apr 14 22:14 .node_repl_history
+drwxr-xr-x 1 LENOVO 197121        0 Jun 17 18:04 .npm
+drwxr-xr-x 1 LENOVO 197121        0 May  2 14:33 .ollama
+drwxr-xr-x 1 LENOVO 197121        0 Mar 29 01:31 .sbx-denybin
+drwxr-xr-x 1 LENOVO 197121        0 Jun 15  2025 .ssh
+-rw-r--r-- 1 LENOVO 197121     1533 Jul 15 15:37 .viminfo
+drwxr-xr-x 1 LENOVO 197121        0 Jun 10 16:46 .virtual_documents
+drwxr-xr-x 1 LENOVO 197121        0 Aug  6  2025 .vscode
+[0m
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md[90m [offset=504][0m
+Plan is clear — P7 is green, so now mapping the visual codebase.
+[0m→ [0mRead src/features/book-experience
+[0m→ [0mRead worker
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead package.json
+[0m→ [0mRead tests/smoke/smoke-image-prompt.mts
+[0m→ [0mRead tests/smoke/smoke-image-batch.mts
+[0m→ [0mRead tests/smoke/smoke-visual-system.mts
+[0m→ [0mRead worker/image-api.mts
+[0m→ [0mRead worker/image-batch.mts
+[0m→ [0mRead worker/image-batch-pool.mts
+[0m→ [0mRead src/features/book-experience/jobs/providers.ts
+[0m→ [0mRead src/features/book-experience/storage
+[0m→ [0mRead src/features/book-experience/schemas/composition.ts
+[0m→ [0mRead src/features/book-experience/schemas/model.ts
+[0m→ [0mRead src/features/book-experience/schemas/primitives.ts
+[0m→ [0mRead src/features/book-experience/storage/paths.ts
+[0m→ [0mRead src/features/book-experience/schemas/source.ts
+Core contracts reviewed — now checking generation history and legacy visuals.
+[0m→ [0mRead src/features/visual
+[0m→ [0mRead src/features/images
+[0m→ [0mRead worker/reference-images.mts
+[0m→ [0mRead src/features/book-experience/beats/repository.ts
+[0m→ [0mRead worker/moment-images.mts
+[0m→ [0mRead src/features/visual/types.ts
+[0m→ [0mRead src/features/book-experience/book-model/repository.ts
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md[90m [offset=180][0m
+[0m
+[0m$ [0mgit status --short | head -n 60; echo "===TRACKED DIFF STAT==="; git diff --stat | tail -n 20; echo "===UNTRACKED==="; git ls-files --others --exclude-standard | head -n 60
+M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+ M worker/commentary.mts
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? .patches/P7-new-files/
+?? .patches/P7-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/P6.result
+?? docs/features/25d-schema-foundation/.run/P7.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/.run/settled.P6
+?? docs/features/25d-schema-foundation/.run/settled.P7
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? docs/features/25d-schema-foundation/logs/P6-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P7-attempt1-000747.log
+?? docs/features/25d-schema-foundation/logs/P7-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P8-attempt1-002422.log
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/beats/
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/coverage/
+?? src/features/book-experience/story-map/
+?? src/features/episodes/adapters.ts
+?? src/features/moment-text/grounding.ts
+?? src/features/moments/adapters.ts
+?? tests/smoke/smoke-beats.mts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? worker/beats/
+?? worker/book-model/
+?? worker/story-planning/
+===TRACKED DIFF STAT===
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  37 +
+ docs/features/25d-schema-foundation/status.md      | 100 ++-
+ package.json                                       |   3 +
+ worker/commentary.mts                              |  46 ++
+ 6 files changed, 669 insertions(+), 411 deletions(-)
+===UNTRACKED===
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+.patches/P5-new-files/src/app/api/books/[bookId]/model/route.ts
+.patches/P5-new-files/src/features/bible/adapters.ts
+.patches/P5-new-files/src/features/book-experience/book-model/components/BookModelReview.tsx
+.patches/P5-new-files/src/features/book-experience/book-model/consolidate.ts
+.patches/P5-new-files/src/features/book-experience/book-model/derived.ts
+.patches/P5-new-files/src/features/book-experience/book-model/index.ts
+.patches/P5-new-files/src/features/book-experience/book-model/ledger.ts
+.patches/P5-new-files/src/features/book-experience/book-model/proposals.ts
+.patches/P5-new-files/src/features/book-experience/book-model/repository.ts
+.patches/P5-new-files/src/features/book-experience/book-model/state.ts
+.patches/P5-new-files/src/features/book-experience/book-model/windows.ts
+.patches/P5-new-files/tests/smoke/smoke-book-model.mts
+.patches/P5-new-files/worker/book-model/consolidate.mts
+.patches/P5-new-files/worker/book-model/understand.mts
+.patches/P5-studio.patch
+.patches/P6-new-files/src/app/api/books/[bookId]/episodes/route.ts
+.patches/P6-new-files/src/features/book-experience/story-map/components/EpisodeBoard.tsx
+.patches/P6-new-files/src/features/book-experience/story-map/components/StoryMapReview.tsx
+.patches/P6-new-files/src/features/book-experience/story-map/coverage.ts
+.patches/P6-new-files/src/features/book-experience/story-map/index.ts
+.patches/P6-new-files/src/features/book-experience/story-map/planning.ts
+.patches/P6-new-files/src/features/book-experience/story-map/progression.ts
+.patches/P6-new-files/src/features/book-experience/story-map/repair.ts
+.patches/P6-new-files/src/features/book-experience/story-map/repository.ts
+.patches/P6-new-files/src/features/episodes/adapters.ts
+.patches/P6-new-files/src/features/moments/adapters.ts
+.patches/P6-new-files/tests/smoke/smoke-story-planning.mts
+.patches/P6-new-files/worker/story-planning/episodes.mts
+.patches/P6-new-files/worker/story-planning/moments.mts
+.patches/P6-new-files/worker/story-planning/repair.mts
+.patches/P6-new-files/worker/story-planning/story-map.mts
+.patches/P6-studio.patch
+.patches/P7-new-files/BeatReview.tsx
+.patches/P7-new-files/build.ts
+.patches/P7-new-files/grounding.ts
+.patches/P7-new-files/plan.mts
+.patches/P7-new-files/repository.ts
+.patches/P7-new-files/representations.ts
+.patches/P7-new-files/reveal.ts
+.patches/P7-new-files/review.ts
+.patches/P7-new-files/smoke-beats.mts
+.patches/P7-new-files/verbatim.ts
+.patches/P7-studio.patch
+docs/features/25d-schema-foundation/.run/P4.result
+docs/features/25d-schema-foundation/.run/P5.result
+docs/features/25d-schema-foundation/.run/P6.result
+docs/features/25d-schema-foundation/.run/P7.result
+docs/features/25d-schema-foundation/.run/settled.P4
+docs/features/25d-schema-foundation/.run/settled.P5
+docs/features/25d-schema-foundation/.run/settled.P6
+docs/features/25d-schema-foundation/.run/settled.P7
+docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+docs/features/25d-schema-foundation/logs/P6-gate-attempt1.log
+docs/features/25d-schema-foundation/logs/P7-attempt1-000747.log
+docs/features/25d-schema-foundation/logs/P7-gate-attempt1.log
+docs/features/25d-schema-foundation/logs/P8-attempt1-002422.log
+src/app/api/books/[bookId]/episodes/route.ts
+[0m
+[0m→ [0mRead worker/providers/images.mts
+[0m→ [0mRead src/features/book-experience/jobs/pipeline.ts
+[0m→ [0mRead src/app/api/books/[bookId]/episodes/route.ts
+[0m→ [0mRead worker/beats/plan.mts
+[0m→ [0mRead src/features/images/types.ts
+[0m
+[0m$ [0mls "node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/" 2>&1 | head -n 30
+01-metadata
+02-route-segment-config
+default.md
+dynamic-routes.md
+error.md
+forbidden.md
+index.md
+instrumentation.md
+instrumentation-client.md
+intercepting-routes.md
+layout.md
+loading.md
+mdx-components.md
+middleware.md
+not-found.md
+page.md
+parallel-routes.md
+proxy.md
+public-folder.md
+route.md
+route-groups.md
+src-folder.md
+template.md
+unauthorized.md
+[0m
+[0m→ [0mRead tests/smoke/smoke-beats.mts[90m [limit=80][0m
+[0m→ [0mRead node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md[90m [limit=80][0m
+Baseline captured and P7 confirmed done — now building P8.
+[0m
+[0m# [0mTodos
+[•] Write src/features/book-experience/visuals/ domain (references, requests, assets, regeneration, repository, index)
+[ ] Write VisualReview component + visual/images adapters + visuals route
+[ ] Write worker/visuals/ + image-api key helper
+[ ] Write smoke:visual-generation test + package script
+[ ] Run gates: lint, build, smoke:visual-generation, smoke:images, smoke:batch, smoke:visual
+[ ] Save patches + update status.md
+[0m
+[0m← [0mWrite src/features/book-experience/visuals/references.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/visuals/requests.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/visuals/assets.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/features/book-experience/visuals/assets.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\visuals\assets.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\visuals\assets.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\visuals\assets.ts
+@@ -3,9 +3,10 @@
+ // dimensions, depth alignment, truthful bit-depth metadata and background
+ // overscan. Metadata claims alone are not proof of hole-free motion —
+ // assembly (P9) computes safeCamera from this validated coverage.
+ 
+-import type { CoordinateFrame, VisualTargetKind } from "./references.ts";
++import type { CoordinateFrame } from "./requests.ts";
++import type { VisualTargetKind } from "./references.ts";
+ 
+ export type GeneratedAssetDescriptor = {
+   key: string;
+   targetId: string;
+
+[0m
+[0m← [0mWrite src/features/book-experience/visuals/regeneration.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/visuals/repository.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/visuals/index.ts
+Wrote file successfully.
+[0m
+Domain core done — now the review UI and adapters.
+[0m# [0mTodos
+[✓] Write src/features/book-experience/visuals/ domain (references, requests, assets, regeneration, repository, index)
+[•] Write VisualReview component + visual/images adapters + visuals route
+[ ] Write worker/visuals/ + image-api key helper
+[ ] Write smoke:visual-generation test + package script
+[ ] Run gates: lint, build, smoke:visual-generation, smoke:images, smoke:batch, smoke:visual
+[ ] Save patches + update status.md
+[0m
+[0m→ [0mRead src/features/book-experience/story-map/components/StoryMapReview.tsx[90m [limit=60][0m
+[0m
+[0m← [0mWrite src/features/book-experience/visuals/components/VisualReview.tsx
+Wrote file successfully.
+[0m
+[0m$ [0mhead -n 30 "src/features/visual/mappers.ts"; echo "===STORE==="; head -n 30 "src/features/visual/store.ts"; echo "===IMGSTORE==="; head -n 30 "src/features/images/store.ts"
+import type { DocumentData } from "firebase/firestore";
+
+import { millis } from "@/services/firebase/use-live";
+import type { ImageCandidate } from "@/features/images/types";
+import type { StyleCanon, VisualReference } from "@/features/visual/types";
+
+export function toStyleCanon(_id: string, data: DocumentData): StyleCanon {
+  return {
+    medium: String(data.medium ?? ""),
+    palette: String(data.palette ?? ""),
+    lighting: String(data.lighting ?? ""),
+    periodAccuracy: String(data.periodAccuracy ?? ""),
+    realism: String(data.realism ?? ""),
+    composition: String(data.composition ?? ""),
+    recurringMotifs: String(data.recurringMotifs ?? ""),
+    prohibitedTendencies: (data.prohibitedTendencies ?? []) as string[],
+    status: data.status === "approved" ? "approved" : "draft",
+    proposalStatus: data.proposalStatus ?? "none",
+    proposalError: data.proposalError ?? null,
+    updatedAt: millis(data.updatedAt),
+    approvedAt: millis(data.approvedAt),
+  };
+}
+
+export function toVisualReference(id: string, data: DocumentData): VisualReference {
+  return {
+    id,
+    sourceId: String(data.sourceId ?? ""),
+    bibleEntryId: String(data.bibleEntryId ?? ""),
+    kind: data.kind,
+===STORE===
+import { FieldValue } from "firebase-admin/firestore";
+import type { DocumentReference } from "firebase-admin/firestore";
+
+import { adminDb } from "@/services/firebase/admin";
+import { addJobToTransaction, createQueuedJob } from "@/features/jobs/store";
+import { COLLECTIONS } from "@/features/jobs/types";
+import { EditError } from "@/features/sources/edit-ops";
+import { sourceRef } from "@/features/sources/store";
+import {
+  appearanceStateProblem,
+  styleCanonProblem,
+  type AppearanceState,
+  type StyleCanon,
+  type VisualReferenceKind,
+} from "@/features/visual/types";
+
+export function styleCanonRef(bookId: string): DocumentReference {
+  return adminDb().collection(COLLECTIONS.books).doc(bookId).collection("visual").doc("styleCanon");
+}
+
+export function referencesRef(bookId: string) {
+  return adminDb().collection(COLLECTIONS.books).doc(bookId).collection("visualReferences");
+}
+
+export function referenceCandidatesRef(bookId: string, referenceId: string) {
+  return referencesRef(bookId).doc(referenceId).collection("candidates");
+}
+
+/**
+ * The canon is written by the AI from the book itself; the editor reviews the
+===IMGSTORE===
+import { FieldValue } from "firebase-admin/firestore";
+
+import { episodesRef } from "@/features/episodes/store";
+import { canPlanStoryMoments, type EpisodeMapStatus } from "@/features/episodes/types";
+import { adminDb } from "@/services/firebase/admin";
+import {
+  imageMetadataProblem,
+  type NormalizedPoint,
+  type NormalizedRect,
+} from "@/features/images/types";
+import { addJobToTransaction, allJobsRef, createQueuedJob } from "@/features/jobs/store";
+import { COLLECTIONS } from "@/features/jobs/types";
+import { momentsRef } from "@/features/moments/store";
+import { EditError } from "@/features/sources/edit-ops";
+import { sourceRef } from "@/features/sources/store";
+import { referencesRef, styleCanonRef } from "@/features/visual/store";
+import { momentReferenceProblems, type VisualReference } from "@/features/visual/types";
+
+export function momentCandidatesRef(
+  bookId: string,
+  sourceId: string,
+  episodeId: string,
+  momentId: string,
+) {
+  return momentsRef(bookId, sourceId, episodeId).doc(momentId).collection("imageCandidates");
+}
+
+export async function startMomentImageGeneration(
+  bookId: string,
+  sourceId: string,
+[0m
+[0m← [0mWrite src/features/visual/adapters.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/images/adapters.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/app/api/books/[bookId]/visuals/route.ts
+Wrote file successfully.
+[0m
+UI and route done — now the worker generation seam.
+[0m# [0mTodos
+[✓] Write src/features/book-experience/visuals/ domain (references, requests, assets, regeneration, repository, index)
+[✓] Write VisualReview component + visual/images adapters + visuals route
+[•] Write worker/visuals/ + image-api key helper
+[ ] Write smoke:visual-generation test + package script
+[ ] Run gates: lint, build, smoke:visual-generation, smoke:images, smoke:batch, smoke:visual
+[ ] Save patches + update status.md
+[0m
+[0m← [0mEdit worker/image-api.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\worker\image-api.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\worker\image-api.mts
++++ C:\Users\LENOVO\bookward-dashbaord\worker\image-api.mts
+@@ -114,4 +114,19 @@
+   if (contentType === "image/webp") return "webp";
+   if (contentType === "image/svg+xml") return "svg";
+   return "png";
+ }
++
++// Immutable canonical asset key for generated visuals (P8, plan section 4):
++// books/{bookId}/assets/{assetVersionId}/{role}.{extension}. Published and
++// approved assets are reused by this exact key; regeneration writes a new
++// assetVersionId and never rewrites a live key.
++export type VisualAssetRole = "background" | "foreground" | "depth" | "reference";
++
++export function visualAssetKeyFor(args: {
++  bookId: string;
++  assetVersionId: string;
++  role: VisualAssetRole;
++  contentType: string;
++}): string {
++  return `books/${args.bookId}/assets/${args.assetVersionId}/${args.role}.${extensionFor(args.contentType)}`;
++}
+
+[0m
+[0m← [0mWrite worker/visuals/generate.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/visuals/batch.mts
+Wrote file successfully.
+[0m
+[0m→ [0mRead tests/smoke/smoke-beats.mts[90m [offset=230][0m
+[0m
+[0m← [0mWrite tests/smoke/smoke-visual-generation.mts
+Wrote file successfully.
+[0m
+[0m← [0mEdit package.json
+Index: C:\Users\LENOVO\bookward-dashbaord\package.json
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\package.json
++++ C:\Users\LENOVO\bookward-dashbaord\package.json
+@@ -27,8 +27,9 @@
+   "smoke:job-engine": "node --experimental-strip-types tests/smoke/smoke-job-engine.mts",
+   "smoke:book-model": "node --experimental-strip-types tests/smoke/smoke-book-model.mts",
+   "smoke:story-planning": "node --experimental-strip-types tests/smoke/smoke-story-planning.mts",
+   "smoke:beats": "node --experimental-strip-types tests/smoke/smoke-beats.mts",
++  "smoke:visual-generation": "node --experimental-strip-types tests/smoke/smoke-visual-generation.mts",
+   "test:preview": "node --experimental-strip-types tests/book-experience/preview-check.mts",
+   "lint": "eslint"
+ },
+ "dependencies": {
+
+[0m
+[0m# [0mTodos
+[✓] Write src/features/book-experience/visuals/ domain (references, requests, assets, regeneration, repository, index)
+[✓] Write VisualReview component + visual/images adapters + visuals route
+[✓] Write worker/visuals/ + image-api key helper
+[✓] Write smoke:visual-generation test + package script
+[•] Run gates: lint, build, smoke:visual-generation, smoke:images, smoke:batch, smoke:visual
+[ ] Save patches + update status.md
+[0m
+[0m$ [0mnode --experimental-strip-types tests/smoke/smoke-visual-generation.mts 2>&1 | tail -n 60
+node:internal/modules/typescript:62
+        throw new ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX(error.message);
+              ^
+
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]:   x TypeScript parameter property is not supported in strip-only mode
+     ,-[205:1]
+ 202 | 
+ 203 | class FailOnceProvider implements ImageProvider {
+ 204 |   readonly name = "fail-once";
+ 205 |   constructor(private readonly inner: ImageProvider) {}
+     :                                ^^^^^^^^^^^^^^^^^^^^
+ 206 |   async generate(request: Parameters<ImageProvider["generate"]>[0]) {
+ 207 |     if (request.idempotencyKey.includes("fail-me")) throw new Error("forced child failure");
+ 208 |     return this.inner.generate(request);
+     `----
+
+    at parseTypeScript (node:internal/modules/typescript:62:15)
+    at processTypeScriptCode (node:internal/modules/typescript:116:42)
+    at stripTypeScriptModuleTypes (node:internal/modules/typescript:150:10)
+    at ModuleLoader.<anonymous> (node:internal/modules/esm/translators:471:16)
+    at #translate (node:internal/modules/esm/loader:534:12)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:581:27)
+    at async ModuleJob._link (node:internal/modules/esm/module_job:116:19) {
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'
+}
+
+Node.js v22.16.0
+[0m
+Known strip-types issue — expanding the constructor.
+[0m← [0mEdit tests/smoke/smoke-visual-generation.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-visual-generation.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-visual-generation.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-visual-generation.mts
+@@ -201,9 +201,12 @@
+ check("Completed units are never double-charged", duplicateCharge && store.charges.size === 1);
+ 
+ class FailOnceProvider implements ImageProvider {
+   readonly name = "fail-once";
+-  constructor(private readonly inner: ImageProvider) {}
++  private readonly inner: ImageProvider;
++  constructor(inner: ImageProvider) {
++    this.inner = inner;
++  }
+   async generate(request: Parameters<ImageProvider["generate"]>[0]) {
+     if (request.idempotencyKey.includes("fail-me")) throw new Error("forced child failure");
+     return this.inner.generate(request);
+   }
+
+[0m
+[0m$ [0mnode --experimental-strip-types tests/smoke/smoke-visual-generation.mts 2>&1 | tail -n 60
+(node:1968) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1968) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/visuals/assets.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  Scene requests pin approved reference versions and keys
+PASS  Layers of one composition share the coordinate frame and reference versions
+PASS  Negative rules forbid baked-in text
+PASS  Fills are labelled as invented, never source facts
+PASS  Regeneration carries a distinct idempotency key
+PASS  Single and batch generation share the prompt path
+PASS  Empty visual selection is rejected
+PASS  Reference approval blocks premature scene generation
+PASS  Unknown identities cannot be pinned
+PASS  Single generation writes an immutable S3 key
+PASS  Single generation validates clean
+PASS  Generation records provenance, prompt, model and cost
+PASS  S3 keys are immutable once written
+PASS  Completed units are never double-charged
+PASS  Every selected target launches one independent child
+PASS  One failed child does not discard successful children
+PASS  Retry targets contain only failed children
+PASS  Retry regenerates only the failed target
+PASS  The existing bounded batch pool caps concurrency
+PASS  A clean background validates
+PASS  Frame mismatch is rejected
+PASS  Foregrounds need real alpha
+PASS  Hidden-coverage gaps are rejected
+PASS  Baked-in text is rejected
+PASS  Aligned 8-bit depth validates
+PASS  Honest 16-bit containers keep sourceBitDepth 8
+PASS  Fabricated depth precision is rejected
+PASS  Depth must use the near-white convention
+PASS  Depth records actual bit depth, never recovered detail
+PASS  Clean assets approve with continuity recorded
+PASS  Assets without checksums cannot approve
+PASS  Foreground generates with real alpha
+PASS  A foreground asset can be rejected
+PASS  Approved siblings are listed by immutable key
+PASS  Regeneration is a new billable attempt
+PASS  Regeneration reuses approved siblings
+PASS  Only the affected target regenerates
+PASS  Approved assets remain unchanged during sibling regeneration
+PASS  Reference changes flag dependent drafts
+PASS  Old generations keep their pinned reference provenance
+PASS  Immutable S3 keys follow the canonical asset path
+PASS  Legacy canon maps to a versioned visualProfile
+PASS  Legacy reference gating names the missing approval
+PASS  Only ready candidates map to canonical assets
+PASS  Ready candidates map without inventing depth
+PASS  Visual review offers multi-select generation
+PASS  Visual review exposes targeted regeneration
+PASS  Visual review approves without prompt or camera entry
+PASS  Visual route gates scenes on approved references
+PASS  Every new P8 file stays below 1000 lines
+
+50/50 checks passed
+[0m
+New gate 50/50 — now the full gate set.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 20
+> editorial-studio@0.1.0 lint
+> eslint
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 40
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 143ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 13.1s
+  Running TypeScript ...
+tests/smoke/smoke-visual-generation.mts(358,70): error TS2353: Object literal may only specify known properties, and 'lens' does not exist in type 'StyleCanon'.
+Failed to type check.
+[0m
+[0m← [0mEdit tests/smoke/smoke-visual-generation.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-visual-generation.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-visual-generation.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-visual-generation.mts
+@@ -354,9 +354,9 @@
+ 
+ check("Immutable S3 keys follow the canonical asset path", visualAssetKeyFor({ bookId: "book_p8", assetVersionId: "v1", role: "background", contentType: "image/png" }) === "books/book_p8/assets/v1/background.png");
+ 
+ const profile = styleCanonToVisualProfile(
+-  { medium: "Painterly", palette: "ochre, indigo", lighting: "dawn", lens: "", periodAccuracy: "", realism: "", composition: "", recurringMotifs: "", prohibitedTendencies: ["No text"], status: "approved", proposalStatus: "none", proposalError: null, updatedAt: null, approvedAt: null },
++  { medium: "Painterly", palette: "ochre, indigo", lighting: "dawn", periodAccuracy: "", realism: "", composition: "", recurringMotifs: "", prohibitedTendencies: ["No text"], status: "approved", proposalStatus: "none", proposalError: null, updatedAt: null, approvedAt: null },
+   2,
+ );
+ check("Legacy canon maps to a versioned visualProfile", profile.version === 2 && profile.palette.length === 2 && profile.negativeRules.length === 1);
+ check(
+
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 40
+Generating static pages using 3 workers (5/11) 
+  Generating static pages using 3 workers (8/11) 
+✓ Generating static pages using 3 workers (11/11) in 1085ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/episodes
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/books/[bookId]/visuals
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+Build green with the new route — running remaining gates.
+[0m$ [0mnpm.cmd run smoke:visual-generation 2>&1 | tail -n 3 && npm.cmd run smoke:images 2>&1 | tail -n 3 && npm.cmd run smoke:batch 2>&1 | tail -n 3 && npm.cmd run smoke:visual 2>&1 | tail -n 3
+PASS  Every new P8 file stays below 1000 lines
+
+50/50 checks passed
+PASS  A scene defaults to portrait 4:5
+
+6/6 checks passed
+PASS  Retry targets contain only failed children
+
+4/4 checks passed
+PASS  Reference names match without regard to case or padding
+
+10/10 checks passed
+[0m
+All gates green — verifying the diff for placement, secrets, and scope before closing out.
+[0m$ [0mgit status --short | grep -v "^ M .patches" | grep -v "docs/features/25d-schema-foundation/.run" | grep -v "docs/features/25d-schema-foundation/logs" | grep -v "loop-run-20260918"; echo "===SIZES==="; for f in src/features/book-experience/visuals/references.ts src/features/book-experience/visuals/requests.ts src/features/book-experience/visuals/assets.ts src/features/book-experience/visuals/regeneration.ts src/features/book-experience/visuals/repository.ts src/features/book-experience/visuals/index.ts src/features/book-experience/visuals/components/VisualReview.tsx src/features/visual/adapters.ts src/features/images/adapters.ts "src/app/api/books/[bookId]/visuals/route.ts" worker/visuals/generate.mts worker/visuals/batch.mts worker/image-api.mts tests/smoke/smoke-visual-generation.mts; do echo "$(wc -l < "$f") $f"; done; echo "===SECRET SCAN==="; grep -rniE "sk-|api[_-]?key|bearer |BEGIN .*PRIVATE|CLOUDFRONT_BASE_URL|OPENROUTER" src/features/book-experience/visuals/ worker/visuals/ tests/smoke/smoke-visual-generation.mts "src/app/api/books/[bookId]/visuals/route.ts" src/features/visual/adapters.ts src/features/images/adapters.ts || echo "no secrets in P8 files"
+M docs/features/25d-schema-foundation/status.md
+ M package.json
+ M worker/commentary.mts
+ M worker/image-api.mts
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? .patches/P7-new-files/
+?? .patches/P7-studio.patch
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/app/api/books/[bookId]/visuals/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/beats/
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/coverage/
+?? src/features/book-experience/story-map/
+?? src/features/book-experience/visuals/
+?? src/features/episodes/adapters.ts
+?? src/features/images/adapters.ts
+?? src/features/moment-text/grounding.ts
+?? src/features/moments/adapters.ts
+?? src/features/visual/adapters.ts
+?? tests/smoke/smoke-beats.mts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? tests/smoke/smoke-visual-generation.mts
+?? worker/beats/
+?? worker/book-model/
+?? worker/story-planning/
+?? worker/visuals/
+===SIZES===
+102 src/features/book-experience/visuals/references.ts
+122 src/features/book-experience/visuals/requests.ts
+83 src/features/book-experience/visuals/assets.ts
+52 src/features/book-experience/visuals/regeneration.ts
+137 src/features/book-experience/visuals/repository.ts
+6 src/features/book-experience/visuals/index.ts
+116 src/features/book-experience/visuals/components/VisualReview.tsx
+56 src/features/visual/adapters.ts
+35 src/features/images/adapters.ts
+132 src/app/api/books/[bookId]/visuals/route.ts
+168 worker/visuals/generate.mts
+44 worker/visuals/batch.mts
+132 worker/image-api.mts
+412 tests/smoke/smoke-visual-generation.mts
+===SECRET SCAN===
+no secrets in P8 files
+[0m
+[0m$ [0mgit diff --binary --output=.patches/P8-studio.patch && mkdir -p ".patches/P8-new-files" && for f in src/features/book-experience/visuals/references.ts src/features/book-experience/visuals/requests.ts src/features/book-experience/visuals/assets.ts src/features/book-experience/visuals/regeneration.ts src/features/book-experience/visuals/repository.ts src/features/book-experience/visuals/index.ts src/features/book-experience/visuals/components/VisualReview.tsx src/features/visual/adapters.ts src/features/images/adapters.ts "src/app/api/books/[bookId]/visuals/route.ts" worker/visuals/generate.mts worker/visuals/batch.mts tests/smoke/smoke-visual-generation.mts; do mkdir -p ".patches/P8-new-files/$(dirname "$f")" && cp "$f" ".patches/P8-new-files/$f"; done && find .patches/P8-new-files -type f | sort
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+.patches/P8-new-files/src/app/api/books/[bookId]/visuals/route.ts
+.patches/P8-new-files/src/features/book-experience/visuals/assets.ts
+.patches/P8-new-files/src/features/book-experience/visuals/components/VisualReview.tsx
+.patches/P8-new-files/src/features/book-experience/visuals/index.ts
+.patches/P8-new-files/src/features/book-experience/visuals/references.ts
+.patches/P8-new-files/src/features/book-experience/visuals/regeneration.ts
+.patches/P8-new-files/src/features/book-experience/visuals/repository.ts
+.patches/P8-new-files/src/features/book-experience/visuals/requests.ts
+.patches/P8-new-files/src/features/images/adapters.ts
+.patches/P8-new-files/src/features/visual/adapters.ts
+.patches/P8-new-files/tests/smoke/smoke-visual-generation.mts
+.patches/P8-new-files/worker/visuals/batch.mts
+.patches/P8-new-files/worker/visuals/generate.mts
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -13,9 +13,9 @@
+ | P4 | qa-pending | P3 | 2026-09-18 | lint pass; build pass (24 app routes + proxy, incl. …/jobs/approve); smoke:job-engine 23/23; smoke:operations 13/13; smoke:batch 4/4; smoke:workflow 10/10 | Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies. |
+ | P5 | qa-pending | P4 | 2026-09-18 | lint pass; build pass (25 app routes + proxy, incl. …/model); smoke:book-model 29/29; smoke:schemas 14/14; smoke:bible 8/8 | Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies. |
+ | P6 | done | P5 | 2026-09-18 | lint pass; build pass (26 routes); smoke:story-planning 31/31; smoke:episodes 18/18; smoke:moments 21/21 | AI StoryMap/Episode/Moment ranges with strict tiling, bounded repair, approval-only UI; later-episode production independent of published siblings. Patch .patches/P6-studio.patch + new-file copies. |
+ | P7 | done | P6 | 2026-09-18 | lint pass; build pass (26 routes); smoke:beats 42/42; smoke:text 10/10; smoke:posting pass; test:preview 23/23 | AI Beat planning with complete-book representation: structured quotes/dialogue/commentary, sentence grounding, verbatim offsets, reveal-safe views, semantic cameras/transitions, BeatReview with subtitles + coverage + pending-visual placeholders, no camera/text entry. Patch .patches/P7-studio.patch + new-file copies. |
+-| P8 | in-progress | P7 | — | Not run | Not started. |
++| P8 | done | P7 | 2026-09-18 | lint pass; build pass (27 routes); smoke:visual-generation 50/50; smoke:images 6/6; smoke:batch 4/4; smoke:visual 10/10 | Reference-first single/batch generation via ImageProvider + fake S3 boundary: approved visualProfile/reference versions gate scenes, one coordinate frame per composition, clean backgrounds with hidden coverage, RGBA foregrounds, honest depth bit depth, targeted regeneration reusing approved siblings by immutable key. Patch .patches/P8-studio.patch + new-file copies. |
+ | P9 | todo | P8 | — | Not run | Not started. |
+ | P10 | todo | P9 | — | Not run | Not started. |
+ | P11 | todo | P10 | — | Not run | Not started. |
+ | P12 | todo | P11 | — | Not run | Not started. |
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -22,8 +22,23 @@
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+ 
+ ## Progress log
+ 
++### 2026-09-18 — P8 done: immutable visual references and single/batch generation (unattended)
++
++- Baseline (pre-edit): P7 done, P8 row in-progress. Tracked diff was runner state only (`.patches/P4-studio.patch` regeneration, `.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `package.json` one-line P7 script, `worker/commentary.mts` P7 appendix); untracked entries were P5/P6/P7 patch artifacts, runner logs/results and landed-but-uncommitted P5/P6/P7 code plus prior-attempt `logs/P8-attempt1-002422.log` (no P8 source had landed). `new.md` untouched (still untouched after this phase). P8 work is unstaged only (tracked edits: `package.json` one-line script, `worker/image-api.mts` pure key-builder appendix; new files listed below).
++- Dependency check: P7 done permits progress. No placeholder; all P8 work is real code against fakes/fixtures. No paid generation, no live writes, no segmentation/depth/inpaint vendors, no manual upload/edit tools (ADR-008/ADR-012).
++- Read AGENTS.md plus bundled Next guide `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md` before changing Next code (new visuals route uses the documented GET/POST handler pattern with `await context.params`, matching the episodes/model routes).
++- New domain `src/features/book-experience/visuals/`: `references.ts` (AI-proposed visualProfile/reference sets, fingerprint-idempotent approvals, referenceApprovalProblem blocks scenes until every pinned reference is approved, pinReferences), `requests.ts` (assembleVisualRequest/assembleVisualBatch: prompt + negativePrompt per target kind, one shared coordinate frame 1600x2000/overscan-160 and one pinned reference-version set per composition, distinct idempotency key per attempt, 25-target batch bound), `assets.ts` (validateAsset: frame match, foreground real alpha, background hidden coverage, depth alignment + honest sourceBitDepth + near-white convention, text-free, checksummed), `regeneration.ts` (planRegeneration at asset/layer/composition scope with distinct key, regenerationPreservesSiblings), `repository.ts` (FakeVisualStore: immutable visualVersions/composition paths, idempotent per-unit charges, approve/reject generations, approvedSiblingKeys, descriptorFor), `components/VisualReview.tsx` (approved references beside candidates, multi-select generation, targeted regeneration, blockers; Approve/Generate-selected/Regenerate only — verified no textarea/text/camera/promptAddition inputs by source grep).
++- Adapters preserving internals: `src/features/visual/adapters.ts` (StyleCanon→visualProfile draft, legacy reference gating), `src/features/images/adapters.ts` (ready candidates→AssetRef without inventing depth/alpha). Thin route `src/app/api/books/[bookId]/visuals/route.ts` (GET profile/request status; POST references.approve / generate single-or-batch with approval gating / regenerate failed-only with reason; no prompt editing, ADR-003).
++- Worker `worker/visuals/`: `generate.mts` (runVisualGeneration through the configured ImageProvider shape + FakeS3Store immutable boundary, records S3 key/source/reference versions/bit depth/prompt/model/cost/continuity; approveVisualGeneration requires zero issues), `batch.mts` (runVisualBatch through the existing bounded runWithConcurrency pool). `worker/image-api.mts` gains pure `visualAssetKeyFor` (`books/{bookId}/assets/{assetVersionId}/{role}.{ext}`, plan 4); live upload transport untouched. `worker/image-batch.mts` intentionally untouched — reused via the pool, proven by the still-green smoke:batch gate. Every new file <1000 lines (largest: smoke 412); plan.md, prompts.md, CONTEXT.md untouched; no new dependencies; no secrets in new files.
++- Test seam `tests/smoke/smoke-visual-generation.mts` 50/50 (prior art: smoke-image-prompt/batch/visual-system PASS style). Fixture: approved ch_mara + loc_harbor references, one background + one foreground + one depth target in composition cmp_harbor_v1. Covers pinning/shared frame, batch/shared path, approval-gating of premature scenes, immutable S3 keys/charges, batch failure isolation + failed-only retry, all eight validation negatives plus honest-16-bit-container acceptance, clean-approve/dirty-block, foreground reject → layer-scope regeneration with approved background byte-identical, reference-change flagging with pinned provenance retained, key shape, legacy adapters, UI input-absence, route gating, file sizes. One gate repair: removed a non-existent `lens` field from the StyleCanon fixture (build type-check) and expanded a TS parameter property (strip-types) — behavior unchanged.
++- Gates (all green): lint pass; build pass (route table 26→27 with …/visuals); smoke:visual-generation 50/50; smoke:images 6/6; smoke:batch 4/4; smoke:visual 10/10. Evidence: "PASS Only the affected target regenerates" and "PASS Approved assets remain unchanged during sibling regeneration" and "PASS Reference approval blocks premature scene generation" — an approved background keeps its exact S3 key/checksum while a rejected foreground regenerates alone, and unapproved references block scene requests.
++- Demoable outcome met locally: VisualReview exposes approved references beside generated candidates with Generate-selected and per-target Regenerate actions; the smoke run approves consistent references, generates one target plus a batch, rejects a foreground asset and regenerates only it. Owner QA (one-line spot check, local only): render VisualReview with approved ch_mara/loc_harbor references, generate bg-harbor alone then fg-mara + depth-harbor as a batch, reject the foreground, regenerate it and confirm the background key/checksum never changed — all covered by the green smoke; real-model asset quality remains P13/D-1 owner QA.
++- Patch: `.patches/P8-studio.patch` (tracked binary diff) plus new-file copies under `.patches/P8-new-files/`. No staging, no commit (suggested message below), no deploy, no live writes.
++- Suggested commit message: `P8: reference-first visual generation with single/batch selection and targeted regeneration`.
++- Out of scope (logged, not fixed): legacy visual/images stores, routes and UIs still serve the old styleCanon/one-image model until P9–P12 migrate them; non-gate suites not re-run; smoke-e2e/smoke-formats remain forbidden as autonomous gates per Scaffold deferred.
++
+ ### 2026-09-18 — P7 done: AI Beat planning and complete-book representation (unattended)
+ 
+ - Baseline (pre-edit): P6 done, P7 row in-progress. Tracked diff was runner state only (`.patches/P4-studio.patch` regeneration, `.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `package.json` one-line P6 script); untracked entries were P5/P6 patch artifacts, runner logs/results and landed-but-uncommitted P5/P6 code (`src/app/api/books/[bookId]/episodes|model/`, `book-experience/book-model|story-map/`, `worker/book-model|story-planning/`, smoke-book-model/story-planning, adapters). `new.md` untouched (still untouched after this phase). P7 work is unstaged only (tracked edits: `package.json` one-line script, `worker/commentary.mts` pure verifier appendix; new files listed below).
+ - Dependency check: P6 done permits progress. No placeholder; all P7 work is real code against fakes/fixtures. No paid planning calls, no live writes, no camera/text entry by the owner (ADR-003).
+
+[0m
+[0m✗ [0mEdit docs/features/25d-schema-foundation/status.md failed
+[91m[1mError: [0mFound multiple matches for oldString. Provide more surrounding context to make the match unique.
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -224,5 +224,6 @@
+ - [P6 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Intentional plan-10 change (legacy p000001/intended-overlap/many-to-many → canonical p000000 strict tiling) applied via adapters with retained internals and recorded reasons. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book planning quality is P13 owner QA. No new architectural decision proposed.
+ - [loop] P6 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:story-planning && npm.cmd run smoke:episodes && npm.cmd run smoke:moments
+ - [P7 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. One test-authoring correction (seq-gating check gated out every entity instead of expecting an allowed entity to vanish); no behavior change. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book beat quality is P13 owner QA. No new architectural decision proposed.
+ - [loop] P7 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:beats && npm.cmd run smoke:text && npm.cmd run smoke:posting && npm.cmd run test:preview
+-- [loop] P7 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:beats && npm.cmd run smoke:text && npm.cmd run smoke:posting && npm.cmd run test:preview
++- [P8 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Gate repairs only: removed a non-existent `lens` field from the StyleCanon smoke fixture (build type-check) and expanded a TS parameter property the strip-types runner cannot parse (same class as the P4 fix). Live image generation, S3 writes and paid model calls deliberately not exercised; fakes/local fixtures only. Real-model alpha/depth/continuity quality is P13/D-1 owner QA. No new architectural decision proposed.
++- [loop] P8 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:visual-generation && npm.cmd run smoke:images && npm.cmd run smoke:batch && npm.cmd run smoke:visual
+
+[0m
+[0m$ [0mgit diff --binary --output=.patches/P8-studio.patch && git status --short | grep -v "docs/features/25d-schema-foundation/.run" | grep -v "docs/features/25d-schema-foundation/logs" | grep -v "loop-run-20260918"
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+ M worker/commentary.mts
+ M worker/image-api.mts
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? .patches/P7-new-files/
+?? .patches/P7-studio.patch
+?? .patches/P8-new-files/
+?? .patches/P8-studio.patch
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/app/api/books/[bookId]/visuals/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/beats/
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/coverage/
+?? src/features/book-experience/story-map/
+?? src/features/book-experience/visuals/
+?? src/features/episodes/adapters.ts
+?? src/features/images/adapters.ts
+?? src/features/moment-text/grounding.ts
+?? src/features/moments/adapters.ts
+?? src/features/visual/adapters.ts
+?? tests/smoke/smoke-beats.mts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? tests/smoke/smoke-visual-generation.mts
+?? worker/beats/
+?? worker/book-model/
+?? worker/story-planning/
+?? worker/visuals/
+[0m
+[0m# [0mTodos
+[✓] Write src/features/book-experience/visuals/ domain (references, requests, assets, regeneration, repository, index)
+[✓] Write VisualReview component + visual/images adapters + visuals route
+[✓] Write worker/visuals/ + image-api key helper
+[✓] Write smoke:visual-generation test + package script
+[✓] Run gates: lint, build, smoke:visual-generation, smoke:images, smoke:batch, smoke:visual
+[✓] Save patches + update status.md
+[0m
+P8 complete — state `done`. Stopping here; no orchestration launched, nothing committed.
+
+**Note on paths:** `C:/Users/800sa/studio` does not exist on this machine. The actual repo (`C:\Users\LENOVO\bookward-dashbaord`, containing the feature docs) was used instead; plan/CONTEXT vocabulary unchanged.
+
+**What landed (all real code, fakes/fixtures only):**
+- `src/features/book-experience/visuals/` — `references.ts` (approval-gated pinning), `requests.ts` (single/batch assembly, one coordinate frame per composition, 25-target bound), `assets.ts` (alpha/coverage/bit-depth/text validation), `regeneration.ts` (targeted plans reusing approved siblings), `repository.ts` (FakeVisualStore with immutable keys, idempotent costs), `components/VisualReview.tsx` (approve / generate-selected / regenerate only)
+- `src/features/visual/adapters.ts`, `src/features/images/adapters.ts` — legacy mapping, internals preserved
+- `src/app/api/books/[bookId]/visuals/route.ts` — thin approve/generate/regenerate adapter with reference gating
+- `worker/visuals/generate.mts` + `batch.mts` — ImageProvider + fake S3 boundary + existing bounded pool; `worker/image-api.mts` gained pure `visualAssetKeyFor`; `worker/image-batch.mts` untouched by design
+- `tests/smoke/smoke-visual-generation.mts` + `smoke:visual-generation` script
+
+**Gates (all green):** lint pass; build pass (26→27 routes, +…/visuals); smoke:visual-generation 50/50; smoke:images 6/6; smoke:batch 4/4; smoke:visual 10/10.
+
+**Evidence:** "PASS Only the affected target regenerates" + "PASS Approved assets remain unchanged during sibling regeneration" + "PASS Reference approval blocks premature scene generation" — approved background kept its exact S3 key/checksum while a rejected foreground regenerated alone.
+
+**Artifacts:** `.patches/P8-studio.patch` + `.patches/P8-new-files/` (13 files); status.md P8 row → done with Progress log and Deferred entries; `new.md` untouched; every file <1000 lines; no secrets; no scope creep.
+
+**Suggested commit message (not committed):** `P8: reference-first visual generation with single/batch selection and targeted regeneration`

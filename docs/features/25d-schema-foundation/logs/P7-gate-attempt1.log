@@ -1,0 +1,189 @@
+
+> editorial-studio@0.1.0 lint
+> eslint
+
+
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 101ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.1s
+  Running TypeScript ...
+  Finished TypeScript in 14.1s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/11) ...
+  Generating static pages using 3 workers (2/11) 
+  Generating static pages using 3 workers (5/11) 
+  Generating static pages using 3 workers (8/11) 
+✓ Generating static pages using 3 workers (11/11) in 1097ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/episodes
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> editorial-studio@0.1.0 smoke:beats
+> node --experimental-strip-types tests/smoke/smoke-beats.mts
+
+(node:8368) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8368) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/beats/build.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  Beats preserve source order with contiguous 1-based order
+PASS  Beat IDs follow ep_01_m01_b01 naming
+PASS  A ~120-word passage splits into two ordered quote Beats
+PASS  Split quotes drop no content
+PASS  splitLongText keeps short text whole
+PASS  Internal thought survives in subtitle commentary
+PASS  Subtitle HTML carries the internal meaning escaped
+PASS  Every Beat subtitle renders readable text
+PASS  Quotes match source offsets character-for-character
+PASS  A one-character dialogue mutation fails verbatim
+PASS  Empty offsets throw an actionable error
+PASS  Valid plan passes representation review
+PASS  Arbitrary ID tagging is rejected
+PASS  Missing paragraph coverage names p000004
+PASS  Internal meaning with no subtitle text is rejected
+PASS  Source-order violations are rejected
+PASS  Future identity stays hidden before its seq
+PASS  True identity resolves at its reveal seq
+PASS  Entities gate by Beat seq
+PASS  Gated entities resolve a focus target when allowed
+PASS  AI supplies every camera pose with finite intent and zoom >= 1
+PASS  First Beat cuts in; later Beats carry typed transitions
+PASS  Each Beat names exactly one composition
+PASS  Every built Beat parses through the canonical Zod contract
+PASS  Commentary splits into verifiable sentences
+PASS  Grounded commentary verifies
+PASS  Ungrounded sentences fail verification
+PASS  Future identities stay out of commentary
+PASS  Worker commentary verifier grounds sentences
+PASS  Worker commentary verifier blocks future leaks
+PASS  Worker plans Beats through the fake proposer
+PASS  Beat approval is idempotent per fingerprint
+PASS  Beat planning requires approved Moment ranges
+PASS  Corrections invalidate dependent Beat drafts
+PASS  Coverage review links every story paragraph to a Beat
+PASS  Non-story material stays outside story coverage
+PASS  Complete coverage approves
+PASS  Malformed coverage blocks approval
+PASS  Fixture preview reuses Beats with readable subtitles
+PASS  Beat review shows pending-visual placeholders
+PASS  Beat review approves without camera or text entry
+PASS  Every new P7 file stays below 1000 lines
+
+42/42 checks passed
+
+> editorial-studio@0.1.0 smoke:text
+> node --experimental-strip-types tests/smoke/smoke-moment-text.mts
+
+(node:17288) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Exact selection preserves punctuation character-for-character
+PASS  Stored exact text revalidates
+PASS  A one-character mismatch is blocked
+PASS  Cross-paragraph selections use the recorded canonical separator
+PASS  A commentary requires evidence
+PASS  Competing primary text types are blocked
+PASS  A default span covers the whole mapped run
+PASS  A default span stops at the first gap in the mapping
+PASS  An unmapped Story Moment has no default span
+PASS  An empty paragraph yields no default span
+
+10/10 checks passed
+
+> editorial-studio@0.1.0 smoke:posting
+> node --experimental-strip-types tests/smoke/smoke-posting.mts && node tests/smoke/smoke-firestore-rules.mjs
+
+(node:16632) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  A complete Story Moment passes
+PASS  Invalid source mapping blocks
+PASS  Exact mismatch blocks
+PASS  Missing primary text blocks
+PASS  Inaccessible image blocks
+PASS  Stale image blocks
+PASS  Continuity conflict blocks
+PASS  Early reveal blocks
+PASS  Invalid hotspot target blocks
+PASS  Invalid hotspot coordinates block
+PASS  Warnings do not become blockers
+
+11/11 checks passed
+PASS  canonical episodes require live=true for Reader access
+PASS  canonical Story Moments require live=true for Reader access
+PASS  replacement versions remain editor-only
+PASS  all other book descendants remain editor-only
+PASS  clients cannot write canonical or internal data
+
+5/5 checks passed
+
+> editorial-studio@0.1.0 test:preview
+> node --experimental-strip-types tests/book-experience/preview-check.mts
+
+(node:5848) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5848) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/functions/compileBundle.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  Fixture compiles to an EpisodeBundle with 3 Beats
+PASS  Every Beat resolves finite frames with HTML subtitles
+PASS  Preview endpoint is fixture-scoped
+PASS  Preview endpoint performs no cloud writes
+PASS  Player exposes control "scope-episode"
+PASS  Player exposes control "scope-moment"
+PASS  Player exposes control "scope-beat"
+PASS  Player exposes control "play"
+PASS  Player exposes control "pause"
+PASS  Player exposes control "scrub"
+PASS  Player exposes control "next"
+PASS  Player exposes control "previous"
+PASS  Player exposes control "fallback-toggle"
+PASS  Player exposes control "subtitle"
+PASS  Player exposes control "provenance"
+PASS  Player has no camera authoring input
+PASS  WebGL stage renders one runtime depthMesh
+PASS  CSS fallback renders flat parallax layers
+PASS  Required file exists: src/app/studio/preview/page.tsx
+PASS  Required file exists: src/app/api/studio/preview/route.ts
+PASS  Required file exists: tests/book-experience/preview.spec.ts
+PASS  Required file exists: playwright.config.ts
+PASS  Every new feature file stays below 1000 lines
+
+23/23 checks passed

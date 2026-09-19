@@ -1,0 +1,273 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+Starting P4 — mapping the job-engine scope before touching code.
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md[90m [offset=504][0m
+[0m→ [0mRead package.json
+[0m→ [0mRead worker/index.mts
+[0m→ [0mRead src/features/book-experience/schemas/jobs.ts
+[0m
+[0m$ [0mgit status --short | head -n 100; echo "---TRACKED-DIFF-STAT---"; git diff --stat | tail -n 30
+A  .patches/P3-new-files/src/app/api/books/[bookId]/sources/[sourceId]/canonical/route.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/jobs.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/model.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/planning.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/publishing.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/source.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/canonical.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/codecs.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/hash.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/index.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/paths.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/repository.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/review.ts
+A  .patches/P3-new-files/tests/smoke/smoke-canonical.mts
+A  .patches/P3-studio.patch
+A  docs/features/25d-schema-foundation/.run/P3.result
+M  docs/features/25d-schema-foundation/.run/inflight
+A  docs/features/25d-schema-foundation/.run/settled.P3
+M  docs/features/25d-schema-foundation/logs/P3-attempt1-181548.log
+A  docs/features/25d-schema-foundation/logs/P3-gate-attempt1.log
+AM docs/features/25d-schema-foundation/logs/P4-attempt1-184139.log
+M  docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+M  docs/features/25d-schema-foundation/status.md
+M  src/app/api/books/[bookId]/sources/[sourceId]/canonical/route.ts
+M  src/features/book-experience/schemas/planning.ts
+M  tests/smoke/smoke-workflow-contract.mjs
+---TRACKED-DIFF-STAT---
+ docs/features/25d-schema-foundation/logs/P4-attempt1-184139.log | 4 ++++
+ 1 file changed, 4 insertions(+)
+[0m
+Baseline is green on deps — now digging into the legacy job queue to design the new engine.
+[0m→ [0mRead src/features/jobs
+[0m→ [0mRead worker/jobs
+[0m→ [0mRead src/features/book-experience
+[0m→ [0mRead tests/smoke/smoke-operations.mts
+[0m→ [0mRead tests/smoke/smoke-image-batch.mts
+[0m→ [0mRead worker/jobs/queue.mts
+[0m→ [0mRead src/features/jobs/types.ts
+[0m→ [0mRead worker/jobs/job-store.mts
+[0m→ [0mRead src/features/jobs/store.ts
+[0m→ [0mRead src/app/api/books
+[0m→ [0mRead worker/costs.mts
+[0m→ [0mRead worker/jobs/dispatch.mts
+[0m→ [0mRead worker/openrouter.mts
+[0m→ [0mRead tests/smoke/smoke-schemas.mts
+[0m→ [0mRead src/app/api/books/[bookId]
+[0m→ [0mRead worker/image-batch-pool.mts
+[0m→ [0mRead worker/jobs/recovery.mts
+[0m→ [0mRead src/features/book-experience/schemas/primitives.ts
+[0m→ [0mRead src/app/api/books/[bookId]/jobs
+[0m→ [0mRead worker/image-api.mts
+[0m
+[0m$ [0mls src/app/api/books/\[bookId\]/jobs/ 2>&1; echo "---"; ls worker/ 2>&1; echo "---"; ls src/features/book-experience/storage/ 2>&1
+route.ts
+---
+ai-proposal.mts
+ai-resolve.mts
+bible-analyze.mts
+bible-merge.mts
+bible-synthesize.mts
+commentary.mts
+costs.mts
+episode-map.mts
+epub.mts
+extraction.mts
+image-api.mts
+image-batch.mts
+image-batch-pool.mts
+image-prompt.mts
+index.mts
+ingest.mts
+jobs
+moment-images.mts
+moment-merge.mts
+openrouter.mts
+pdf-assemble.mts
+pdf-lines.mts
+pdf-scan.mts
+pdf-text.mts
+reference-images.mts
+story-moments.mts
+style-canon.mts
+---
+canonical.ts
+codecs.ts
+hash.ts
+index.ts
+paths.ts
+repository.ts
+review.ts
+[0m
+[0m→ [0mRead src/features/book-experience/storage/repository.ts
+[0m→ [0mRead docs/features/25d-schema-foundation/logs/P4-attempt1-184139.log
+[0m→ [0mRead src/app/api/books/[bookId]/jobs/route.ts
+First attempt stalled during exploration — now building the durable job documents, leases, and provider wrappers.
+[0m→ [0mRead tests/smoke/smoke-canonical.mts[90m [limit=60][0m
+[0m→ [0mRead src/features/book-experience/storage/review.ts
+[0m→ [0mRead src/app/api/books/[bookId]/sources/[sourceId]/approve/route.ts
+[0m
+[0m# [0mTodos
+[•] Baseline + read Next dynamic-routes guide and export patterns
+[ ] Create src/features/book-experience/jobs/ engine/providers/costs/pipeline
+[ ] Create worker/providers/ + worker/jobs/leases+orchestrate, adapters, approve route
+[ ] Add smoke:job-engine + package script
+[ ] Run gates (lint/build/job-engine/operations/batch/workflow)
+[ ] Update status.md, save patches, verify diff
+[0m
+[0m✱ [0mGlob "**/dynamic-routes*"[90m in node_modules/next/dist/docs · 1 match[0m
+[0m→ [0mRead src/features/book-experience/storage/index.ts
+[0m
+[0m$ [0mgit status --short | head -n 60; echo "---UNTRACKED-NEW-MD---"; ls new.md 2>&1; echo "---DIFFSTAT---"; git diff --stat | tail -n 10
+A  .patches/P3-new-files/src/app/api/books/[bookId]/sources/[sourceId]/canonical/route.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/jobs.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/model.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/planning.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/publishing.ts
+A  .patches/P3-new-files/src/features/book-experience/schemas/source.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/canonical.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/codecs.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/hash.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/index.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/paths.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/repository.ts
+A  .patches/P3-new-files/src/features/book-experience/storage/review.ts
+A  .patches/P3-new-files/tests/smoke/smoke-canonical.mts
+A  .patches/P3-studio.patch
+A  docs/features/25d-schema-foundation/.run/P3.result
+M  docs/features/25d-schema-foundation/.run/inflight
+A  docs/features/25d-schema-foundation/.run/settled.P3
+M  docs/features/25d-schema-foundation/logs/P3-attempt1-181548.log
+A  docs/features/25d-schema-foundation/logs/P3-gate-attempt1.log
+AM docs/features/25d-schema-foundation/logs/P4-attempt1-184139.log
+M  docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+M  docs/features/25d-schema-foundation/status.md
+M  src/app/api/books/[bookId]/sources/[sourceId]/canonical/route.ts
+M  src/features/book-experience/schemas/planning.ts
+M  tests/smoke/smoke-workflow-contract.mjs
+---UNTRACKED-NEW-MD---
+new.md
+---DIFFSTAT---
+warning: in the working copy of 'docs/features/25d-schema-foundation/logs/P4-attempt1-184139.log', LF will be replaced by CRLF the next time Git touches it
+ .../logs/P4-attempt1-184139.log                    | 114 +++++++++++++++++++++
+ 1 file changed, 114 insertions(+)
+[0m
+[0m→ [0mRead node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.md[90m [limit=80][0m
+[0m
+[0m# [0mTodos
+[✓] Baseline + read Next dynamic-routes guide and export patterns
+[•] Create src/features/book-experience/jobs/ engine/providers/costs/pipeline
+[ ] Create worker/providers/ + worker/jobs/leases+orchestrate, adapters, approve route
+[ ] Add smoke:job-engine + package script
+[ ] Run gates (lint/build/job-engine/operations/batch/workflow)
+[ ] Update status.md, save patches, verify diff
+[0m
+[0m← [0mWrite src/features/book-experience/jobs/engine.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/jobs/providers.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/jobs/costs.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/jobs/pipeline.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/jobs/index.ts
+Wrote file successfully.
+[0m
+Core engine done — now the provider wrappers and Firestore lease helpers.
+[0m# [0mTodos
+[✓] Baseline + read Next dynamic-routes guide and export patterns
+[✓] Create src/features/book-experience/jobs/ engine/providers/costs/pipeline
+[•] Create worker/providers/ + worker/jobs/leases+orchestrate, adapters, approve route
+[ ] Add smoke:job-engine + package script
+[ ] Run gates (lint/build/job-engine/operations/batch/workflow)
+[ ] Update status.md, save patches, verify diff
+[0m
+[0m← [0mWrite worker/providers/llm.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/providers/images.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/providers/index.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/jobs/leases.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/jobs/orchestrate.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/jobs/adapters.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/app/api/books/[bookId]/jobs/approve/route.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/app/api/books/[bookId]/jobs/approve/route.ts
+Index: C:\Users\800sa\studio\src\app\api\books\[bookId]\jobs\approve\route.ts
+===================================================================
+--- C:\Users\800sa\studio\src\app\api\books\[bookId]\jobs\approve\route.ts
++++ C:\Users\800sa\studio\src\app\api\books\[bookId]\jobs\approve\route.ts
+@@ -4,8 +4,10 @@
+ import { getSession } from '@/features/auth/session';
+ import { adminDb } from '@/services/firebase/admin';
+ import { COLLECTIONS } from '@/features/jobs/types';
+ 
++const CANONICAL_JOBS = 'jobs';
++
+ // Approval-driven pipeline advancement on the canonical one-document-per-job
+ // path (plan sections 4/6, ADR-003/ADR-006). Approving a completed planning
+ // checkpoint enqueues exactly one successor — the next eligible AI planning
+ // step — and never starts visual generation, which requires an explicit
+
+[0m
+[0m← [0mEdit src/app/api/books/[bookId]/jobs/approve/route.ts
+Index: C:\Users\800sa\studio\src\app\api\books\[bookId]\jobs\approve\route.ts
+===================================================================
+--- C:\Users\800sa\studio\src\app\api\books\[bookId]\jobs\approve\route.ts
++++ C:\Users\800sa\studio\src\app\api\books\[bookId]\jobs\approve\route.ts
+@@ -153,10 +153,8 @@
+     throw error;
+   }
+ }
+ 
+-const CANONICAL_JOBS = 'jobs';
+-
+ class ApprovalConflict extends Error {
+   readonly code: string;
+   constructor(code: string, message: string) {
+     super(message);
+
+[0m
+Routes and adapters in place — now the fake-seam smoke test.
+[0m← [0mEdit src/features/jobs/adapters.ts
+Index: C:\Users\800sa\studio\src\features\jobs\adapters.ts
+===================================================================
+--- C:\Users\800sa\studio\src\features\jobs\adapters.ts
++++ C:\Users\800sa\studio\src\features\jobs\adapters.ts
+@@ -3,9 +3,9 @@
+ // New code uses `books/{bookId}/jobs/{jobId}` individual documents with
+ // transactional leases; existing callers keep the map until P12 contracts
+ // these adapters. No behavior of src/features/jobs/store.ts changes here.
+ 
+-import type { Job as LegacyJob, JobStatus as LegacyStatus } from "@/features/jobs/types";
++import type { Job as LegacyJob, JobStatus as LegacyStatus } from "./types";
+ 
+ export const CANONICAL_JOBS_COLLECTION = "jobs";
+ 
+ export function canonicalJobDocPath(bookId: string, jobId: string): string {
+
+[0m
+[0m← [0mWrite tests/smoke/smoke-job-engine.mts
+Wrote file successfully.
+[0m
+[0m→ [0mRead package.json[90m [limit=30][0m
+[91m[1mError: [0mError from provider (Console): Rate limit exceeded. Please try again later.

@@ -1,0 +1,56 @@
+LOOP: 25d-schema-foundation — agent=openrouter, up to 1 phase(s) in flight (mode=waves, waves from prompts.md, strict_deps=0, at_keyboard=attempt, force_forward=1)
+LOOP: phase P0 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log)
+LOOP: dispatched P0  (in flight: P0 )
+  P0 agent| **Records:** `status.md` P0 row + Progress log updated; `.patches/P0-studio.patch` (96KB, this phase's paths only) + `.patches/P0-new-files/` copies saved. plan/prompts/CONTEXT/`new.md` untouched; no secrets; no new dependencies; nothing committed.
+  P0 agent| 
+  P0 agent| **Note:** the loop runner concurrently staged working-tree files via `git add` — I left the index alone and scoped the patch with explicit paths. Suggested commit message recorded in status.md: `P0: behavior-neutral split of image studio and worker queue helpers`.
+LOOP: P0 waiting for the gate lock → npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:workflow && npm.cmd run smoke:ui && npm.cmd run smoke:operations
+LOOP: P0 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:workflow && npm.cmd run smoke:ui && npm.cmd run smoke:operations
+LOOP: P0 finished — done
+LOOP: dispatched P1  (in flight: P1 )
+LOOP: phase P1 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P1-attempt1-171139.log)
+  P1 agent| **Artifacts** — `status.md` P1 row set to qa-pending with dated log, owner steps, and Deferred note; tracked patch `.patches/P1-studio.patch` + new-file copies under `.patches/P1-new-files/`. Suggested commit message: `P1: development access without sign-in via trusted server auth mode`.
+  P1 agent| 
+  P1 agent| **Owner steps remain** (in status.md Notes): configure local dev Firebase identity/credentials; fresh-browser dev access check; production-with-flag rejection check (expect 404 on dev-token); authenticated production isolation check.
+LOOP: P1 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: unified server auth mode, dev-only auto browser identity, bypass-aware readiness, sign-out hidden when bypassed, production forced even with flag. Owner must verify fresh-browser dev access and production rejection (steps in Progress log); live identity issuance never exercised. Patch .patches/P1-studio.patch + new-file copies.
+LOOP: P1 finished — qa-pending (counts as complete)
+LOOP: phase P2 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P2-attempt1-172306.log)
+LOOP: dispatched P2  (in flight: P2 )
+  P2 agent| /usr/bin/bash: line 1: kill: %1: no such job
+  P2 agent| 200
+  P2 agent| [0m
+LOOP: P2 watchdog timeout after 2700s (attempt 1)
+LOOP: retrying P2 with failure evidence (retry 1 of 1)
+LOOP: phase P2 attempt 2 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P2-attempt2-180808.log)
+  P2 agent| Suggested commit message: `P2: deterministic 2.5D scene proof with schemas, local preview and browser prior art`.
+  P2 agent| 
+  P2 agent| Stopping here — no loop.sh, no further orchestration.
+LOOP: P2 waiting for the gate lock → npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:schemas && npm.cmd run test:preview
+LOOP: P2 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:schemas && npm.cmd run test:preview
+LOOP: P2 finished — done
+LOOP: phase P3 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P3-attempt1-181548.log)
+LOOP: dispatched P3  (in flight: P3 )
+  P3 agent| **Evidence**: `PASS Correction keeps history and marks dependent drafts outdated` + `PASS Old published bundles remain unchanged after correction` — fixture source approves into immutable canonical text, every paragraph traceable, correction marks drafts outdated.
+  P3 agent| 
+  P3 agent| **Artifacts**: `.patches/P3-studio.patch` + `.patches/P3-new-files/` copies; status.md P3 row done with gate results and QA notes. Suggested commit message: `P3: canonical source schemas, storage codecs and approval slice`. No commit, no live writes, no secrets; plan.md/prompts.md/CONTEXT.md/new.md untouched.
+LOOP: P3 waiting for the gate lock → npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:schemas && npm.cmd run smoke:canonical && npm.cmd run smoke:pdf && npm.cmd run smoke:uncertainties
+LOOP: P3 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:schemas && npm.cmd run smoke:canonical && npm.cmd run smoke:pdf && npm.cmd run smoke:uncertainties
+LOOP: P3 finished — done
+LOOP: dispatched P4  (in flight: P4 )
+LOOP: phase P4 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P4-attempt1-184139.log)
+  P4 agent| [0m
+  P4 agent| [0m→ [0mRead package.json[90m [limit=30][0m
+  P4 agent| [91m[1mError: [0mError from provider (Console): Rate limit exceeded. Please try again later.
+LOOP: rate/usage limit detected — fleet paused 30m (all loops resume automatically)
+LOOP: pause expired — resuming
+LOOP: phase P4 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P4-attempt1-192346.log)
+  P4 agent| > build · muse-spark-1.3-contributor-free
+  P4 agent| [0m
+  P4 agent| [91m[1mError: [0mError from provider (Console): Rate limit exceeded. Please try again later.
+LOOP: rate/usage limit detected — fleet paused 30m (all loops resume automatically)
+LOOP: pause expired — resuming
+LOOP: phase P4 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/800sa/studio/docs/features/25d-schema-foundation/logs/P4-attempt1-195536.log)
+  P4 agent| > build · muse-spark-1.3-contributor-free
+  P4 agent| [0m
+  P4 agent| [91m[1mError: [0mError from provider (Console): Rate limit exceeded. Please try again later.
+LOOP: rate/usage limit detected — fleet paused 30m (all loops resume automatically)

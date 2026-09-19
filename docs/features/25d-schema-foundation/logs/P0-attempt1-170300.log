@@ -1,0 +1,939 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+Doing P0 studio baseline and split — reading plan and status first.
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead package.json
+[0m→ [0mRead docs/features/25d-schema-foundation/prompts.md
+[0m
+[0m$ [0mgit status --porcelain=v1 | head -n 100; echo "---TRACKED-DIFF-STAT---"; git diff --stat; echo "---UNTRACKED-LIST---"; git ls-files --others --exclude-standard | head -n 50
+M docs/features/25d-schema-foundation/status.md
+?? docs/features/25d-schema-foundation/.run/
+?? docs/features/25d-schema-foundation/.runinfo
+?? docs/features/25d-schema-foundation/logs/
+?? docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+---TRACKED-DIFF-STAT---
+ docs/features/25d-schema-foundation/status.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---UNTRACKED-LIST---
+docs/features/25d-schema-foundation/.run/inflight
+docs/features/25d-schema-foundation/.runinfo
+docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log
+docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+[0m
+[0m$ [0mgit diff docs/features/25d-schema-foundation/status.md; echo "---"; ls src/features/images/ 2>&1; echo "---"; ls worker/ 2>&1; echo "---"; ls tests/smoke/ 2>&1
+diff --git a/docs/features/25d-schema-foundation/status.md b/docs/features/25d-schema-foundation/status.md
+index c78770b..ca3a624 100644
+--- a/docs/features/25d-schema-foundation/status.md
++++ b/docs/features/25d-schema-foundation/status.md
+@@ -6,7 +6,7 @@ Plan: [plan.md](plan.md) · Prompts: [prompts.md](prompts.md)
+ 
+ | Phase | State | Depends on | Date | Gates | Notes |
+ |---|---|---|---|---|---|
+-| P0 | todo | — | — | Not run | Not started. |
++| P0 | in-progress | — | — | Not run | Not started. |
+ | P1 | todo | P0 | — | Not run | Development auth change deferred to build by owner. |
+ | P2 | todo | P1 | — | Not run | Not started. |
+ | P3 | todo | P2 | — | Not run | Not started. |
+---
+components
+store.ts
+types.ts
+---
+ai-proposal.mts
+ai-resolve.mts
+bible-analyze.mts
+bible-merge.mts
+bible-synthesize.mts
+commentary.mts
+costs.mts
+episode-map.mts
+epub.mts
+extraction.mts
+image-api.mts
+image-batch.mts
+image-batch-pool.mts
+image-prompt.mts
+index.mts
+ingest.mts
+moment-images.mts
+moment-merge.mts
+openrouter.mts
+pdf-assemble.mts
+pdf-lines.mts
+pdf-scan.mts
+pdf-text.mts
+reference-images.mts
+story-moments.mts
+style-canon.mts
+---
+smoke-ai-proposals.mts
+smoke-bible.mts
+smoke-completion.mts
+smoke-e2e.mts
+smoke-editorial-ui.mjs
+smoke-episode-map.mts
+smoke-firestore-rules.mjs
+smoke-fixtures.mts
+smoke-formats.mts
+smoke-image-batch.mts
+smoke-image-prompt.mts
+smoke-moments.mts
+smoke-moment-text.mts
+smoke-operations.mts
+smoke-pdf-cleaning.mts
+smoke-posting.mts
+smoke-visual-system.mts
+smoke-workflow-contract.mjs
+[0m
+[0m$ [0mls src/features/images/components/ 2>&1; echo "---"; wc -l src/features/images/components/* worker/index.mts 2>&1; echo "---"; ls src/features/jobs/ 2>&1; ls src/app/api/jobs/ 2>&1
+image-preview.tsx
+image-studio.tsx
+moment-images.tsx
+---
+   56 src/features/images/components/image-preview.tsx
+  916 src/features/images/components/image-studio.tsx
+  163 src/features/images/components/moment-images.tsx
+  635 worker/index.mts
+ 1770 total
+---
+components
+mappers.ts
+store.ts
+types.ts
+route.ts
+[0m
+[0m→ [0mRead worker/index.mts
+[0m→ [0mRead tests/smoke/smoke-operations.mts
+[0m→ [0mRead tests/smoke/smoke-editorial-ui.mjs
+[0m→ [0mRead src/features/images/components/image-studio.tsx
+Baseline context gathered. Now inspecting modules and running baseline checks.
+[0m
+[0m# [0mTodos
+[•] Record baseline + inspect modules/smoke/Next guide
+[ ] Run baseline gates (lint/build/smoke workflow,ui,operations)
+[ ] Split image-studio into focused components (no behavior change)
+[ ] Extract worker queue/dispatch helpers (no behavior change)
+[ ] Adapt source-string tests, verify gates + diff + status + patches
+[0m
+[0m→ [0mRead src/features/images/components/image-preview.tsx
+[0m→ [0mRead src/features/images/components/moment-images.tsx
+[0m→ [0mRead tests/smoke/smoke-workflow-contract.mjs
+[0m→ [0mRead worker/costs.mts
+[0m→ [0mRead src/features/jobs/types.ts
+[0m
+[0m$ [0mls "node_modules/next/dist/docs" 2>&1 | head -n 50; echo "---"; grep -rn "image-studio" src tests --include="*.tsx" --include="*.ts" --include="*.mjs" --include="*.mts" 2>&1 | head -n 20
+01-app
+02-pages
+03-architecture
+04-community
+index.md
+---
+src/features/sources/components/extraction-editor.tsx:10:import ImageStudio from "@/features/images/components/image-studio";
+[0m
+[0m→ [0mRead src/features/jobs/store.ts[90m [limit=80][0m
+[0m
+[0m$ [0mls "node_modules/next/dist/docs/01-app" 2>&1 | head -n 40
+01-getting-started
+02-guides
+03-api-reference
+04-glossary.md
+index.md
+[0m
+[0m→ [0mRead node_modules/next/dist/docs/01-app/02-guides/index.md[90m [limit=60][0m
+[0m
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 20
+> editorial-studio@0.1.0 lint
+> eslint
+[0m
+[0m$ [0mls "node_modules/next/dist/docs/01-app/02-guides" 2>&1; echo "---"; ls "node_modules/next/dist/docs/01-app/01-getting-started" 2>&1
+adopting-partial-prefetching.md
+ai-agents.md
+analytics.md
+authentication.md
+backend-for-frontend.md
+building.md
+caching-without-cache-components.md
+cdn-caching.md
+ci-build-caching.md
+content-security-policy.md
+css-in-js.md
+custom-server.md
+data-security.md
+debugging.md
+deploying-to-platforms.md
+draft-mode.md
+environment-variables.md
+forms.md
+how-revalidation-works.md
+incremental-static-regeneration.md
+incremental-static-regeneration-cache-components.md
+index.md
+instant-navigation.md
+instrumentation.md
+interactive-apps.md
+internationalization.md
+json-ld.md
+lazy-loading.md
+local-development.md
+mcp.md
+mdx.md
+memory-usage.md
+migrating
+migrating-to-cache-components.md
+multi-tenant.md
+multi-zones.md
+offline-support.md
+open-telemetry.md
+package-bundling.md
+ppr-platform-guide.md
+prefetching.md
+preserving-ui-state.md
+preventing-flash-before-hydration.md
+production-checklist.md
+progressive-web-apps.md
+public-static-pages.md
+redirecting.md
+rendering-philosophy.md
+runtime-prefetching.md
+sass.md
+scripts.md
+self-hosting.md
+server-actions.md
+single-page-applications.md
+static-exports.md
+streaming.md
+tailwind-v3-css.md
+testing
+third-party-libraries.md
+upgrading
+videos.md
+view-transitions.md
+---
+01-installation.md
+02-project-structure.md
+03-layouts-and-pages.md
+04-linking-and-navigating.md
+05-server-and-client-components.md
+06-fetching-data.md
+07-mutating-data.md
+08-caching.md
+09-revalidating.md
+10-error-handling.md
+11-css.md
+12-images.md
+13-fonts.md
+14-metadata-and-og-images.md
+15-route-handlers.md
+16-proxy.md
+17-deploying.md
+18-upgrading.md
+index.md
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 30
+Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 797ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+└ ƒ /studio/books/[bookId]/sources/[sourceId]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+[0m→ [0mRead node_modules/next/dist/docs/01-app/01-getting-started/05-server-and-client-components.md[90m [limit=80][0m
+[0m
+[0m$ [0mnpm.cmd run smoke:workflow 2>&1 | tail -n 20; echo "===UI==="; npm.cmd run smoke:ui 2>&1 | tail -n 20; echo "===OPS==="; npm.cmd run smoke:operations 2>&1 | tail -n 20
+> editorial-studio@0.1.0 smoke:workflow
+> node tests/smoke/smoke-workflow-contract.mjs
+
+PASS The initial book flow uploads a source file and queues processing
+PASS The post-upload book page does not ask for the source again
+PASS A corrected source is an explicit revision with stable IDs
+PASS Every API job producer uses the per-book job store
+PASS The worker reads and updates per-book allJobs maps
+PASS Periodic worker writes are no more frequent than once per minute
+PASS The editor can cancel queued jobs and retry terminal failures
+PASS Expensive work is queued only by the route that owns its gate
+PASS Book Bible facts are validated on write, not only displayed
+(node:21208) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/jobs/types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+===UI===
+
+> editorial-studio@0.1.0 smoke:ui
+> node tests/smoke/smoke-editorial-ui.mjs
+
+PASS The source workflow shows live per-source job progress
+PASS Editorial stages are separate accessible tabs in workflow order
+PASS Book Bible fact categories are separate accessible tabs
+PASS Episode planning uses a focused progressive-disclosure workspace
+PASS Light mode is the default and dark mode is class-controlled
+PASS The editorial shell uses the electric-blue brand accent
+===OPS===
+> node --experimental-strip-types tests/smoke/smoke-operations.mts
+
+(node:19876) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/jobs/types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Every AI editorial task has a model setting
+PASS  Budget confirmation is a distinct editor-controlled state
+PASS  Polling and periodic worker writes have a 60-second floor
+PASS  Jobs remain in the owning book allJobs map
+PASS  Queued jobs include stage, checkpoint, estimate, and idempotency data
+PASS  Completed operations are reused before another model call
+PASS  Multi-call planners resume saved model-call units
+PASS  Billable regeneration receives a distinct idempotency key
+PASS  Cost records increment the owning book only once
+PASS  Text tasks capture OpenRouter dollar cost, including OCR repair
+PASS  Over-budget work waits for explicit confirmation
+PASS  Source replacement marks image candidates stale without deleting them
+
+12/12 checks passed
+[0m
+Baseline is green (lint/build/workflow/ui/operations all pass). Now splitting the studio component and worker helpers.
+[0m$ [0mgrep -rn "worker/index" tests src package.json 2>&1 | head -n 20; echo "---"; grep -rln "from \"./index" worker/ 2>&1; echo "---"; ls new.md docs/features/25d-schema-foundation/ 2>&1
+tests/smoke/smoke-operations.mts:5:const worker = fs.readFileSync(new URL('../../worker/index.mts', import.meta.url), 'utf8');
+tests/smoke/smoke-workflow-contract.mjs:17:const worker = read("worker/index.mts");
+package.json:9:    "worker": "node --experimental-strip-types --env-file=.env worker/index.mts",
+---
+---
+new.md
+
+docs/features/25d-schema-foundation/:
+logs
+loop.sh
+loop-run-20260918-171500.log
+plan.md
+prompts.md
+status.md
+[0m
+[0m# [0mTodos
+[✓] Record baseline + inspect modules/smoke/Next guide
+[✓] Run baseline gates (lint/build/smoke workflow,ui,operations)
+[•] Split image-studio into focused components (no behavior change)
+[ ] Extract worker queue/dispatch helpers (no behavior change)
+[ ] Adapt source-string tests, verify gates + diff + status + patches
+[0m
+[0m$ [0mcat tsconfig.json 2>&1 | head -n 40
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+[0m
+[0m← [0mWrite src/features/images/components/studio-stage.tsx
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/images/components/studio-canon-editor.tsx
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/images/components/studio-reference.tsx
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/images/components/studio-episode-images.tsx
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/images/components/image-studio.tsx
+Wrote file successfully.
+[0m
+UI split done. Now extracting worker helpers.
+[0m← [0mWrite worker/jobs/job-store.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/jobs/queue.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/jobs/dispatch.mts
+Wrote file successfully.
+[0m
+[0m← [0mEdit worker/jobs/dispatch.mts
+Index: C:\Users\800sa\studio\worker\jobs\dispatch.mts
+===================================================================
+--- C:\Users\800sa\studio\worker\jobs\dispatch.mts
++++ C:\Users\800sa\studio\worker\jobs\dispatch.mts
+@@ -23,13 +23,14 @@
+     onProgress: (stage: string, done: number, total: number) => void;
+     defaultMaxAttempts: number;
+     workerId: string;
+     booksCollection: string;
++    db: import("firebase-admin/firestore").Firestore;
+   },
+ ): Promise<Record<string, unknown>> {
+   switch (job.type) {
+     case "test.echo":
+-      return runTestEcho(job, input.booksCollection);
++      return runTestEcho(job, input.db, input.booksCollection, input.workerId);
+     case "source.ingest":
+       return ingestSource({
+         bookId: job.bookId,
+         sourceId: String(job.payload.sourceId ?? ""),
+
+[0m
+[0m← [0mEdit worker/jobs/dispatch.mts
+Index: C:\Users\800sa\studio\worker\jobs\dispatch.mts
+===================================================================
+--- C:\Users\800sa\studio\worker\jobs\dispatch.mts
++++ C:\Users\800sa\studio\worker\jobs\dispatch.mts
+@@ -145,18 +145,17 @@
+ }
+ 
+ async function runTestEcho(
+   job: ClaimedJob,
++  db: import("firebase-admin/firestore").Firestore,
+   booksCollection: string,
++  workerId: string,
+ ): Promise<Record<string, unknown>> {
+-  const { getFirestore } = await import("firebase-admin/firestore");
+-  const db = getFirestore();
+-  const { hostname } = await import("node:os");
+   const book = await db.collection(booksCollection).doc(job.bookId).get();
+   await new Promise((resolve) => setTimeout(resolve, 3000));
+ 
+   return {
+     echoed: job.payload.message ?? null,
+     bookTitle: book.exists ? book.get("title") : null,
+-    completedBy: `${hostname()}-${process.pid}`,
++    completedBy: workerId,
+   };
+ }
+
+[0m
+[0m← [0mWrite worker/jobs/recovery.mts
+Wrote file successfully.
+[0m
+Now rewriting the worker entry as a thin loop over the extracted helpers.
+[0m← [0mWrite worker/index.mts
+Wrote file successfully.
+[0m
+Worker extraction done. Now adapting source-string tests to follow the new modules.
+[0m$ [0mgrep -rn "image-studio\|studio-canon\|studio-episode\|studio-reference\|studio-stage\|worker/" tests/ 2>&1 | head -n 30
+tests/smoke/smoke-ai-proposals.mts:1:import { normaliseProposal } from "../../worker/ai-proposal.mts";
+tests/smoke/smoke-bible.mts:5:} from "../../worker/bible-merge.mts";
+tests/smoke/smoke-episode-map.mts:200:const planner = readFileSync("worker/episode-map.mts", "utf8");
+tests/smoke/smoke-fixtures.mts:6:import { openPdf } from "../../worker/pdf-text.mts";
+tests/smoke/smoke-image-batch.mts:1:import { runWithConcurrency } from "../../worker/image-batch-pool.mts";
+tests/smoke/smoke-image-prompt.mts:1:import { assembleImagePrompt } from "../../worker/image-prompt.mts";
+tests/smoke/smoke-moments.mts:8:import { mergeMoments, normaliseMoment } from "../../worker/moment-merge.mts";
+tests/smoke/smoke-operations.mts:5:const worker = fs.readFileSync(new URL('../../worker/index.mts', import.meta.url), 'utf8');
+tests/smoke/smoke-operations.mts:7:const costs = fs.readFileSync(new URL('../../worker/costs.mts', import.meta.url), 'utf8');
+tests/smoke/smoke-operations.mts:9:const episodePlanner = fs.readFileSync(new URL('../../worker/episode-map.mts', import.meta.url), 'utf8');
+tests/smoke/smoke-operations.mts:10:const momentPlanner = fs.readFileSync(new URL('../../worker/story-moments.mts', import.meta.url), 'utf8');
+tests/smoke/smoke-operations.mts:11:const openrouter = fs.readFileSync(new URL('../../worker/openrouter.mts', import.meta.url), 'utf8');
+tests/smoke/smoke-operations.mts:12:const aiResolve = fs.readFileSync(new URL('../../worker/ai-resolve.mts', import.meta.url), 'utf8');
+tests/smoke/smoke-pdf-cleaning.mts:7:} from "../../worker/pdf-lines.mts";
+tests/smoke/smoke-workflow-contract.mjs:17:const worker = read("worker/index.mts");
+[0m
+[0m→ [0mRead tests/smoke/smoke-operations.mts
+[0m
+[0m← [0mEdit tests/smoke/smoke-operations.mts
+Index: C:\Users\800sa\studio\tests\smoke\smoke-operations.mts
+===================================================================
+--- C:\Users\800sa\studio\tests\smoke\smoke-operations.mts
++++ C:\Users\800sa\studio\tests\smoke\smoke-operations.mts
+@@ -1,9 +1,15 @@
+ import fs from 'node:fs';
+ 
+ import { canConfirmBudget, MODEL_TASKS } from '../../src/features/jobs/types.ts';
+ 
+-const worker = fs.readFileSync(new URL('../../worker/index.mts', import.meta.url), 'utf8');
++const workerEntry = fs.readFileSync(new URL('../../worker/index.mts', import.meta.url), 'utf8');
++// Queue/dispatch helpers were extracted to worker/jobs/ without behavior
++// changes; the same behavioral claims apply to the combined worker sources.
++const workerJobs = ['job-store.mts', 'queue.mts', 'dispatch.mts', 'recovery.mts']
++  .map((file) => fs.readFileSync(new URL(`../../worker/jobs/${file}`, import.meta.url), 'utf8'))
++  .join('\n');
++const worker = `${workerEntry}\n${workerJobs}`;
+ const jobs = fs.readFileSync(new URL('../../src/features/jobs/store.ts', import.meta.url), 'utf8');
+ const costs = fs.readFileSync(new URL('../../worker/costs.mts', import.meta.url), 'utf8');
+ const approval = fs.readFileSync(new URL('../../src/app/api/books/[bookId]/sources/[sourceId]/approve/route.ts', import.meta.url), 'utf8');
+ const episodePlanner = fs.readFileSync(new URL('../../worker/episode-map.mts', import.meta.url), 'utf8');
+
+[0m
+[0m← [0mEdit tests/smoke/smoke-operations.mts
+Index: C:\Users\800sa\studio\tests\smoke\smoke-operations.mts
+===================================================================
+--- C:\Users\800sa\studio\tests\smoke\smoke-operations.mts
++++ C:\Users\800sa\studio\tests\smoke\smoke-operations.mts
+@@ -29,8 +29,9 @@
+   ['Cost records increment the owning book only once', /if \(existing\.exists\) return;[\s\S]*actualCostUsd: FieldValue\.increment/.test(costs)],
+   ['Text tasks capture OpenRouter dollar cost, including OCR repair', /usage\?\.cost/.test(openrouter) && /recordCost\(job\.bookId/.test(aiResolve)],
+   ['Over-budget work waits for explicit confirmation', /status: "waiting_confirmation"[\s\S]*budgetDetails/.test(worker)],
+   ['Source replacement marks image candidates stale without deleting them', /stale: true[\s\S]*staleReason/.test(approval) && !/writer\.delete/.test(approval)],
++  ['Worker entry delegates queue and dispatch to worker/jobs helpers', /from "\.\/jobs\/queue\.mts"/.test(workerEntry) && /from "\.\/jobs\/dispatch\.mts"/.test(workerEntry) && /from "\.\/jobs\/recovery\.mts"/.test(workerEntry)],
+ ] as const;
+ 
+ let failed = 0;
+ for (const [name, pass] of checks) {
+
+[0m
+[0m→ [0mRead tests/smoke/smoke-workflow-contract.mjs[90m [limit=30][0m
+[0m
+[0m← [0mEdit tests/smoke/smoke-workflow-contract.mjs
+Index: C:\Users\800sa\studio\tests\smoke\smoke-workflow-contract.mjs
+===================================================================
+--- C:\Users\800sa\studio\tests\smoke\smoke-workflow-contract.mjs
++++ C:\Users\800sa\studio\tests\smoke\smoke-workflow-contract.mjs
+@@ -13,9 +13,18 @@
+ const bookJobsRoute = read("src/app/api/books/[bookId]/jobs/route.ts");
+ const uncertaintiesRoute = read(
+   "src/app/api/books/[bookId]/sources/[sourceId]/uncertainties/route.ts",
+ );
+-const worker = read("worker/index.mts");
++const workerEntry = read("worker/index.mts");
++// Queue/dispatch helpers were extracted to worker/jobs/ without behavior
++// changes; the same behavioral claims apply to the combined worker sources.
++const worker = [
++  workerEntry,
++  read("worker/jobs/job-store.mts"),
++  read("worker/jobs/queue.mts"),
++  read("worker/jobs/dispatch.mts"),
++  read("worker/jobs/recovery.mts"),
++].join("\n");
+ const jobTypes = read("src/features/jobs/types.ts");
+ const bibleRoute = read(
+   "src/app/api/books/[bookId]/sources/[sourceId]/bible/route.ts",
+ );
+
+[0m
+[0m$ [0mgrep -rn "\.collection(JOBS)" worker/ 2>&1; echo "exit:$?"; wc -l src/features/images/components/*.tsx worker/jobs/*.mts worker/index.mts tests/smoke/smoke-operations.mts tests/smoke/smoke-workflow-contract.mjs
+exit:1
+   56 src/features/images/components/image-preview.tsx
+  225 src/features/images/components/image-studio.tsx
+  163 src/features/images/components/moment-images.tsx
+  143 src/features/images/components/studio-canon-editor.tsx
+  266 src/features/images/components/studio-episode-images.tsx
+  260 src/features/images/components/studio-reference.tsx
+   63 src/features/images/components/studio-stage.tsx
+  161 worker/jobs/dispatch.mts
+   46 worker/jobs/job-store.mts
+  207 worker/jobs/queue.mts
+  118 worker/jobs/recovery.mts
+  202 worker/index.mts
+   42 tests/smoke/smoke-operations.mts
+  127 tests/smoke/smoke-workflow-contract.mjs
+ 2079 total
+[0m
+All files under limits. Running the full P0 gate suite.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 10
+> editorial-studio@0.1.0 lint
+> eslint
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 25
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+└ ƒ /studio/books/[bookId]/sources/[sourceId]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+[0m$ [0mnpm.cmd run smoke:workflow 2>&1 | tail -n 14; echo "===UI==="; npm.cmd run smoke:ui 2>&1 | tail -n 10; echo "===OPS==="; npm.cmd run smoke:operations 2>&1 | tail -n 18
+PASS The post-upload book page does not ask for the source again
+PASS A corrected source is an explicit revision with stable IDs
+PASS Every API job producer uses the per-book job store
+FAIL The worker reads and updates per-book allJobs maps
+PASS Periodic worker writes are no more frequent than once per minute
+PASS The editor can cancel queued jobs and retry terminal failures
+PASS Expensive work is queued only by the route that owns its gate
+PASS Book Bible facts are validated on write, not only displayed
+
+1 workflow contract check(s) failed.
+(node:23276) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/jobs/types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+===UI===
+
+> editorial-studio@0.1.0 smoke:ui
+> node tests/smoke/smoke-editorial-ui.mjs
+
+PASS The source workflow shows live per-source job progress
+PASS Editorial stages are separate accessible tabs in workflow order
+PASS Book Bible fact categories are separate accessible tabs
+PASS Episode planning uses a focused progressive-disclosure workspace
+PASS Light mode is the default and dark mode is class-controlled
+PASS The editorial shell uses the electric-blue brand accent
+===OPS===
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Every AI editorial task has a model setting
+PASS  Budget confirmation is a distinct editor-controlled state
+PASS  Polling and periodic worker writes have a 60-second floor
+PASS  Jobs remain in the owning book allJobs map
+PASS  Queued jobs include stage, checkpoint, estimate, and idempotency data
+PASS  Completed operations are reused before another model call
+PASS  Multi-call planners resume saved model-call units
+PASS  Billable regeneration receives a distinct idempotency key
+PASS  Cost records increment the owning book only once
+PASS  Text tasks capture OpenRouter dollar cost, including OCR repair
+PASS  Over-budget work waits for explicit confirmation
+PASS  Source replacement marks image candidates stale without deleting them
+PASS  Worker entry delegates queue and dispatch to worker/jobs helpers
+
+13/13 checks passed
+[0m
+One workflow check needs adapting to the extracted queue signature — the `collectionGroup(JOBS)` literal moved into a parameterized helper.
+[0m→ [0mRead tests/smoke/smoke-workflow-contract.mjs[90m [offset=70, limit=30][0m
+[0m
+[0m← [0mEdit tests/smoke/smoke-workflow-contract.mjs
+Index: C:\Users\800sa\studio\tests\smoke\smoke-workflow-contract.mjs
+===================================================================
+--- C:\Users\800sa\studio\tests\smoke\smoke-workflow-contract.mjs
++++ C:\Users\800sa\studio\tests\smoke\smoke-workflow-contract.mjs
+@@ -74,9 +74,14 @@
+ {
+   name: "The worker reads and updates per-book allJobs maps",
+   pass:
+     worker.includes('const ALL_JOBS_DOC = "allJobs"') &&
+-    worker.includes("collectionGroup(JOBS)") &&
++    // Queue helpers take the jobs collection as a parameter; the entry
++    // still passes the JOBS constant and the helper still scans via
++    // collectionGroup filtered to the allJobs document.
++    workerEntry.includes("jobsCollection: JOBS") &&
++    /\.collectionGroup\(/.test(worker) &&
++    worker.includes("snapshot.id ===") &&
+     worker.includes("storedJobs") &&
+     !worker.includes(".collection(JOBS)"),
+ },
+ {
+
+[0m
+[0m$ [0mnpm.cmd run smoke:workflow 2>&1 | tail -n 14
+PASS The initial book flow uploads a source file and queues processing
+PASS The post-upload book page does not ask for the source again
+PASS A corrected source is an explicit revision with stable IDs
+PASS Every API job producer uses the per-book job store
+PASS The worker reads and updates per-book allJobs maps
+PASS Periodic worker writes are no more frequent than once per minute
+PASS The editor can cancel queued jobs and retry terminal failures
+PASS Expensive work is queued only by the route that owns its gate
+PASS Book Bible facts are validated on write, not only displayed
+(node:13132) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/jobs/types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[0m
+All gates green. Verifying worker syntax, diff hygiene, and untouched protected files.
+[0m$ [0mgit status --porcelain=v1; echo "---STAT---"; git diff --stat
+M docs/features/25d-schema-foundation/status.md
+ M src/features/images/components/image-studio.tsx
+ M tests/smoke/smoke-operations.mts
+ M tests/smoke/smoke-workflow-contract.mjs
+ M worker/index.mts
+?? docs/features/25d-schema-foundation/.run/
+?? docs/features/25d-schema-foundation/.runinfo
+?? docs/features/25d-schema-foundation/logs/
+?? docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+?? src/features/images/components/studio-canon-editor.tsx
+?? src/features/images/components/studio-episode-images.tsx
+?? src/features/images/components/studio-reference.tsx
+?? src/features/images/components/studio-stage.tsx
+?? worker/jobs/
+---STAT---
+warning: in the working copy of 'src/features/images/components/image-studio.tsx', LF will be replaced by CRLF the next time Git touches it
+ docs/features/25d-schema-foundation/status.md   |   2 +-
+ src/features/images/components/image-studio.tsx | 713 +-----------------------
+ tests/smoke/smoke-operations.mts                |   9 +-
+ tests/smoke/smoke-workflow-contract.mjs         |  18 +-
+ worker/index.mts                                | 497 ++---------------
+ 5 files changed, 68 insertions(+), 1171 deletions(-)
+warning: in the working copy of 'tests/smoke/smoke-workflow-contract.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'worker/index.mts', LF will be replaced by CRLF the next time Git touches it
+[0m
+[0m$ [0mnode --check worker/index.mts && node --check worker/jobs/job-store.mts && node --check worker/jobs/queue.mts && node --check worker/jobs/dispatch.mts && node --check worker/jobs/recovery.mts && echo "WORKER-SYNTAX-OK"
+WORKER-SYNTAX-OK
+[0m
+[0m$ [0mgrep -c "canon\.\|reference\.\|image\.batch\|momentReferenceProblems\|styleCanonProblem" src/features/images/components/image-studio.tsx src/features/images/components/studio-canon-editor.tsx src/features/images/components/studio-episode-images.tsx src/features/images/components/studio-reference.tsx 2>&1; echo "---ACTIONS---"; grep -rh "action: \"" src/features/images/components/*.tsx | sort | uniq -c
+src/features/images/components/image-studio.tsx:16
+src/features/images/components/studio-canon-editor.tsx:12
+src/features/images/components/studio-episode-images.tsx:3
+src/features/images/components/studio-reference.tsx:20
+---ACTIONS---
+      1                     action: "reference.approve",
+      1                 action: "image.metadata",
+      1               action: "reference.generate",
+      1               onClick={() => onPost({ action: "canon.approve" })}
+      1               onClick={() => onPost({ action: "canon.save", ...draft })}
+      1             action: "reference.create",
+      1             onClick={() => onPost({ action: "canon.propose", sourceId })}
+      1             onClick={() => onPost({ action: "canon.reopen" })}
+      1             onSelect={() => onAction({ action: "image.select", momentId: moment.id, candidateId: candidate.id })}
+      1             post({ action: "image.batch.generate", momentIds: [...selected] }).then(
+      1           onClick={() => onAction({ action: "image.generate", momentId: moment.id, promptAddition: addition })}
+[0m
+[0m$ [0mgit ls-files | grep -i "new.md" ; echo "---"; git diff --name-only; echo "---SECRET-SCAN---"; git diff | grep -in "api[_-]\?key\s*[:=]\|secret\s*[:=]\|password\|BEGIN.*PRIVATE" | head -n 10; echo "scan-done"
+new.md
+---
+warning: in the working copy of 'src/features/images/components/image-studio.tsx', LF will be replaced by CRLF the next time Git touches it
+docs/features/25d-schema-foundation/status.md
+src/features/images/components/image-studio.tsx
+tests/smoke/smoke-operations.mts
+tests/smoke/smoke-workflow-contract.mjs
+worker/index.mts
+---SECRET-SCAN---
+warning: in the working copy of 'tests/smoke/smoke-workflow-contract.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'worker/index.mts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/features/images/components/image-studio.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/smoke/smoke-workflow-contract.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'worker/index.mts', LF will be replaced by CRLF the next time Git touches it
+scan-done
+[0m
+Everything preserved. Updating status and saving patches.
+[0m$ [0mcat .gitignore 2>&1 | head -n 30; echo "---"; ls .patches 2>&1
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# tesseract language data, downloaded on first OCR run
+*.traineddata
+
+# service account credentials
+---
+ls: cannot access '.patches': No such file or directory
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\800sa\studio\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\800sa\studio\docs\features\25d-schema-foundation\status.md
++++ C:\Users\800sa\studio\docs\features\25d-schema-foundation\status.md
+@@ -5,9 +5,9 @@
+ ## Phase table
+ 
+ | Phase | State | Depends on | Date | Gates | Notes |
+ |---|---|---|---|---|---|
+-| P0 | in-progress | — | — | Not run | Not started. |
++| P0 | done | — | 2026-09-18 | lint pass; build pass; smoke:workflow 9/9; smoke:ui 6/6; smoke:operations 13/13 | Behavior-neutral split only: image-studio 916→225+4 focused modules, worker/index 635→202+4 job helpers; routes/gates/costs/recovery unchanged; patch .patches/P0-studio.patch + new-file copies. |
+ | P1 | todo | P0 | — | Not run | Development auth change deferred to build by owner. |
+ | P2 | todo | P1 | — | Not run | Not started. |
+ | P3 | todo | P2 | — | Not run | Not started. |
+ | P4 | todo | P3 | — | Not run | Not started. |
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\800sa\studio\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\800sa\studio\docs\features\25d-schema-foundation\status.md
++++ C:\Users\800sa\studio\docs\features\25d-schema-foundation\status.md
+@@ -22,8 +22,21 @@
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+ 
+ ## Progress log
+ 
++### 2026-09-18 — P0 done: behavior-neutral preparation
++
++- Baseline (pre-edit, all green): `npm.cmd run lint` pass; `npm.cmd run build` pass with identical route table; `smoke:workflow` 9/9; `smoke:ui` 6/6; `smoke:operations` 12/12. Tracked baseline diff was only the runner's P0 in-progress row; untracked baseline was only runner logs (`.run/`, `.runinfo`, `logs/`, `loop-run-20260918-171500.log`); `new.md` preserved untouched.
++- Read AGENTS.md plus the bundled Next guide `node_modules/next/dist/docs/01-app/01-getting-started/05-server-and-client-components.md` before changing Next code; split keeps every file a `"use client"` component with identical JSX/routes/approval actions.
++- Split `src/features/images/components/image-studio.tsx` (916 lines) into a 225-line orchestrator plus `studio-stage.tsx` (Stage/ReferenceGroup), `studio-canon-editor.tsx` (FIELD_LABEL/EMPTY_CANON/CanonEditor), `studio-reference.tsx` (REFERENCE_STAGES/ReferenceCreator/ReferenceCard), `studio-episode-images.tsx` (EpisodeImages/EpisodeMomentImages/MomentImageCard). All 11 visual action types (`canon.propose/save/approve/reopen`, `reference.create/generate/approve`, `image.generate/select/metadata/batch.generate`) preserved verbatim; sole consumer `extraction-editor.tsx` import unchanged.
++- Extracted `worker/index.mts` (635 lines) into a 202-line poll/claim/process/presence entry plus `worker/jobs/job-store.mts` (ClaimedJob/StoredJob/storedJobs/patchJob), `queue.mts` (claimNextJob/requeueStaleJobs/enqueueFollowUp/progressReporter), `dispatch.mts` (12-type runJob switch incl. test.echo), `recovery.mts` (sourceRef/markWorkFailed/failureSuggestion). allJobs map shape, budget waiting_confirmation gate, idempotency/resume-from-checkpoint, costs and per-type failure marking unchanged; every new file <300 lines.
++- Adapted two source-string tests to follow the extracted modules without weakening claims: `smoke-operations.mts` and `smoke-workflow-contract.mjs` now assert against combined `worker/index.mts` + `worker/jobs/*.mts` sources (same regexes), plus narrow checks that the entry delegates to `./jobs/queue|dispatch|recovery` and passes `jobsCollection: JOBS` into `collectionGroup`.
++- Post-edit gates: lint pass; build pass (same 18 routes); smoke:workflow 9/9; smoke:ui 6/6; smoke:operations 13/13; `node --check` clean on all five worker files. Evidence: "The existing editorial workflow remains usable with no behavior change and its baseline checks still pass" — 28/28 smoke checks green after a verbatim move with zero route/type/action changes.
++- QA mapping (unattended, no browser opened): smoke:ui still asserts tab order, JobProgress aria-live/progressbar and image-workspace selectors; owner spot-check of Studio tabs/image selection/job progress recommended at next dev session but no code awaits it.
++- Patch: `.patches/P0-studio.patch` (tracked binary diff) plus new-file copies under `.patches/P0-new-files/`. Changed tracked files: image-studio.tsx, worker/index.mts, smoke-operations.mts, smoke-workflow-contract.mjs, status.md. New files: 4 studio components + 4 worker/jobs helpers. No staging, no commit (suggested message below), no deploy, no live writes.
++- Suggested commit message: `P0: behavior-neutral split of image studio and worker queue helpers`.
++- No new dependencies added (zod/three/fiber/playwright not needed for a behavior-neutral split); plan.md, prompts.md, CONTEXT.md untouched; no secrets in diff; no scope creep.
++
+ ### 2026-09-18 — Scaffold
+ 
+ - Owner confirmed the plan after adding AI-only authoring, approval-driven preview, complete-book representation, HTML subtitles, immutable reference assets, independent episode publication/replacement, AWS visual storage and development auth bypass.
+ - Created the plan, self-contained phase prompts, vocabulary/ADRs, status tracker and rendered unattended runner.
+
+[0m
+[0m$ [0mls .patches 2>&1 || mkdir .patches && ls .patches
+ls: cannot access '.patches': No such file or directory
+[0m
+[0m$ [0mmkdir -p .patches && git diff --binary --output=.patches/P0-studio.patch && ls -la .patches
+total 12
+drwxr-xr-x 1 800sa 197609 0 Sep 18 17:09 .
+drwxr-xr-x 1 800sa 197609 0 Sep 18 17:09 ..
+-rw-r--r-- 1 800sa 197609 0 Sep 18 17:09 P0-studio.patch
+[0m
+[0m$ [0mgit diff --binary | wc -c; git status --porcelain=v1 .patches
+warning: in the working copy of 'docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log', LF will be replaced by CRLF the next time Git touches it
+798
+?? .patches/
+[0m
+[0m$ [0mgit diff --stat; echo "---PATCH-SIZE---"; ls -la .patches/
+warning: in the working copy of 'docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log', LF will be replaced by CRLF the next time Git touches it
+ .../25d-schema-foundation/logs/P0-attempt1-170300.log         | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+---PATCH-SIZE---
+total 12
+drwxr-xr-x 1 800sa 197609 0 Sep 18 17:09 .
+drwxr-xr-x 1 800sa 197609 0 Sep 18 17:09 ..
+-rw-r--r-- 1 800sa 197609 0 Sep 18 17:09 P0-studio.patch
+[0m
+The tracked diff changed unexpectedly — checking whether my edits are still on disk and what happened in git.
+[0m$ [0mgit log --oneline -5; echo "---STASH---"; git stash list; echo "---FILES---"; wc -l src/features/images/components/image-studio.tsx worker/index.mts worker/jobs/queue.mts 2>&1; echo "---STATUS---"; git status --porcelain=v1 | head -n 30
+74f81bd Add initial documentation for 2.5D Book Experience and status tracking
+0dea38e Add smoke tests for image batch processing, image prompts, moment text handling, and workflow contracts
+3beff56 fix: ignore .env files to prevent secret leaks
+0021a2a feat: update smoke scripts to use experimental strip types for improved compatibility
+a6a91e3 feat: add Firebase configuration file and update .gitignore to exclude .env
+---STASH---
+---FILES---
+  225 src/features/images/components/image-studio.tsx
+  202 worker/index.mts
+  207 worker/jobs/queue.mts
+  634 total
+---STATUS---
+A  docs/features/25d-schema-foundation/.run/inflight
+A  docs/features/25d-schema-foundation/.runinfo
+AM docs/features/25d-schema-foundation/logs/P0-attempt1-170300.log
+A  docs/features/25d-schema-foundation/loop-run-20260918-171500.log
+M  docs/features/25d-schema-foundation/status.md
+M  src/features/images/components/image-studio.tsx
+A  src/features/images/components/studio-canon-editor.tsx
+A  src/features/images/components/studio-episode-images.tsx
+A  src/features/images/components/studio-reference.tsx
+A  src/features/images/components/studio-stage.tsx
+M  tests/smoke/smoke-operations.mts
+M  tests/smoke/smoke-workflow-contract.mjs
+M  worker/index.mts
+A  worker/jobs/dispatch.mts
+A  worker/jobs/job-store.mts
+A  worker/jobs/queue.mts
+A  worker/jobs/recovery.mts
+?? .patches/
+[0m
+[0m$ [0mgit diff HEAD --binary --output=.patches/P0-studio.patch -- docs/features/25d-schema-foundation/status.md src/features/images/components/image-studio.tsx src/features/images/components/studio-stage.tsx src/features/images/components/studio-canon-editor.tsx src/features/images/components/studio-reference.tsx src/features/images/components/studio-episode-images.tsx worker/index.mts worker/jobs/job-store.mts worker/jobs/queue.mts worker/jobs/dispatch.mts worker/jobs/recovery.mts tests/smoke/smoke-operations.mts tests/smoke/smoke-workflow-contract.mjs && ls -la .patches/ && mkdir -p .patches/P0-new-files && cp src/features/images/components/studio-stage.tsx src/features/images/components/studio-canon-editor.tsx src/features/images/components/studio-reference.tsx src/features/images/components/studio-episode-images.tsx worker/jobs/job-store.mts worker/jobs/queue.mts worker/jobs/dispatch.mts worker/jobs/recovery.mts .patches/P0-new-files/ && ls -la .patches/P0-new-files/
+total 108
+drwxr-xr-x 1 800sa 197609     0 Sep 18 17:09 .
+drwxr-xr-x 1 800sa 197609     0 Sep 18 17:09 ..
+-rw-r--r-- 1 800sa 197609 96917 Sep 18 17:10 P0-studio.patch
+total 64
+drwxr-xr-x 1 800sa 197609    0 Sep 18 17:10 .
+drwxr-xr-x 1 800sa 197609    0 Sep 18 17:10 ..
+-rw-r--r-- 1 800sa 197609 5753 Sep 18 17:10 dispatch.mts
+-rw-r--r-- 1 800sa 197609 1282 Sep 18 17:10 job-store.mts
+-rw-r--r-- 1 800sa 197609 6672 Sep 18 17:10 queue.mts
+-rw-r--r-- 1 800sa 197609 4475 Sep 18 17:10 recovery.mts
+-rw-r--r-- 1 800sa 197609 4738 Sep 18 17:10 studio-canon-editor.tsx
+-rw-r--r-- 1 800sa 197609 7847 Sep 18 17:10 studio-episode-images.tsx
+-rw-r--r-- 1 800sa 197609 8987 Sep 18 17:10 studio-reference.tsx
+-rw-r--r-- 1 800sa 197609 1665 Sep 18 17:10 studio-stage.tsx
+[0m
+Patch saved. Final gate re-run after the last test adaptation.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 3 && npm.cmd run smoke:workflow 2>&1 | grep -c PASS && npm.cmd run smoke:ui 2>&1 | grep -c PASS && npm.cmd run smoke:operations 2>&1 | tail -n 2
+> editorial-studio@0.1.0 lint
+> eslint
+
+9
+6
+
+13/13 checks passed
+[0m
+[0m# [0mTodos
+[✓] Record baseline + inspect modules/smoke/Next guide
+[✓] Run baseline gates (lint/build/smoke workflow,ui,operations)
+[✓] Split image-studio into focused components (no behavior change)
+[✓] Extract worker queue/dispatch helpers (no behavior change)
+[✓] Adapt source-string tests, verify gates + diff + status + patches
+[0m
+P0 complete — state `done`.
+
+**What changed (behavior-neutral, verbatim moves only):**
+- `image-studio.tsx` 916→225 lines + 4 focused modules (`studio-stage`, `studio-canon-editor`, `studio-reference`, `studio-episode-images`). All 11 visual action types, routes, approval gates preserved; sole consumer import unchanged.
+- `worker/index.mts` 635→202 lines + 4 helpers in `worker/jobs/` (`job-store`, `queue`, `dispatch`, `recovery`). allJobs shape, budget gate, idempotency/resume, costs, failure marking unchanged.
+- `smoke-operations.mts` / `smoke-workflow-contract.mjs` adapted to assert against combined `worker/index.mts` + `worker/jobs/*.mts` (same claims, no weakening).
+
+**Gates:** lint pass; build pass (same 18 routes); smoke:workflow 9/9; smoke:ui 6/6; smoke:operations 13/13. Evidence: 28/28 checks green after the move with zero route/type/action changes.
+
+**Records:** `status.md` P0 row + Progress log updated; `.patches/P0-studio.patch` (96KB, this phase's paths only) + `.patches/P0-new-files/` copies saved. plan/prompts/CONTEXT/`new.md` untouched; no secrets; no new dependencies; nothing committed.
+
+**Note:** the loop runner concurrently staged working-tree files via `git add` — I left the index alone and scoped the patch with explicit paths. Suggested commit message recorded in status.md: `P0: behavior-neutral split of image studio and worker queue helpers`.

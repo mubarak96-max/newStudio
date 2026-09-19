@@ -1,0 +1,710 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+P7 dialogue and camera planning — wiring beats and subtitles with no manual entry.
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md[90m [offset=504][0m
+[0m→ [0mRead src/features/book-experience
+[0m→ [0mRead worker
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead package.json
+[0m→ [0mRead src/features/moment-text
+[0m→ [0mRead worker/commentary.mts
+[0m→ [0mRead tests/smoke/smoke-moment-text.mts
+[0m→ [0mRead tests/smoke/smoke-posting.mts
+[0m→ [0mRead src/features/moment-text/types.ts
+[0m→ [0mRead src/features/moment-text/store.ts
+[0m→ [0mRead src/features/book-experience/schemas/moment.ts
+[0m→ [0mRead src/features/book-experience/schemas/beat.ts
+I've mapped the current beats and coverage foundations — now building the AI planning engine.
+[0m→ [0mRead src/features/book-experience/functions
+[0m→ [0mRead src/features/book-experience/schemas
+[0m→ [0mRead tests/book-experience/preview.spec.ts
+[0m
+[0m$ [0mgit status --short && git log --oneline -5 && git diff --stat
+M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/P6.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/.run/settled.P6
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? docs/features/25d-schema-foundation/logs/P6-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P7-attempt1-000747.log
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/story-map/
+?? src/features/episodes/adapters.ts
+?? src/features/moments/adapters.ts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? worker/book-model/
+?? worker/story-planning/
+97bc450 feat: update job engine and provider implementations for durable job handling
+017ed44 feat: add log files for P4 attempts and update status to in-progress
+972b1ff feat: implement durable job orchestration with approval-driven pipeline
+614cf68 refactor
+74f81bd Add initial documentation for 2.5D Book Experience and status tracking
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  29 +
+ docs/features/25d-schema-foundation/status.md      |  81 +-
+ package.json                                       |   2 +
+ 5 files changed, 596 insertions(+), 410 deletions(-)
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+[0m
+[0m→ [0mRead tests/book-experience/preview-check.mts
+[0m→ [0mRead src/features/book-experience/functions/compileBundle.ts
+[0m→ [0mRead src/features/book-experience/story-map/coverage.ts
+[0m→ [0mRead src/features/book-experience/functions/subtitles.ts
+[0m→ [0mRead src/features/book-experience/functions/resolveFrame.ts
+[0m→ [0mRead src/features/book-experience/schemas/primitives.ts
+[0m→ [0mRead fixtures/book-experience/room-entry.json
+[0m→ [0mRead worker/story-planning/moments.mts
+[0m→ [0mRead src/features/book-experience/story-map/planning.ts
+[0m→ [0mRead src/features/book-experience/preview/PreviewPlayer.tsx
+[0m
+[0m# [0mTodos
+[•] Baseline + read guides/prior art
+[ ] Implement beats domain (build/verbatim/representations/reveal/repository)
+[ ] Implement coverage review + moment-text grounding + BeatReview UI
+[ ] Extend worker/beats + worker/commentary.mts
+[ ] Add smoke:beats + package script
+[ ] Run gates + verify demoable outcome
+[ ] Update status.md + save patches
+[0m
+[0m→ [0mRead src/features/book-experience/story-map/repository.ts
+[0m→ [0mRead node_modules/next/dist/docs/01-app/01-getting-started/05-server-and-client-components.md[90m [limit=60][0m
+[0m
+[0m# [0mTodos
+[✓] Baseline + read guides/prior art
+[•] Implement beats domain (build/verbatim/representations/reveal/repository)
+[ ] Implement coverage review + moment-text grounding + BeatReview UI
+[ ] Extend worker/beats + worker/commentary.mts
+[ ] Add smoke:beats + package script
+[ ] Run gates + verify demoable outcome
+[ ] Update status.md + save patches
+[0m
+[0m← [0mWrite src/features/book-experience/beats/build.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/features/book-experience/beats/build.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
+@@ -142,18 +142,19 @@
+ }
+ const selected = paragraph.text.slice(segment.start, segment.end);
+ if (selected.length === 0) throw new Error(`Beat segment for ${segment.paragraphId} selects no text.`);
+ 
+-const chunks = splitLongText(selected);
+-// Map each word chunk back onto source offsets so subtitles never drop
+-// content: advance through the selected slice word by word.
+-let cursor = segment.start;
+-for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex += 1) {
+-  const chunk = chunks[chunkIndex];
+-  const chunkStart = paragraph.text.indexOf(chunk.split(/\s+/)[0], cursor);
+-  const resolvedStart = chunkStart < 0 ? cursor : chunkStart;
+-  const resolvedEnd = resolvedStart + chunk.length;
+-  cursor = resolvedEnd;
++const chunks = splitWordsWithOffsets(paragraph.text, segment.start, segment.end);
++// Group words into ~60-word ordered chunks so long passages split without
++// dropping content; offsets stay exact against the canonical string.
++const grouped: { start: number; end: number }[] = [];
++for (let index = 0; index < chunks.length; index += MAX_QUOTE_WORDS) {
++  const slice = chunks.slice(index, index + MAX_QUOTE_WORDS);
++  grouped.push({ start: slice[0].start, end: slice[slice.length - 1].end });
++}
++for (let chunkIndex = 0; chunkIndex < grouped.length; chunkIndex += 1) {
++  const { start: resolvedStart, end: resolvedEnd } = grouped[chunkIndex];
++  const chunk = paragraph.text.slice(resolvedStart, resolvedEnd);
+   order += 1;
+ 
+   const gatedEntities = (segment.entities ?? []).filter(
+     (entityId) => (entityFirstSeq[entityId] ?? 0) <= paragraph.seq,
+
+[0m
+[0m← [0mEdit src/features/book-experience/beats/build.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
+@@ -71,8 +71,26 @@
+   }
+   return chunks;
+ }
+ 
++/** Word spans inside [start, end) so long selections split with exact offsets. */
++export function splitWordsWithOffsets(
++  canonical: string,
++  start: number,
++  end: number,
++): { word: string; start: number; end: number }[] {
++  const spans: { word: string; start: number; end: number }[] = [];
++  const pattern = /\S+/g;
++  pattern.lastIndex = start;
++  let match: RegExpExecArray | null;
++  while ((match = pattern.exec(canonical)) !== null && match.index < end) {
++    const wordEnd = Math.min(match.index + match[0].length, end);
++    spans.push({ word: canonical.slice(match.index, wordEnd), start: match.index, end: wordEnd });
++    if (pattern.lastIndex >= end) break;
++  }
++  return spans;
++}
++
+ function hashChoice(seed: string, count: number): number {
+   let hash = 0;
+   for (let index = 0; index < seed.length; index += 1) {
+     hash = (hash * 31 + seed.charCodeAt(index)) % 100003;
+
+[0m
+[0m← [0mEdit src/features/book-experience/beats/build.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\beats\build.ts
+@@ -263,14 +263,14 @@
+       modality: "text" as const,
+       description:
+         segment.kind === "internal"
+           ? `Internal meaning of ${segment.paragraphId} preserved in subtitles: ${chunk.slice(0, 80)}.`
+-          : `Subtitle carries ${segment.paragraphId} (${segment.kind}) in source order${chunks.length > 1 ? `, part ${chunkIndex + 1} of ${chunks.length}` : ""}.`,
++          : `Subtitle carries ${segment.paragraphId} (${segment.kind}) in source order${grouped.length > 1 ? `, part ${chunkIndex + 1} of ${grouped.length}` : ""}.`,
+     },
+     {
+       paragraphId: segment.paragraphId,
+       modality: "camera" as const,
+-      description: `AI ${framing} camera move settles on ${target} across ${chunkIndex + 1}/${chunks.length}.`,
++      description: `AI ${framing} camera move settles on ${target} across ${chunkIndex + 1}/${grouped.length}.`,
+     },
+   ],
+ };
+ const parsed = BeatSchema.safeParse(candidate);
+
+[0m
+[0m← [0mWrite src/features/book-experience/beats/verbatim.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/beats/representations.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/beats/reveal.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/beats/repository.ts
+Wrote file successfully.
+[0m
+[0m# [0mTodos
+[✓] Baseline + read guides/prior art
+[✓] Implement beats domain (build/verbatim/representations/reveal/repository)
+[•] Implement coverage review + moment-text grounding + BeatReview UI
+[ ] Extend worker/beats + worker/commentary.mts
+[ ] Add smoke:beats + package script
+[ ] Run gates + verify demoable outcome
+[ ] Update status.md + save patches
+[0m
+[0m← [0mWrite src/features/book-experience/coverage/review.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/moment-text/grounding.ts
+Wrote file successfully.
+[0m
+[0m→ [0mRead src/features/book-experience/story-map/components/StoryMapReview.tsx[90m [limit=80][0m
+[0m
+[0m← [0mWrite src/features/book-experience/beats/components/BeatReview.tsx
+Wrote file successfully.
+[0m
+[0m# [0mTodos
+[✓] Baseline + read guides/prior art
+[✓] Implement beats domain (build/verbatim/representations/reveal/repository)
+[✓] Implement coverage review + moment-text grounding + BeatReview UI
+[•] Extend worker/beats + worker/commentary.mts
+[ ] Add smoke:beats + package script
+[ ] Run gates + verify demoable outcome
+[ ] Update status.md + save patches
+[0m
+[0m← [0mWrite worker/beats/plan.mts
+Wrote file successfully.
+[0m
+Core beat modules are in — now finalizing worker verification and test coverage.
+[0m← [0mEdit worker/commentary.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\worker\commentary.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\worker\commentary.mts
++++ C:\Users\LENOVO\bookward-dashbaord\worker\commentary.mts
+@@ -105,4 +105,50 @@
+   });
+ 
+   return { model, preservedEditorText: preserved, evidenceParagraphIds, ...usage };
+ }
++
++// P7 sentence-level commentary verification (plan section 5).
++// Pure and local: every commentary sentence needs a mapped-paragraph
++// citation and future identities stay hidden behind seq gating. The worker
++// calls this before storing AI commentary; the owner never retypes text.
++export type CommentarySentenceInput = {
++  sentence: string;
++  groundedIn: string[];
++};
++
++export function verifyCommentary(args: {
++  commentaryId: string;
++  text: string;
++  sentences: CommentarySentenceInput[];
++  allowedParagraphIds: string[];
++  blockedTerms?: string[];
++}): string[] {
++  const allowed = new Set(args.allowedParagraphIds);
++  const problems: string[] = [];
++  if (!args.text.trim()) return [`Commentary ${args.commentaryId} is empty.`];
++  if (args.sentences.length === 0) {
++    return [`Commentary ${args.commentaryId} has no verifiable sentences.`];
++  }
++  for (const entry of args.sentences) {
++    if (!entry.sentence.trim()) {
++      problems.push(`Commentary ${args.commentaryId} contains an empty sentence.`);
++      continue;
++    }
++    if (entry.groundedIn.length === 0) {
++      problems.push(`Sentence "${entry.sentence.slice(0, 60)}" has no grounding citation.`);
++    }
++    for (const citation of entry.groundedIn) {
++      if (!allowed.has(citation)) {
++        problems.push(`${citation} is not mapped to this Moment; commentary must cite its own paragraphs.`);
++      }
++    }
++  }
++  for (const term of args.blockedTerms ?? []) {
++    if (term && args.text.includes(term)) {
++      problems.push(
++        `Commentary ${args.commentaryId} leaks a future identity ("${term}"); seq gates what can be shown.`,
++      );
++    }
++  }
++  return problems;
++}
+
+[0m
+[0m# [0mTodos
+[✓] Baseline + read guides/prior art
+[✓] Implement beats domain (build/verbatim/representations/reveal/repository)
+[✓] Implement coverage review + moment-text grounding + BeatReview UI
+[✓] Extend worker/beats + worker/commentary.mts
+[•] Add smoke:beats + package script
+[ ] Run gates + verify demoable outcome
+[ ] Update status.md + save patches
+[0m
+[0m← [0mWrite tests/smoke/smoke-beats.mts
+Wrote file successfully.
+[0m
+[0m→ [0mRead package.json[90m [limit=35][0m
+[0m
+[0m← [0mEdit package.json
+Index: C:\Users\LENOVO\bookward-dashbaord\package.json
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\package.json
++++ C:\Users\LENOVO\bookward-dashbaord\package.json
+@@ -26,8 +26,9 @@
+   "smoke:canonical": "node --experimental-strip-types tests/smoke/smoke-canonical.mts",
+   "smoke:job-engine": "node --experimental-strip-types tests/smoke/smoke-job-engine.mts",
+   "smoke:book-model": "node --experimental-strip-types tests/smoke/smoke-book-model.mts",
+   "smoke:story-planning": "node --experimental-strip-types tests/smoke/smoke-story-planning.mts",
++  "smoke:beats": "node --experimental-strip-types tests/smoke/smoke-beats.mts",
+   "test:preview": "node --experimental-strip-types tests/book-experience/preview-check.mts",
+   "lint": "eslint"
+ },
+ "dependencies": {
+
+[0m
+[0m$ [0mnode --experimental-strip-types tests/smoke/smoke-beats.mts
+(node:11964) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11964) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/beats/build.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  Beats preserve source order with contiguous 1-based order
+PASS  Beat IDs follow ep_01_m01_b01 naming
+PASS  A ~120-word passage splits into two ordered quote Beats
+PASS  Split quotes drop no content
+PASS  splitLongText keeps short text whole
+PASS  Internal thought survives in subtitle commentary
+PASS  Subtitle HTML carries the internal meaning escaped
+PASS  Every Beat subtitle renders readable text
+PASS  Quotes match source offsets character-for-character
+PASS  A one-character dialogue mutation fails verbatim
+PASS  Empty offsets throw an actionable error
+PASS  Valid plan passes representation review
+PASS  Arbitrary ID tagging is rejected
+PASS  Missing paragraph coverage names p000004
+PASS  Internal meaning with no subtitle text is rejected
+PASS  Source-order violations are rejected
+PASS  Future identity stays hidden before its seq
+PASS  True identity resolves at its reveal seq
+FAIL  Entities gate by Beat seq
+PASS  Gated entities resolve a focus target when allowed
+PASS  AI supplies every camera pose with finite intent and zoom >= 1
+PASS  First Beat cuts in; later Beats carry typed transitions
+PASS  Each Beat names exactly one composition
+PASS  Every built Beat parses through the canonical Zod contract
+PASS  Commentary splits into verifiable sentences
+PASS  Grounded commentary verifies
+PASS  Ungrounded sentences fail verification
+PASS  Future identities stay out of commentary
+PASS  Worker commentary verifier grounds sentences
+PASS  Worker commentary verifier blocks future leaks
+PASS  Worker plans Beats through the fake proposer
+PASS  Beat approval is idempotent per fingerprint
+PASS  Beat planning requires approved Moment ranges
+PASS  Corrections invalidate dependent Beat drafts
+PASS  Coverage review links every story paragraph to a Beat
+PASS  Non-story material stays outside story coverage
+PASS  Complete coverage approves
+PASS  Malformed coverage blocks approval
+PASS  Fixture preview reuses Beats with readable subtitles
+PASS  Beat review shows pending-visual placeholders
+PASS  Beat review approves without camera or text entry
+PASS  Every new P7 file stays below 1000 lines
+
+41/42 checks passed
+[0m
+42 checks in, one gating assertion needs correcting — fixing the test.
+[0m← [0mEdit tests/smoke/smoke-beats.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-beats.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-beats.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-beats.mts
+@@ -137,12 +137,19 @@
+ 
+ const reveals = [{ entityId: "ch_mara", displayName: "Mara Quinn", preRevealName: "the deckhand", revealSeq: 4 }];
+ check("Future identity stays hidden before its seq", resolveRevealView(reveals, 2).ch_mara === "the deckhand" && isRevealSafe(reveals, 2));
+ check("True identity resolves at its reveal seq", resolveRevealView(reveals, 4).ch_mara === "Mara Quinn");
+-const gated = buildBeats({ ...baseArgs, entityFirstSeq: { ch_mara: 0, ch_captain: 99 } });
++const gated = buildBeats({
++  ...baseArgs,
++  entityFirstSeq: { ch_mara: 99, ch_captain: 99 },
++  segments: baseArgs.segments.map((segment) =>
++    segment.paragraphId === "p000000" ? { ...segment, entities: ["ch_captain"] } : segment,
++  ),
++});
+ check(
+   "Entities gate by Beat seq",
+-  (gated.find((beat) => beat.text.quote?.paragraphId === "p000004")?.camera.focusEntityId ?? undefined) === undefined,
++  (gated.find((beat) => beat.text.dialogue?.[0]?.paragraphId === "p000000")?.camera.focusEntityId ??
++    undefined) === undefined,
+ );
+ check(
+   "Gated entities resolve a focus target when allowed",
+   beats.find((beat) => beat.text.quote?.paragraphId === "p000004")?.camera.focusEntityId === "ch_mara",
+
+[0m
+[0m$ [0mnode --experimental-strip-types tests/smoke/smoke-beats.mts 2>&1 | tail -8
+PASS  Complete coverage approves
+PASS  Malformed coverage blocks approval
+PASS  Fixture preview reuses Beats with readable subtitles
+PASS  Beat review shows pending-visual placeholders
+PASS  Beat review approves without camera or text entry
+PASS  Every new P7 file stays below 1000 lines
+
+42/42 checks passed
+[0m
+[0m# [0mTodos
+[✓] Baseline + read guides/prior art
+[✓] Implement beats domain (build/verbatim/representations/reveal/repository)
+[✓] Implement coverage review + moment-text grounding + BeatReview UI
+[✓] Extend worker/beats + worker/commentary.mts
+[✓] Add smoke:beats + package script
+[•] Run gates + verify demoable outcome
+[ ] Update status.md + save patches
+[0m
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -15
+> editorial-studio@0.1.0 lint
+> eslint
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -30
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 192ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.9s
+  Running TypeScript ...
+src/features/book-experience/coverage/review.ts(6,15): error TS2459: Module '"../beats/build.ts"' declares 'Beat' locally, but it is not exported.
+Failed to type check.
+[0m
+[0m← [0mEdit src/features/book-experience/coverage/review.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\coverage\review.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\coverage\review.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\coverage\review.ts
+@@ -2,9 +2,9 @@
+ // Every story paragraph appears in a report linking source -> Moment ->
+ // Beat -> Representation. Non-story material stays classified and available
+ // as source but outside story coverage. Malformed coverage blocks approval.
+ 
+-import type { Beat } from "../beats/build.ts";
++import type { Beat } from "../schemas/beat.ts";
+ 
+ export type CoverageRow = {
+   paragraphId: string;
+   seq: number;
+
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -30
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/episodes
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+Build is green — now running the remaining verification gates.
+[0m$ [0mnpm.cmd run smoke:beats 2>&1 | tail -4 && npm.cmd run smoke:text 2>&1 | tail -3 && npm.cmd run smoke:posting 2>&1 | tail -6
+PASS  Beat review approves without camera or text entry
+PASS  Every new P7 file stays below 1000 lines
+
+42/42 checks passed
+PASS  An empty paragraph yields no default span
+
+10/10 checks passed
+PASS  canonical Story Moments require live=true for Reader access
+PASS  replacement versions remain editor-only
+PASS  all other book descendants remain editor-only
+PASS  clients cannot write canonical or internal data
+
+5/5 checks passed
+[0m
+[0m$ [0mnpm.cmd run test:preview 2>&1 | tail -5
+PASS  Required file exists: tests/book-experience/preview.spec.ts
+PASS  Required file exists: playwright.config.ts
+PASS  Every new feature file stays below 1000 lines
+
+23/23 checks passed
+[0m
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md[90m [offset=192][0m
+[0m
+[0m$ [0mgit diff --stat && git status --short | head -40
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  29 +
+ docs/features/25d-schema-foundation/status.md      |  81 +-
+ package.json                                       |   3 +
+ worker/commentary.mts                              |  46 ++
+ 6 files changed, 643 insertions(+), 410 deletions(-)
+ M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+ M worker/commentary.mts
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/P6.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/.run/settled.P6
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? docs/features/25d-schema-foundation/logs/P6-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P7-attempt1-000747.log
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/beats/
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/coverage/
+?? src/features/book-experience/story-map/
+?? src/features/episodes/adapters.ts
+?? src/features/moment-text/grounding.ts
+?? src/features/moments/adapters.ts
+?? tests/smoke/smoke-beats.mts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? worker/beats/
+?? worker/book-model/
+?? worker/story-planning/
+[0m
+[0m$ [0mrg -i "api[_-]?key|secret|token|password|Bearer" src/features/book-experience/beats/ src/features/book-experience/coverage/ src/features/moment-text/grounding.ts worker/beats/ tests/smoke/smoke-beats.mts || echo "NO_SECRETS"
+/usr/bin/bash: line 1: rg: command not found
+NO_SECRETS
+[0m
+[0m✱ [0mGrep "api[_-]?key|secret|password|Bearer"[90m in src/features/book-experience/beats · 0 matches[0m
+[0m✱ [0mGrep "api[_-]?key|secret|password|Bearer"[90m in worker/beats · 0 matches[0m
+All gates pass and the diff is clean — recording the phase outcome.
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -12,9 +12,9 @@
+ | P3 | done | P2 | 2026-09-18 | lint pass; build pass (24 routes); smoke:schemas 14/14; smoke:canonical 17/17; smoke:pdf 2/2; smoke:uncertainties 5/5; smoke:workflow 10/10 | Canonical source + full section-3 schemas: p000000 seq, immutable canonical.json pointer, 20-para chunks, correction history with draft invalidation, classification instead of deletion, fakes-backed review/approval slice. Patch .patches/P3-studio.patch + new-file copies. |
+ | P4 | qa-pending | P3 | 2026-09-18 | lint pass; build pass (24 app routes + proxy, incl. …/jobs/approve); smoke:job-engine 23/23; smoke:operations 13/13; smoke:batch 4/4; smoke:workflow 10/10 | Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies. |
+ | P5 | qa-pending | P4 | 2026-09-18 | lint pass; build pass (25 app routes + proxy, incl. …/model); smoke:book-model 29/29; smoke:schemas 14/14; smoke:bible 8/8 | Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies. |
+ | P6 | done | P5 | 2026-09-18 | lint pass; build pass (26 routes); smoke:story-planning 31/31; smoke:episodes 18/18; smoke:moments 21/21 | AI StoryMap/Episode/Moment ranges with strict tiling, bounded repair, approval-only UI; later-episode production independent of published siblings. Patch .patches/P6-studio.patch + new-file copies. |
+-| P7 | in-progress | P6 | — | Not run | Not started. |
++| P7 | done | P6 | 2026-09-18 | lint pass; build pass (26 routes); smoke:beats 42/42; smoke:text 10/10; smoke:posting pass; test:preview 23/23 | AI Beat planning with complete-book representation: structured quotes/dialogue/commentary, sentence grounding, verbatim offsets, reveal-safe views, semantic cameras/transitions, BeatReview with subtitles + coverage + pending-visual placeholders, no camera/text entry. Patch .patches/P7-studio.patch + new-file copies. |
+ | P8 | todo | P7 | — | Not run | Not started. |
+ | P9 | todo | P8 | — | Not run | Not started. |
+ | P10 | todo | P9 | — | Not run | Not started. |
+ | P11 | todo | P10 | — | Not run | Not started. |
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -22,8 +22,23 @@
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+ 
+ ## Progress log
+ 
++### 2026-09-18 — P7 done: AI Beat planning and complete-book representation (unattended)
++
++- Baseline (pre-edit): P6 done, P7 row in-progress. Tracked diff was runner state only (`.patches/P4-studio.patch` regeneration, `.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `package.json` one-line P6 script); untracked entries were P5/P6 patch artifacts, runner logs/results and landed-but-uncommitted P5/P6 code (`src/app/api/books/[bookId]/episodes|model/`, `book-experience/book-model|story-map/`, `worker/book-model|story-planning/`, smoke-book-model/story-planning, adapters). `new.md` untouched (still untouched after this phase). P7 work is unstaged only (tracked edits: `package.json` one-line script, `worker/commentary.mts` pure verifier appendix; new files listed below).
++- Dependency check: P6 done permits progress. No placeholder; all P7 work is real code against fakes/fixtures. No paid planning calls, no live writes, no camera/text entry by the owner (ADR-003).
++- Read AGENTS.md plus bundled Next guide `node_modules/next/dist/docs/01-app/01-getting-started/05-server-and-client-components.md` before changing Next code (new BeatReview is a `"use client"` review component with approve/regenerate buttons only, matching StoryMapReview).
++- New domain `src/features/book-experience/beats/`: `build.ts` (buildBeats/beatIdFor/splitLongText: source-order Beats ep_01_m01_b01, ~60-word splits with exact UTF-16 offsets and zero content loss, seq-gated entities, one compositionId per Beat, deterministic AI camera/transition plans with rationale), `verbatim.ts` (validateVerbatim: slice-exact quote/dialogue match, no normalization), `representations.ts` (validateRepresentations: meaningful descriptions ≥12 chars, generic-tag rejection, internal paragraphs require subtitle text, source-order enforcement), `reveal.ts` (resolveRevealView/isRevealSafe: pre-reveal names hidden below reveal seq), `repository.ts` (FakeBeatStore: propose/approve with fingerprint idempotency, correction-driven outdated invalidation), `components/BeatReview.tsx` (subtitles + paragraph-to-Beat coverage table + pending-visual placeholders; Approve/Request-AI-revision only, no camera/text inputs — verified by source grep).
++- Coverage `src/features/book-experience/coverage/review.ts` (buildCoverageReview/coverageApprovalProblem: uncovered/meaningless paragraphs block approval with named IDs; non-story stays classified outside coverage). Moment-text `src/features/moment-text/grounding.ts` (splitSentences/verifyCommentary: sentence-level citations, Moment-mapping checks, blocked future-term leak detection).
++- Worker `worker/beats/plan.mts` (runBeatPlanning with injected fake proposer, Moment-approval gating, verbatim+representation validation before store); `worker/commentary.mts` gains a pure verifyCommentary appendix (existing generateCommentary untouched). Package script `smoke:beats` added. Every new file <1000 lines; plan.md, prompts.md, CONTEXT.md untouched; no new dependencies; no secrets in new files.
++- Test seam `tests/smoke/smoke-beats.mts` 42/42 (prior art: smoke-moment-text.mts, smoke-posting.mts PASS style; preview.spec.ts from P2 reused via compileFixtureBundle+resolveFrame). Fixture: dialogue + 120-word long passage + internal thought + classified non-story + reveal paragraph. Covers order/IDs, lossless split, internal meaning in escaped HTML subtitles, verbatim pass/mutation-fail, tagging/gap/internal/order negatives, reveal hide/show, seq gating, camera completeness, Zod parsing, sentence grounding + leak blocks, worker pass/approval-idempotency/outdated-invalidation, coverage approve/block, fixture-preview reuse, UI input-absence, file sizes. One test-authoring fix: the seq-gating check first expected an allowed entity to vanish; corrected to gate out every entity (behavior unchanged).
++- Gates (all green): lint pass; build pass (26 routes, no new routes — P7 adds no endpoints by design); smoke:beats 42/42; smoke:text 10/10; smoke:posting pass; test:preview 23/23. Evidence: "PASS Split quotes drop no content" and "PASS Internal thought survives in subtitle commentary" and "PASS Future identity stays hidden before its seq" and "PASS Malformed coverage blocks approval" — a long passage splits losslessly, an internal thought persists in subtitles with exact offsets, future identities hide until their seq, and gap coverage blocks approval.
++- Demoable outcome met locally: BeatReview exposes AI-planned Beats with readable subtitles, a complete paragraph-to-Beat coverage review and pending-visual placeholders, with Approve/Request-AI-revision as the only actions. Owner QA (one-line spot check, local only): render BeatReview with the smoke fixture Beats, confirm the long passage reads whole across two subtitles, the internal thought is fully worded, quotes match the source offsets, the deckhand identity hides until p000004, and removing a paragraph representation blocks Approve.
++- Patch: `.patches/P7-studio.patch` (tracked binary diff) plus new-file copies under `.patches/P7-new-files/`. No staging, no commit (suggested message below), no deploy, no live writes.
++- Suggested commit message: `P7: AI beat planning with verbatim, reveal-safe coverage review`.
++- Out of scope (logged, not fixed): legacy moment-text store/routes/UIs still serve the old primary-text/one-image model until P8–P12 migrate them; non-gate suites not re-run; smoke-e2e/smoke-formats remain forbidden as autonomous gates per Scaffold deferred.
++
+ ### 2026-09-18 — P6 done: StoryMap, Episodes and Moments (unattended)
+ 
+ - Baseline (pre-edit): P5 qa-pending, P6 row in-progress. Tracked diff was runner state only (`.patches/P4-studio.patch` regeneration, `.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `package.json` one-line P5 script); untracked entries were P5 patch artifacts, runner logs/results (incl. `logs/P6-attempt1-235710.log`) and landed-but-uncommitted P5 code (`src/app/api/books/[bookId]/model/`, `src/features/book-experience/book-model/`, `worker/book-model/`, `smoke-book-model.mts`, `bible/adapters.ts`). `new.md` untouched (still untouched after this phase). P6 work is unstaged only (tracked edit: `package.json` one-line script; new files listed below).
+ - Dependency check: P5 qa-pending permits progress. No placeholder; all P6 work is real code against fakes/fixtures. No paid planning calls, no live writes, no boundary editing by the owner (owner checklist Before/During).
+
+[0m
+[0m✗ [0mEdit docs/features/25d-schema-foundation/status.md failed
+[91m[1mError: [0mFound multiple matches for oldString. Provide more surrounding context to make the match unique.
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -207,5 +207,6 @@
+ - [loop] P5 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: chapter-bounded rolling ledger with overlap dedup, deterministic deltas, immutable per-window checkpoints, consolidated Entity/Event review with spoiler-safe identity, AI merge/split proposals with approve/reject-only actions. Owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies.
+ - [loop] P5 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies.
+ - [P6 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Intentional plan-10 change (legacy p000001/intended-overlap/many-to-many → canonical p000000 strict tiling) applied via adapters with retained internals and recorded reasons. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book planning quality is P13 owner QA. No new architectural decision proposed.
+ - [loop] P6 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:story-planning && npm.cmd run smoke:episodes && npm.cmd run smoke:moments
+-- [loop] P6 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:story-planning && npm.cmd run smoke:episodes && npm.cmd run smoke:moments
++- [P7 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. One test-authoring correction (seq-gating check gated out every entity instead of expecting an allowed entity to vanish); no behavior change. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book beat quality is P13 owner QA. No new architectural decision proposed.
++- [loop] P7 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:beats && npm.cmd run smoke:text && npm.cmd run smoke:posting && npm.cmd run test:preview
+
+[0m
+[0m$ [0mls .patches/ 2>/dev/null; mkdir -p .patches/P7-new-files && git diff --binary --output=.patches/P7-studio.patch && cp src/features/book-experience/beats/build.ts src/features/book-experience/beats/verbatim.ts src/features/book-experience/beats/representations.ts src/features/book-experience/beats/reveal.ts src/features/book-experience/beats/repository.ts src/features/book-experience/beats/components/BeatReview.tsx src/features/book-experience/coverage/review.ts src/features/moment-text/grounding.ts worker/beats/plan.mts tests/smoke/smoke-beats.mts .patches/P7-new-files/ && ls .patches/P7-new-files/
+P0-new-files
+P0-studio.patch
+P1-new-files
+P1-studio.patch
+P2-new-files
+P2-studio.patch
+P3-new-files
+P3-studio.patch
+P4-new-files
+P4-studio.patch
+P5-new-files
+P5-studio.patch
+P6-new-files
+P6-studio.patch
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+BeatReview.tsx
+build.ts
+grounding.ts
+plan.mts
+repository.ts
+representations.ts
+reveal.ts
+review.ts
+smoke-beats.mts
+verbatim.ts
+[0m
+[0m$ [0mgit diff --cached --stat | head -5; echo "---"; git status --short | wc -l
+---
+40
+[0m
+[0m# [0mTodos
+[✓] Baseline + read guides/prior art
+[✓] Implement beats domain (build/verbatim/representations/reveal/repository)
+[✓] Implement coverage review + moment-text grounding + BeatReview UI
+[✓] Extend worker/beats + worker/commentary.mts
+[✓] Add smoke:beats + package script
+[✓] Run gates + verify demoable outcome
+[✓] Update status.md + save patches
+[0m
+P7 done. All gates green; nothing staged, committed, or deployed.
+
+**What landed** (unstaged only, `new.md` untouched):
+- `src/features/book-experience/beats/` — `build.ts` (source-order Beats `ep_01_m01_b01`, lossless ~60-word splits with exact UTF-16 offsets, seq-gated entities, one compositionId per Beat, deterministic AI camera/transition plans), `verbatim.ts`, `representations.ts` (meaningful-description + internal-requires-subtitles + order checks), `reveal.ts` (spoiler-safe views), `repository.ts` (FakeBeatStore with idempotent approval + outdated invalidation), `components/BeatReview.tsx` (subtitles + coverage table + pending-visual placeholders, approve/revision buttons only).
+- `src/features/book-experience/coverage/review.ts` — paragraph-to-Beat review; malformed coverage blocks approval.
+- `src/features/moment-text/grounding.ts` — sentence splitting + `verifyCommentary`; `worker/beats/plan.mts` — fake-proposer worker pass; `worker/commentary.mts` — pure verifier appended, existing generation untouched.
+- `tests/smoke/smoke-beats.mts` + `smoke:beats` script.
+
+**Gates:** lint pass; build pass (26 routes, no new routes by design); smoke:beats 42/42; smoke:text 10/10; smoke:posting pass; test:preview 23/23.
+
+**Evidence:** "PASS Split quotes drop no content" + "PASS Internal thought survives in subtitle commentary" + "PASS Future identity stays hidden before its seq" + "PASS Malformed coverage blocks approval".
+
+**Recorded:** status.md P7 row → done with gate results, dated Progress log, Deferred append; patch `.patches/P7-studio.patch` + 10 new-file copies under `.patches/P7-new-files/`; nothing staged.
+
+**Suggested commit message for studio:** `P7: AI beat planning with verbatim, reveal-safe coverage review`
+
+**Owner QA (local spot check):** render BeatReview with the smoke-fixture Beats — confirm the long passage reads whole across two subtitles, the internal thought is fully worded, quotes match source offsets, the deckhand identity hides until p000004, and removing a paragraph representation blocks Approve.

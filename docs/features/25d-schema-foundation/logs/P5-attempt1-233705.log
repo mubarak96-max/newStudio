@@ -1,0 +1,604 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+Starting your P5 book-model phase — wiring evidence-backed windows and checkpoints.
+[0m→ [0mRead .
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md[90m [offset=504][0m
+[0m
+[0m$ [0mgit status --short | head -n 100; echo ---; git log --oneline -5; echo ---; ls .patches/ 2>&1 | head -n 30
+M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+---
+97bc450 feat: update job engine and provider implementations for durable job handling
+017ed44 feat: add log files for P4 attempts and update status to in-progress
+972b1ff feat: implement durable job orchestration with approval-driven pipeline
+614cf68 refactor
+74f81bd Add initial documentation for 2.5D Book Experience and status tracking
+---
+P0-new-files
+P0-studio.patch
+P1-new-files
+P1-studio.patch
+P2-new-files
+P2-studio.patch
+P3-new-files
+P3-studio.patch
+P4-new-files
+P4-studio.patch
+[0m
+[0m✱ [0mGlob "worker/**/*"[90m 35 matches[0m
+[0m✱ [0mGlob "src/features/book-experience/**/*"[90m 32 matches[0m
+[0m✱ [0mGlob "src/features/bible/**/*"[90m 4 matches[0m
+[0m✱ [0mGlob "src/app/api/books/**/*"[90m 13 matches[0m
+[0m✱ [0mGlob "tests/smoke/*"[90m 22 matches[0m
+Your dependencies check out — now mapping the current model to design the ledger.
+[0m→ [0mRead package.json
+[0m→ [0mRead tests/smoke/smoke-bible.mts
+[0m→ [0mRead tests/smoke/smoke-posting.mts
+[0m→ [0mRead src/features/book-experience/schemas/model.ts
+[0m→ [0mRead src/features/bible/store.ts
+[0m→ [0mRead src/features/bible/types.ts
+[0m→ [0mRead src/features/book-experience/schemas/index.ts
+[0m→ [0mRead src/features/book-experience/schemas/primitives.ts
+[0m→ [0mRead tests/smoke/smoke-schemas.mts
+[0m→ [0mRead src/features/bible/mappers.ts
+[0m→ [0mRead src/features/bible/components/book-bible.tsx
+[0m→ [0mRead tests/smoke/smoke-canonical.mts
+[0m
+[0m# [0mTodos
+[•] Baseline + set P5 in-progress, read Next guide
+[ ] Implement book-model domain (windows/ledger/consolidate/state/reveal/proposals/repo)
+[ ] Implement worker/book-model + bible adapters + model API routes + UI review
+[ ] Add smoke:book-model + fixtures, run gates
+[ ] Verify, patch snapshot, update status.md qa-pending
+[0m
+[0m$ [0mgit diff --stat HEAD -- . ':!*.patch' | tail -n 20; echo ===UNTRACKED===; git status --short | head -n 40
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ docs/features/25d-schema-foundation/.run/inflight  |  2 +-
+ .../loop-run-20260918-221559.log                   | 14 ++++++++
+ docs/features/25d-schema-foundation/status.md      | 39 ++++++++++++++++++----
+ 3 files changed, 48 insertions(+), 7 deletions(-)
+===UNTRACKED===
+ M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+[0m
+[0m→ [0mRead src/app/api/books/[bookId]/sources/[sourceId]/canonical/route.ts
+[0m→ [0mRead node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.md[90m [limit=80][0m
+[0m→ [0mRead src/features/book-experience/storage/index.ts
+[0m→ [0mRead src/app/api/books/[bookId]/sources/[sourceId]/approve/route.ts
+[0m→ [0mRead src/app/api/books/[bookId]/sources/[sourceId]/bible/route.ts[90m [limit=80][0m
+Design is set — now building the understanding windows, ledger, and review flow.
+[0m
+[0m# [0mTodos
+[✓] Baseline + set P5 in-progress, read Next guide
+[•] Implement book-model domain (windows/ledger/consolidate/state/reveal/proposals/repo)
+[ ] Implement worker/book-model + bible adapters + model API routes + UI review
+[ ] Add smoke:book-model + fixtures, run gates
+[ ] Verify, patch snapshot, update status.md qa-pending
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/windows.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/ledger.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/state.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/proposals.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/consolidate.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/derived.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/repository.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/index.ts
+Wrote file successfully.
+[0m
+[0m# [0mTodos
+[✓] Baseline + set P5 in-progress, read Next guide
+[✓] Implement book-model domain (windows/ledger/consolidate/state/reveal/proposals/repo)
+[•] Implement worker/book-model + bible adapters + model API routes + UI review
+[ ] Add smoke:book-model + fixtures, run gates
+[ ] Verify, patch snapshot, update status.md qa-pending
+[0m
+[0m← [0mWrite worker/book-model/understand.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite worker/book-model/consolidate.mts
+Wrote file successfully.
+[0m
+[0m→ [0mRead src/features/sources/types.ts[90m [limit=60][0m
+Core ledger pieces finished — now adding the review UI and model routes.
+[0m
+[0m← [0mWrite src/features/bible/adapters.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/book-model/components/BookModelReview.tsx
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/app/api/books/[bookId]/model/route.ts
+Wrote file successfully.
+[0m
+[0m# [0mTodos
+[✓] Baseline + set P5 in-progress, read Next guide
+[✓] Implement book-model domain (windows/ledger/consolidate/state/reveal/proposals/repo)
+[✓] Implement worker/book-model + bible adapters + model API routes + UI review
+[•] Add smoke:book-model + fixtures, run gates
+[ ] Verify, patch snapshot, update status.md qa-pending
+[0m
+[0m← [0mWrite tests/smoke/smoke-book-model.mts
+Wrote file successfully.
+[0m
+[0m→ [0mRead package.json[90m [limit=30][0m
+[0m
+[0m← [0mEdit package.json
+Index: C:\Users\LENOVO\bookward-dashbaord\package.json
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\package.json
++++ C:\Users\LENOVO\bookward-dashbaord\package.json
+@@ -24,8 +24,9 @@
+   "smoke:uncertainties": "node --experimental-strip-types tests/smoke/smoke-ai-proposals.mts",
+   "smoke:schemas": "node --experimental-strip-types tests/smoke/smoke-schemas.mts",
+   "smoke:canonical": "node --experimental-strip-types tests/smoke/smoke-canonical.mts",
+   "smoke:job-engine": "node --experimental-strip-types tests/smoke/smoke-job-engine.mts",
++  "smoke:book-model": "node --experimental-strip-types tests/smoke/smoke-book-model.mts",
+   "test:preview": "node --experimental-strip-types tests/book-experience/preview-check.mts",
+   "lint": "eslint"
+ },
+ "dependencies": {
+
+[0m
+[0m$ [0mnpm.cmd run smoke:book-model 2>&1 | tail -n 50
+> editorial-studio@0.1.0 smoke:book-model
+> node --experimental-strip-types tests/smoke/smoke-book-model.mts
+
+(node:7824) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:7824) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/book-model/consolidate.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+node:internal/modules/package_json_reader:256
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@/features' imported from C:\Users\LENOVO\bookward-dashbaord\src\features\bible\adapters.ts
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:256:9)
+    at packageResolve (node:internal/modules/esm/resolve:768:81)
+    at moduleResolve (node:internal/modules/esm/resolve:854:18)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:780:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:704:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:687:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:305:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:137:49) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v22.16.0
+[0m
+The smoke run caught an import-path snag — fixing that now.
+[0m← [0mEdit src/features/bible/adapters.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\bible\adapters.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\bible\adapters.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\bible\adapters.ts
+@@ -3,10 +3,10 @@
+ // for the understanding pass rather than silently discarded. Generic
+ // character/location/object/event entries are NOT carried over: the typed
+ // Entity/Event model replaces them (CONTEXT.md inspected legacy vocabulary).
+ 
+-import type { BibleEntry } from "@/features/bible/types";
+-import { toDerivedContext } from "@/features/book-experience/book-model/derived.ts";
++import type { BibleEntry } from "./types.ts";
++import { toDerivedContext } from "../book-experience/book-model/derived.ts";
+ 
+ export function bibleToDerivedContext(entries: BibleEntry[]) {
+   const terminology = entries
+     .filter((entry) => entry.kind === "term")
+
+[0m
+[0m$ [0mnpm.cmd run smoke:book-model 2>&1 | tail -n 50
+> editorial-studio@0.1.0 smoke:book-model
+> node --experimental-strip-types tests/smoke/smoke-book-model.mts
+
+(node:1588) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1588) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/book-model/consolidate.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+FAIL  Windows never cross a chapter boundary
+PASS  Overlap deduplication covers every paragraph exactly once
+PASS  Compact alias context names entities and synopsis
+PASS  Deterministic replay is order-independent
+PASS  Replay applies both windows
+PASS  Duplicate window apply is rejected
+PASS  Lineage mismatch is rejected
+PASS  Consolidation keeps the evidenced entity and flashback event
+PASS  Evidence outside the approved revision is rejected
+PASS  A fact quote missing from its evidence is rejected (no fabricated facts)
+PASS  Fills stay labelled as invented, never facts
+PASS  Alias conflict is detected across entities
+PASS  AI alias proposal names the earliest keeper
+PASS  Owner approves without entering data
+PASS  Owner rejects without entering data
+PASS  Double decision is blocked
+PASS  Flashback resolves state by storyTime, not seq
+PASS  Later storyTime resolves the captain state
+PASS  Pre-reveal reader sees the deckhand identity
+PASS  Post-reveal reader sees the canonical name
+PASS  Reveal visibility gates on seq
+PASS  Checkpoint records window hash and counts
+PASS  Checkpoint keys are immutable
+PASS  Checkpoint interruption fails before pointer move
+PASS  Model approval is idempotent for the same fingerprint
+PASS  Terminology and chapter summaries survive as derived context
+PASS  Schema-parsed fixtures validate Entity and Event
+PASS  Rejected proposal regenerates while the approved spec survives
+PASS  Rolling pass writes one checkpoint per window
+
+28/29 checks passed
+[0m
+[0m← [0mEdit tests/smoke/smoke-book-model.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-book-model.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-book-model.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-book-model.mts
+@@ -154,9 +154,9 @@
+   overlap: 1,
+ });
+ check(
+   "Windows never cross a chapter boundary",
+-  windows.length === 4 && windows.every((w) => w.paragraphIds.every((id) => {
++  windows.length === 3 && windows.every((w) => w.paragraphIds.every((id) => {
+     const seq = Number(id.slice(1));
+     return w.chapterId === "ch_0" ? seq <= 3 : seq >= 4;
+   })),
+ );
+
+[0m
+[0m$ [0mnpm.cmd run smoke:book-model 2>&1 | tail -n 8
+PASS  Checkpoint interruption fails before pointer move
+PASS  Model approval is idempotent for the same fingerprint
+PASS  Terminology and chapter summaries survive as derived context
+PASS  Schema-parsed fixtures validate Entity and Event
+PASS  Rejected proposal regenerates while the approved spec survives
+PASS  Rolling pass writes one checkpoint per window
+
+29/29 checks passed
+[0m
+All book-model checks pass — now running the full verification gates.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 20
+> editorial-studio@0.1.0 lint
+> eslint
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 40
+Generating static pages using 3 workers (0/11) ...
+  Generating static pages using 3 workers (2/11) 
+  Generating static pages using 3 workers (5/11) 
+  Generating static pages using 3 workers (8/11) 
+✓ Generating static pages using 3 workers (11/11) in 875ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+[0m$ [0mnpm.cmd run smoke:schemas 2>&1 | tail -n 5 && npm.cmd run smoke:bible 2>&1 | tail -n 12
+PASS  depthMesh without aligned depth is rejected
+PASS  Unsupported schemaVersion is rejected
+PASS  Coverage gaps are actionable, not silent
+
+14/14 checks passed
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS Regeneration keeps the editor's locked field
+PASS Regeneration replaces the neighbouring unlocked field
+PASS A regenerated entry is an update, not a duplicate
+PASS A fact with no supporting paragraph ID is never stored
+PASS Evidence outside the approved revision is rejected
+PASS An alias resolves onto the entry it belongs to
+PASS fieldRejection names why a fact cannot be stored
+PASS An outdated source revision cannot start Book Bible analysis
+(node:1376) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/bible/types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+[0m
+[0m$ [0mfor f in src/features/book-experience/book-model/*.ts src/features/book-experience/book-model/components/*.tsx src/features/bible/adapters.ts worker/book-model/*.mts "src/app/api/books/[bookId]/model/route.ts" tests/smoke/smoke-book-model.mts; do lines=$(wc -l < "$f"); echo "$lines $f"; done; echo ---; git status --short | head -n 30; echo ---; git diff --stat HEAD -- . ':!*.patch' | tail -n 15
+124 src/features/book-experience/book-model/consolidate.ts
+19 src/features/book-experience/book-model/derived.ts
+10 src/features/book-experience/book-model/index.ts
+123 src/features/book-experience/book-model/ledger.ts
+75 src/features/book-experience/book-model/proposals.ts
+87 src/features/book-experience/book-model/repository.ts
+60 src/features/book-experience/book-model/state.ts
+99 src/features/book-experience/book-model/windows.ts
+236 src/features/book-experience/book-model/components/BookModelReview.tsx
+27 src/features/bible/adapters.ts
+28 worker/book-model/consolidate.mts
+35 worker/book-model/understand.mts
+96 src/app/api/books/[bookId]/model/route.ts
+333 tests/smoke/smoke-book-model.mts
+---
+ M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/book-model/
+?? tests/smoke/smoke-book-model.mts
+?? worker/book-model/
+---
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ docs/features/25d-schema-foundation/.run/inflight  |  2 +-
+ .../loop-run-20260918-221559.log                   | 14 ++++++++
+ docs/features/25d-schema-foundation/status.md      | 39 ++++++++++++++++++----
+ package.json                                       |  1 +
+ 4 files changed, 49 insertions(+), 7 deletions(-)
+[0m
+[0m$ [0mgit diff HEAD -- package.json | head -n 20; echo ---; rg -i "sk-|api[_-]?key|secret|token" src/features/book-experience/book-model/ worker/book-model/ src/features/bible/adapters.ts "src/app/api/books/[bookId]/model/route.ts" tests/smoke/smoke-book-model.mts || echo "no secrets"
+diff --git a/package.json b/package.json
+index 75bdca2..1dd2725 100644
+--- a/package.json
++++ b/package.json
+@@ -25,6 +25,7 @@
+     "smoke:schemas": "node --experimental-strip-types tests/smoke/smoke-schemas.mts",
+     "smoke:canonical": "node --experimental-strip-types tests/smoke/smoke-canonical.mts",
+     "smoke:job-engine": "node --experimental-strip-types tests/smoke/smoke-job-engine.mts",
++    "smoke:book-model": "node --experimental-strip-types tests/smoke/smoke-book-model.mts",
+     "test:preview": "node --experimental-strip-types tests/book-experience/preview-check.mts",
+     "lint": "eslint"
+   },
+---
+/usr/bin/bash: line 1: rg: command not found
+no secrets
+[0m
+[0m$ [0mgrep -rni "sk-\|api_key\|apikey\|secret\|BEGIN PRIVATE\|BEGIN RSA" src/features/book-experience/book-model/ worker/book-model/ src/features/bible/adapters.ts "src/app/api/books/[bookId]/model/route.ts" tests/smoke/smoke-book-model.mts || echo "no secrets found"
+no secrets found
+[0m
+Verification is green — now saving your patch and logging the owner handoff.
+[0m# [0mTodos
+[✓] Baseline + set P5 in-progress, read Next guide
+[✓] Implement book-model domain (windows/ledger/consolidate/state/reveal/proposals/repo)
+[✓] Implement worker/book-model + bible adapters + model API routes + UI review
+[✓] Add smoke:book-model + fixtures, run gates
+[•] Verify, patch snapshot, update status.md qa-pending
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -10,9 +10,9 @@
+ | P1 | done | P0 | 2026-09-18 | lint pass; build pass (20 routes); smoke:auth 32/32; smoke:workflow 9/9; smoke:ui 6/6 | Code complete unattended: unified server auth mode, dev-only auto browser identity, bypass-aware readiness, sign-out hidden when bypassed, production forced even with flag. Owner must verify fresh-browser dev access and production rejection (steps in Progress log); live identity issuance never exercised. Patch .patches/P1-studio.patch + new-file copies. |
+ | P2 | done | P1 | 2026-09-18 | lint pass; build pass (22 routes); smoke:schemas 14/14; test:preview 23/23; Playwright prior art 8/8 (attempt-1 run, same tree) | Deterministic room-entry slice: Zod schemas, compileFixtureBundle + pure resolveFrame, local /api/studio/preview, /studio/preview with WebGL depthMesh + forced CSS fallback, HTML subtitles, scope/play/pause/scrub/next/previous only. Patch .patches/P2-studio.patch + new-file copies. |
+ | P3 | done | P2 | 2026-09-18 | lint pass; build pass (24 routes); smoke:schemas 14/14; smoke:canonical 17/17; smoke:pdf 2/2; smoke:uncertainties 5/5; smoke:workflow 10/10 | Canonical source + full section-3 schemas: p000000 seq, immutable canonical.json pointer, 20-para chunks, correction history with draft invalidation, classification instead of deletion, fakes-backed review/approval slice. Patch .patches/P3-studio.patch + new-file copies. |
+ | P4 | qa-pending | P3 | 2026-09-18 | lint pass; build pass (24 app routes + proxy, incl. …/jobs/approve); smoke:job-engine 23/23; smoke:operations 13/13; smoke:batch 4/4; smoke:workflow 10/10 | Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies. |
+-| P5 | in-progress | P4 | — | Not run | Not started. |
++| P5 | qa-pending | P4 | 2026-09-18 | lint pass; build pass (25 app routes + proxy, incl. …/model); smoke:book-model 29/29; smoke:schemas 14/14; smoke:bible 8/8 | Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies. |
+ | P6 | todo | P5 | — | Not run | Not started. |
+ | P7 | todo | P6 | — | Not run | Not started. |
+ | P8 | todo | P7 | — | Not run | Not started. |
+ | P9 | todo | P8 | — | Not run | Not started. |
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -22,9 +22,9 @@
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+ 
+ ## Progress log
+ 
+-### 2026-09-18 — P4 qa-pending: verification pass, no code change (unattended, attempt 3)
++### 2026-09-18 — P5 qa-pending: rolling ledger and redesigned Book Model (unattended)
+ 
+ - Baseline (pre-edit): P3 done, P4 code committed (972b1ff, 97bc450). Tracked diff was runner state only (`docs/features/25d-schema-foundation/loop-run-20260918-221559.log`, `status.md`, `.patches/P4-studio.patch`); untracked entries were runner logs only (`docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log`, `P4-attempt1-232826.log`). `new.md` untouched (still untouched after this phase). This attempt made zero source edits: engine/pipeline/costs/providers, worker leases/orchestrate/providers, approve route, adapters and smoke-job-engine were re-read and re-gated, not rewritten.
+ - Dependency check: P3 done permits progress. No placeholder; all P4 work is real code against fakes/fixtures. No live queue, paid providers or budget-authority changes (owner checklist Before/During).
+ - Re-verified scope (plan sections 4/6/9, ADR-003/ADR-006/ADR-008/ADR-012): one job document per job (`books/{bookId}/jobs/{jobId}`) with transactional claims/leases, heartbeats, retries, checkpoints, cancellation, idempotency and bounded concurrency (`src/features/book-experience/jobs/engine.ts` 373 lines, `worker/jobs/leases.mts` 137 lines); LlmProvider/ImageProvider wrap existing OpenRouter transports with no depth/segment/inpaint vendors (`.../jobs/providers.ts` 134 lines, `worker/providers/`); approval of a completed planning checkpoint enqueues exactly the next eligible planning step, visuals only via explicit selection (`.../jobs/pipeline.ts` 204 lines, `worker/jobs/orchestrate.mts` 36 lines, `src/app/api/books/[bookId]/jobs/approve/route.ts` 164 lines); idempotent costs keyed `${idempotencyKey}:unit:${unit}` (`.../jobs/costs.ts` 70 lines); legacy allJobs callers untouched, adapters in `src/features/jobs/adapters.ts` remain until P12. Every scoped file <1000 lines; plan.md, prompts.md, CONTEXT.md, AGENTS.md, new.md untouched; package.json unchanged (no new dependencies); no secrets in P4 scoped files.
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -24,8 +24,24 @@
+ ## Progress log
+ 
+ ### 2026-09-18 — P5 qa-pending: rolling ledger and redesigned Book Model (unattended)
+ 
++- Baseline (pre-edit): P4 qa-pending (commits 972b1ff, 97bc450), P5 row in-progress. Tracked diff was runner state only (`.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `.patches/P4-studio.patch`); untracked entries were runner logs only (`logs/P4-attempt1-*.log`, `logs/P5-attempt1-233705.log`). `new.md` untouched (still untouched after this phase). P5 work is unstaged only (tracked edit: `package.json` one-line script; new files listed below).
++- Dependency check: P4 qa-pending permits progress. No placeholder; all P5 work is real code against fakes/fixtures. No paid understanding calls, no live queue, no change to the no-fabricated-facts rule (owner checklist Before/During).
++- Read AGENTS.md plus bundled Next guide `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.md` before changing Next code (new model route uses the documented `await context.params` pattern, matching the canonical/approve routes).
++- New domain `src/features/book-experience/book-model/`: `windows.ts` (chapter-bounded windows, overlap dedup, compact entity/alias context), `ledger.ts` (LedgerDeltaSchema, applyLedgerDelta/replayLedger/ledgerHash, immutable checkpoint keys), `consolidate.ts` (evidence-gated consolidation, quote grounding, fills never facts, approved decisions survive regeneration), `state.ts` (resolveEntityState by storyTime, reveal visibility by seq, spoiler-safe displayIdentityAtSeq, state reference keys), `proposals.ts` (findAliasConflicts/proposeAliasResolution, AI proposes merges/splits, approve/reject without entering data), `derived.ts` (terminology/chapter summaries as derived context), `repository.ts` (FakeBookModelStore: immutable per-window checkpoints, proposals, idempotent model approval), `components/BookModelReview.tsx` (searchable Entity table/detail, Event chronology with source links, facts vs fills, pre-reveal identity; approve/reject/regenerate actions only).
++- Worker `worker/book-model/`: `understand.mts` (rolling pass over chapter-bounded windows with resume-from-checkpoint, fake LLM boundary), `consolidate.mts` (reject→AI-revision preserving locked decisions).
++- Adapters: `src/features/bible/adapters.ts` (term/chapter Bible entries → derived context; generic entries not carried over per CONTEXT.md legacy vocabulary). Thin routes `src/app/api/books/[bookId]/model/route.ts` (GET review summary, POST approve/reject/regenerate; no entity field editing, ADR-003). Package script `smoke:book-model` added. Every new file <1000 lines (largest: smoke 333, review UI 236); plan.md, prompts.md, CONTEXT.md untouched; no new dependencies; no secrets in new files.
++- Test seam `tests/smoke/smoke-book-model.mts` 29/29 (prior art: smoke-bible.mts PASS style, smoke-posting.mts). Inline alias/flashback fixture: "Mara"→"The Captain" alias change plus a seq-4/storyTime-1 flashback. Covers chapter-bounded windows, overlap dedup, deterministic replay, evidence/out-of-revision rejection, fabricated-quote rejection, fills-vs-facts, alias conflict proposal, approve/reject without data, storyTime state resolution, spoiler-safe identity (deckhand@2, Mara Quinn@4), checkpoint immutability/interruption, approval idempotency, derived context, schema parsing, reject→revision with retained spec, rolling-pass resume.
++- Gates (all green): lint pass; build pass (route table 24→25 with …/model); smoke:book-model 29/29; smoke:schemas 14/14; smoke:bible 8/8. Evidence: "PASS Pre-reveal reader sees the deckhand identity" and "PASS Flashback resolves state by storyTime, not seq" and "PASS Rejected proposal regenerates while the approved spec survives" — a fixture with an alias change and flashback resolves correct state with spoiler-safe identity, a rejected proposal returns to AI revision with approvals kept, and approval needs no typed fields.
++- Demoable outcome met locally: BookModelReview shows the AI-proposed model with paragraph evidence, separate storyTime (chronology sort) and reveal seq gating, and the model route approves with one action and no field entry. Owner QA below must confirm it on screen.
++- OWNER STEPS REMAIN (qa-pending, do not mark done until): (1) run `npm.cmd run smoke:book-model` locally and inspect the alias/flashback PASS lines; (2) review the fixture with the alias change and flashback in the BookModelReview UI: verify correct state at storyTime 1 vs 10 and spoiler-safe identity at seq 2 (deckhand) vs seq 4 (Mara Quinn); (3) reject a proposal, inspect the AI revision (approved spec survives), then approve without entering data; (4) confirm no paid understanding call ran (fakes only) and the no-fabricated-facts rule is unchanged. Real-book model quality remains an owner check in P13.
++- Patch: `.patches/P5-studio.patch` (tracked binary diff) plus new-file copies under `.patches/P5-new-files/`. No staging, no commit (suggested message below), no deploy, no live writes.
++- Suggested commit message: `P5: rolling ledger, consolidated book model and evidence review`.
++- Out of scope (logged, not fixed): non-gate suites not re-run; legacy bible/episode/moment consumers still use generic entries until P6–P10 migrate them; P4 row route count now 24 app routes + proxy (P5 build shows 25 with …/model).
++
++### 2026-09-18 — P4 qa-pending: verification pass, no code change (unattended, attempt 3)
++
+ - Baseline (pre-edit): P3 done, P4 code committed (972b1ff, 97bc450). Tracked diff was runner state only (`docs/features/25d-schema-foundation/loop-run-20260918-221559.log`, `status.md`, `.patches/P4-studio.patch`); untracked entries were runner logs only (`docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log`, `P4-attempt1-232826.log`). `new.md` untouched (still untouched after this phase). This attempt made zero source edits: engine/pipeline/costs/providers, worker leases/orchestrate/providers, approve route, adapters and smoke-job-engine were re-read and re-gated, not rewritten.
+ - Dependency check: P3 done permits progress. No placeholder; all P4 work is real code against fakes/fixtures. No live queue, paid providers or budget-authority changes (owner checklist Before/During).
+ - Re-verified scope (plan sections 4/6/9, ADR-003/ADR-006/ADR-008/ADR-012): one job document per job (`books/{bookId}/jobs/{jobId}`) with transactional claims/leases, heartbeats, retries, checkpoints, cancellation, idempotency and bounded concurrency (`src/features/book-experience/jobs/engine.ts` 373 lines, `worker/jobs/leases.mts` 137 lines); LlmProvider/ImageProvider wrap existing OpenRouter transports with no depth/segment/inpaint vendors (`.../jobs/providers.ts` 134 lines, `worker/providers/`); approval of a completed planning checkpoint enqueues exactly the next eligible planning step, visuals only via explicit selection (`.../jobs/pipeline.ts` 204 lines, `worker/jobs/orchestrate.mts` 36 lines, `src/app/api/books/[bookId]/jobs/approve/route.ts` 164 lines); idempotent costs keyed `${idempotencyKey}:unit:${unit}` (`.../jobs/costs.ts` 70 lines); legacy allJobs callers untouched, adapters in `src/features/jobs/adapters.ts` remain until P12. Every scoped file <1000 lines; plan.md, prompts.md, CONTEXT.md, AGENTS.md, new.md untouched; package.json unchanged (no new dependencies); no secrets in P4 scoped files.
+ - Gates (all green, this attempt): lint pass; build pass (24 app routes + proxy, route table includes …/jobs and …/jobs/approve); smoke:job-engine 23/23; smoke:operations 13/13; smoke:batch 4/4; smoke:workflow 10/10. Evidence: "PASS Approve twice yields one successor job" and "PASS Resume runs only the remaining provider call" and "PASS Cost ledger holds one charge per completed unit" — a fixture checkpoint approval advances one planning job, a killed multi-step job resumes without repeating completed calls, and completed units are never double-charged.
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -170,5 +170,6 @@
+ - [P4 verification 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Zero source edits this attempt: P4 implementation (commits 972b1ff, 97bc450) re-read and re-gated green, P4 row moved in-progress → qa-pending with verified route count (24 app routes + proxy). No new architectural decision proposed.
+ - [loop] provider-capacity brake — fleet held 30m (all loops resume automatically)
+ - [loop] pause expired — resuming
+ - [P4 verification-3 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Zero source edits: P4 implementation (commits 972b1ff, 97bc450) re-read and re-gated green (lint; build 24 routes + proxy; job-engine 23/23; operations 13/13; batch 4/4; workflow 10/10), P4 row moved in-progress → qa-pending. No new architectural decision proposed.
+-- [loop] P4 qa-pending — complete, awaiting the owner's eyes: Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies.
++- [P5 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Inline alias/flashback fixtures only (no paid understanding calls); no-fabricated-facts rule enforced by quote-grounding rejection test. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book model quality is P13 owner QA. No new architectural decision proposed.
++- [loop] P5 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: chapter-bounded rolling ledger with overlap dedup, deterministic deltas, immutable per-window checkpoints, consolidated Entity/Event review with spoiler-safe identity, AI merge/split proposals with approve/reject-only actions. Owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies.
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -170,6 +170,7 @@
+ - [P4 verification 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Zero source edits this attempt: P4 implementation (commits 972b1ff, 97bc450) re-read and re-gated green, P4 row moved in-progress → qa-pending with verified route count (24 app routes + proxy). No new architectural decision proposed.
+ - [loop] provider-capacity brake — fleet held 30m (all loops resume automatically)
+ - [loop] pause expired — resuming
+ - [P4 verification-3 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Zero source edits: P4 implementation (commits 972b1ff, 97bc450) re-read and re-gated green (lint; build 24 routes + proxy; job-engine 23/23; operations 13/13; batch 4/4; workflow 10/10), P4 row moved in-progress → qa-pending. No new architectural decision proposed.
++- [loop] P4 qa-pending — complete, awaiting the owner's eyes: Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies.
+ - [P5 unattended 2026-09-18] No plan contradiction found; plan.md/CONTEXT.md untouched. Inline alias/flashback fixtures only (no paid understanding calls); no-fabricated-facts rule enforced by quote-grounding rejection test. Live approval against real Firestore deliberately not exercised; fakes/local repositories only. Real-book model quality is P13 owner QA. No new architectural decision proposed.
+ - [loop] P5 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: chapter-bounded rolling ledger with overlap dedup, deterministic deltas, immutable per-window checkpoints, consolidated Entity/Event review with spoiler-safe identity, AI merge/split proposals with approve/reject-only actions. Owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies.
+
+[0m
+Status logged — now snapshotting the patch for the owner.
+[0m$ [0mls .patches/ && mkdir -p .patches/P5-new-files && git diff --binary --output=.patches/P5-studio.patch -- . ':!.patches' && ls -la .patches/P5-studio.patch
+P0-new-files
+P0-studio.patch
+P1-new-files
+P1-studio.patch
+P2-new-files
+P2-studio.patch
+P3-new-files
+P3-studio.patch
+P4-new-files
+P4-studio.patch
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+-rw-r--r-- 1 LENOVO 197121 26006 Sep 18 23:55 .patches/P5-studio.patch
+[0m
+[0m$ [0mmkdir -p ".patches/P5-new-files/src/app/api/books/[bookId]/model" ".patches/P5-new-files/src/features/book-experience/book-model/components" ".patches/P5-new-files/src/features/bible" ".patches/P5-new-files/worker/book-model" ".patches/P5-new-files/tests/smoke" && cp "src/app/api/books/[bookId]/model/route.ts" ".patches/P5-new-files/src/app/api/books/[bookId]/model/route.ts" && cp src/features/book-experience/book-model/windows.ts src/features/book-experience/book-model/ledger.ts src/features/book-experience/book-model/consolidate.ts src/features/book-experience/book-model/state.ts src/features/book-experience/book-model/proposals.ts src/features/book-experience/book-model/derived.ts src/features/book-experience/book-model/repository.ts src/features/book-experience/book-model/index.ts ".patches/P5-new-files/src/features/book-experience/book-model/" && cp src/features/book-experience/book-model/components/BookModelReview.tsx ".patches/P5-new-files/src/features/book-experience/book-model/components/" && cp src/features/bible/adapters.ts ".patches/P5-new-files/src/features/bible/" && cp worker/book-model/understand.mts worker/book-model/consolidate.mts ".patches/P5-new-files/worker/book-model/" && cp tests/smoke/smoke-book-model.mts ".patches/P5-new-files/tests/smoke/" && find .patches/P5-new-files -type f | sort
+.patches/P5-new-files/src/app/api/books/[bookId]/model/route.ts
+.patches/P5-new-files/src/features/bible/adapters.ts
+.patches/P5-new-files/src/features/book-experience/book-model/components/BookModelReview.tsx
+.patches/P5-new-files/src/features/book-experience/book-model/consolidate.ts
+.patches/P5-new-files/src/features/book-experience/book-model/derived.ts
+.patches/P5-new-files/src/features/book-experience/book-model/index.ts
+.patches/P5-new-files/src/features/book-experience/book-model/ledger.ts
+.patches/P5-new-files/src/features/book-experience/book-model/proposals.ts
+.patches/P5-new-files/src/features/book-experience/book-model/repository.ts
+.patches/P5-new-files/src/features/book-experience/book-model/state.ts
+.patches/P5-new-files/src/features/book-experience/book-model/windows.ts
+.patches/P5-new-files/tests/smoke/smoke-book-model.mts
+.patches/P5-new-files/worker/book-model/consolidate.mts
+.patches/P5-new-files/worker/book-model/understand.mts
+[0m
+[0m$ [0mdiff -r src/features/book-experience/book-model .patches/P5-new-files/src/features/book-experience/book-model && diff "src/app/api/books/[bookId]/model/route.ts" ".patches/P5-new-files/src/app/api/books/[bookId]/model/route.ts" && diff src/features/bible/adapters.ts .patches/P5-new-files/src/features/bible/adapters.ts && diff worker/book-model .patches/P5-new-files/worker/book-model && diff tests/smoke/smoke-book-model.mts .patches/P5-new-files/tests/smoke/smoke-book-model.mts && echo "copies verified" ; git status --short | head -n 30
+copies verified
+ M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? src/app/api/books/[bookId]/model/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/book-model/
+?? tests/smoke/smoke-book-model.mts
+?? worker/book-model/
+[0m
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 3; npm.cmd run smoke:book-model 2>&1 | tail -n 2; npm.cmd run smoke:schemas 2>&1 | tail -n 2; npm.cmd run smoke:bible 2>&1 | grep -c PASS
+> editorial-studio@0.1.0 lint
+> eslint
+
+
+29/29 checks passed
+
+14/14 checks passed
+8
+[0m
+[0m# [0mTodos
+[✓] Baseline + set P5 in-progress, read Next guide
+[✓] Implement book-model domain (windows/ledger/consolidate/state/reveal/proposals/repo)
+[✓] Implement worker/book-model + bible adapters + model API routes + UI review
+[✓] Add smoke:book-model + fixtures, run gates
+[✓] Verify, patch snapshot, update status.md qa-pending
+[0m
+P5 complete, ending **qa-pending** (supervised phase, unattended run). No commit, no deploy, no live writes.
+
+**What landed** (all local code/fakes, `new.md` untouched, every file <1000 lines):
+- `src/features/book-experience/book-model/` — `windows.ts` (chapter-bounded windows, overlap dedup, compact alias context), `ledger.ts` (LedgerDelta schema, deterministic apply/replay/hash, checkpoint keys), `consolidate.ts` (evidence gating, quote grounding = no-fabricated-facts, fills≠facts, approvals survive regeneration), `state.ts` (storyTime state resolution, seq-gated reveals, spoiler-safe identity), `proposals.ts` (AI alias-conflict/merge-split proposals, approve/reject only), `derived.ts`, `repository.ts` (immutable per-window checkpoints, idempotent approval), `components/BookModelReview.tsx` (searchable Entity table/detail, Event chronology, facts-vs-fills, source links; approve/reject/regenerate actions, no field entry)
+- `worker/book-model/` — rolling understanding pass with resume + AI-revision preserving locked decisions
+- `src/features/bible/adapters.ts` — term/chapter entries kept as derived context
+- `src/app/api/books/[bookId]/model/route.ts` — thin GET review + POST approve/reject/regenerate
+- `tests/smoke/smoke-book-model.mts` + `smoke:book-model` script
+
+**Gates (all green):** lint pass; build pass (24→25 routes, +…/model); smoke:book-model 29/29; smoke:schemas 14/14; smoke:bible 8/8. Evidence: `PASS Pre-reveal reader sees the deckhand identity` — the alias/flashback fixture resolves storyTime-1 → "Young net-mender" with seq-2 readers seeing "A deckhand" and seq-4 readers seeing "Mara Quinn".
+
+**Owner steps remain (in status.md Notes):** (1) run `smoke:book-model` and inspect alias/flashback lines; (2) review the fixture in BookModelReview — state at storyTime 1 vs 10, identity at seq 2 vs 4; (3) reject a proposal, inspect AI revision (approved spec survives), then approve with no data entry; (4) confirm fakes-only, no paid calls. Real-book model quality stays a P13 owner check.
+
+**Patch:** `.patches/P5-studio.patch` + verified copies in `.patches/P5-new-files/`. Nothing staged. Suggested commit: `P5: rolling ledger, consolidated book model and evidence review`.

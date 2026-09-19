@@ -1,0 +1,1147 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+Unattended P9 phase — assembling canonical compositions and safe cameras.
+[0m✗ [0mRead C:/Users/800sa/studio failed
+[91m[1mError: [0mFile not found: C:\Users\800sa\studio
+[0m
+[0m$ [0mpwd; ls -la; echo "---"; ls C:/Users/ 2>&1 | head -n 50
+/c/Users/LENOVO/bookward-dashbaord
+total 768
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 .
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:23 ..
+-rw-r--r-- 1 LENOVO 197121   2926 Sep 18 00:46 .env
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:35 .git
+-rw-r--r-- 1 LENOVO 197121    678 Sep 18 00:47 .gitignore
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:37 .next
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:34 .patches
+-rw-r--r-- 1 LENOVO 197121    687 Aug 23 15:10 AGENTS.md
+-rw-r--r-- 1 LENOVO 197121   1505 Aug 23 15:10 apphosting.yaml
+-rw-r--r-- 1 LENOVO 197121   1816 Aug 23 15:10 backfill-delivery-url.mts
+-rw-r--r-- 1 LENOVO 197121     12 Aug 23 15:10 CLAUDE.md
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 docs
+-rw-r--r-- 1 LENOVO 197121    483 Aug 23 15:10 eslint.config.mjs
+-rw-r--r-- 1 LENOVO 197121    103 Aug 23 15:10 firebase.json
+-rw-r--r-- 1 LENOVO 197121     48 Aug 23 15:10 firestore.indexes.json
+-rw-r--r-- 1 LENOVO 197121   1040 Aug 23 15:10 firestore.rules
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 fixtures
+-rw-r--r-- 1 LENOVO 197121    813 Aug 23 15:10 issues.md
+-rw-r--r-- 1 LENOVO 197121  37778 Sep 18 22:00 new.md
+-rw-r--r-- 1 LENOVO 197121    140 Aug 23 15:10 next.config.ts
+-rw-r--r-- 1 LENOVO 197121    295 Sep 18 22:26 next-env.d.ts
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:05 node_modules
+-rw-r--r-- 1 LENOVO 197121   3186 Sep 19 00:31 package.json
+-rw-r--r-- 1 LENOVO 197121 406217 Sep 18 22:05 package-lock.json
+-rw-r--r-- 1 LENOVO 197121    663 Sep 18 22:00 playwright.config.ts
+-rw-r--r-- 1 LENOVO 197121    101 Aug 23 15:10 postcss.config.mjs
+drwxr-xr-x 1 LENOVO 197121      0 Aug 23 15:10 public
+-rw-r--r-- 1 LENOVO 197121   1486 Aug 23 15:10 README.md
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 src
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 test-results
+drwxr-xr-x 1 LENOVO 197121      0 Sep 18 22:00 tests
+-rw-r--r-- 1 LENOVO 197121    745 Aug 23 15:10 tsconfig.json
+drwxr-xr-x 1 LENOVO 197121      0 Sep 19 00:29 worker
+---
+All Users
+Default
+Default User
+desktop.ini
+LENOVO
+Public
+[0m
+[0m→ [0mRead docs/features/25d-schema-foundation
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md
+[0m→ [0mRead docs/features/25d-schema-foundation/status.md
+[0m→ [0mRead docs/CONTEXT.md
+[0m→ [0mRead docs/features/25d-schema-foundation/plan.md[90m [offset=504][0m
+Workspace mapped and plan reviewed — now implementing the P9 assembly phase.
+[0m
+[0m# [0mTodos
+[•] Baseline: inventory tracked/untracked changes, verify P8 done, read AGENTS.md + Next guide + prior art
+[ ] Implement compositions domain (assemble, safeCamera, resolve, actions, repository, components)
+[ ] Extend preview (rendering, fallback, subtitle, transitions, inspection, states)
+[ ] Worker compositions + thin app routes
+[ ] Add smoke:compose + extend test:preview fixtures
+[ ] Run gates, verify demoable outcome, write patch + status.md
+[0m
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead package.json
+[0m
+[0m$ [0mgit status --short | head -n 80; echo "===DIFFSTAT==="; git diff --stat | tail -n 30
+M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+ M worker/commentary.mts
+ M worker/image-api.mts
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? .patches/P7-new-files/
+?? .patches/P7-studio.patch
+?? .patches/P8-new-files/
+?? .patches/P8-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/P6.result
+?? docs/features/25d-schema-foundation/.run/P7.result
+?? docs/features/25d-schema-foundation/.run/P8.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/.run/settled.P6
+?? docs/features/25d-schema-foundation/.run/settled.P7
+?? docs/features/25d-schema-foundation/.run/settled.P8
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? docs/features/25d-schema-foundation/logs/P6-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P7-attempt1-000747.log
+?? docs/features/25d-schema-foundation/logs/P7-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P8-attempt1-002422.log
+?? docs/features/25d-schema-foundation/logs/P8-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P9-attempt1-003730.log
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/app/api/books/[bookId]/visuals/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/beats/
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/coverage/
+?? src/features/book-experience/story-map/
+?? src/features/book-experience/visuals/
+?? src/features/episodes/adapters.ts
+?? src/features/images/adapters.ts
+?? src/features/moment-text/grounding.ts
+?? src/features/moments/adapters.ts
+?? src/features/visual/adapters.ts
+?? tests/smoke/smoke-beats.mts
+?? tests/smoke/smoke-book-model.mts
+?? tests/smoke/smoke-story-planning.mts
+?? tests/smoke/smoke-visual-generation.mts
+?? worker/beats/
+?? worker/book-model/
+?? worker/story-planning/
+?? worker/visuals/
+===DIFFSTAT===
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  45 ++
+ docs/features/25d-schema-foundation/status.md      | 119 ++-
+ package.json                                       |   4 +
+ worker/commentary.mts                              |  46 ++
+ worker/image-api.mts                               |  15 +
+ 7 files changed, 711 insertions(+), 412 deletions(-)
+[0m
+[0m→ [0mRead src/features/book-experience
+[0m→ [0mRead tests/book-experience
+[0m→ [0mRead worker
+[0m→ [0mRead src/features/book-experience/preview
+[0m→ [0mRead src/features/book-experience/functions
+[0m→ [0mRead src/features/book-experience/schemas
+[0m→ [0mRead tests/book-experience/preview-check.mts
+[0m→ [0mRead src/features/book-experience/functions/compileBundle.ts
+[0m→ [0mRead src/features/book-experience/functions/resolveFrame.ts
+[0m→ [0mRead src/features/book-experience/preview/PreviewPlayer.tsx
+[0m→ [0mRead tests/book-experience/preview.spec.ts
+[0m→ [0mRead src/features/book-experience/schemas/composition.ts
+[0m→ [0mRead src/features/book-experience/preview/DepthScene.tsx
+[0m→ [0mRead src/features/book-experience/preview/CssFallback.tsx
+Core preview and schema patterns understood — checking generation and episode layers.
+[0m→ [0mRead src/features/book-experience/visuals
+[0m→ [0mRead fixtures/book-experience
+[0m→ [0mRead src/app/studio
+[0m→ [0mRead src/features/book-experience/schemas/primitives.ts
+[0m→ [0mRead src/app/studio/preview
+[0m→ [0mRead src/app/studio/books
+[0m→ [0mRead src/app/api/studio/preview
+[0m→ [0mRead fixtures/book-experience/room-entry.json
+[0m→ [0mRead src/app/studio/books/[bookId]
+[0m→ [0mRead src/features/book-experience/visuals/repository.ts
+[0m→ [0mRead src/app/api/studio/preview/route.ts
+[0m→ [0mRead src/features/book-experience/visuals/assets.ts
+[0m→ [0mRead src/features/book-experience/schemas/bundle.ts
+[0m→ [0mRead src/features/book-experience/preview/index.ts
+[0m→ [0mRead src/app/studio/books/[bookId]/page.tsx
+[0m→ [0mRead src/features/book-experience/schemas/beat.ts
+[0m→ [0mRead src/features/book-experience/story-map/progression.ts
+[0m→ [0mRead src/app/api/books/[bookId]/visuals/route.ts
+Patterns clear — verifying remaining references before coding.
+[0m
+[0m$ [0mls "node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/" 2>&1; echo "---"; ls src/features/book-experience/visuals/components/ src/features/book-experience/beats/ worker/visuals/ tests/smoke/ | head -n 60
+01-metadata
+02-route-segment-config
+default.md
+dynamic-routes.md
+error.md
+forbidden.md
+index.md
+instrumentation.md
+instrumentation-client.md
+intercepting-routes.md
+layout.md
+loading.md
+mdx-components.md
+middleware.md
+not-found.md
+page.md
+parallel-routes.md
+proxy.md
+public-folder.md
+route.md
+route-groups.md
+src-folder.md
+template.md
+unauthorized.md
+---
+src/features/book-experience/beats/:
+build.ts
+components
+repository.ts
+representations.ts
+reveal.ts
+verbatim.ts
+
+src/features/book-experience/visuals/components/:
+VisualReview.tsx
+
+tests/smoke/:
+smoke-ai-proposals.mts
+smoke-auth.mts
+smoke-beats.mts
+smoke-bible.mts
+smoke-book-model.mts
+smoke-canonical.mts
+smoke-completion.mts
+smoke-e2e.mts
+smoke-editorial-ui.mjs
+smoke-episode-map.mts
+smoke-firestore-rules.mjs
+smoke-fixtures.mts
+smoke-formats.mts
+smoke-image-batch.mts
+smoke-image-prompt.mts
+smoke-job-engine.mts
+smoke-moments.mts
+smoke-moment-text.mts
+smoke-operations.mts
+smoke-pdf-cleaning.mts
+smoke-posting.mts
+smoke-schemas.mts
+smoke-story-planning.mts
+smoke-visual-generation.mts
+smoke-visual-system.mts
+smoke-workflow-contract.mjs
+
+worker/visuals/:
+batch.mts
+generate.mts
+[0m
+[0m→ [0mRead worker/visuals/generate.mts
+[0m→ [0mRead src/features/book-experience/visuals/components/VisualReview.tsx[90m [limit=80][0m
+[0m→ [0mRead tests/smoke/smoke-beats.mts[90m [limit=90][0m
+[0m→ [0mRead src/features/book-experience/schemas/publishing.ts
+[0m→ [0mRead node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md[90m [limit=60][0m
+[0m→ [0mRead src/features/book-experience/visuals/requests.ts[90m [limit=80][0m
+Baseline captured — now building the composition assembly domain.
+[0m→ [0mRead src/features/book-experience/schemas/moment.ts
+[0m→ [0mRead src/features/book-experience/schemas/paragraph.ts
+[0m
+[0m# [0mTodos
+[✓] Baseline: inventory tracked/untracked changes, verify P8 done, read AGENTS.md + Next guide + prior art
+[•] Implement compositions domain (assemble, safeCamera, resolve, actions, repository, components)
+[ ] Extend preview (rendering, fallback, subtitle, transitions, inspection, states)
+[ ] Worker compositions + thin app routes
+[ ] Add smoke:compose + extend test:preview fixtures
+[ ] Run gates, verify demoable outcome, write patch + status.md
+[0m
+[0m← [0mWrite src/features/book-experience/compositions/safeCamera.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/compositions/assemble.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/features/book-experience/compositions/assemble.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\assemble.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\assemble.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\assemble.ts
+@@ -165,14 +165,8 @@
+       message: `Layer ${layer.layerId} renders as depthMesh but has no bounded mesh subdivisions.`,
+     });
+   }
+ }
+-if (layer.role === "scene-background" as string) {
+-  issues.push({
+-    code: "UNKNOWN_ROLE",
+-    message: `Layer ${layer.layerId} has an unknown role; use background, midground or foreground.`,
+-  });
+-}
+ if (layer.role === "background" && (layer.overscanPresentPx ?? 0) < args.frame.overscan) {
+   issues.push({
+     code: "HIDDEN_COVERAGE_GAP",
+     message: `Background ${layer.layerId} covers ${layer.overscanPresentPx ?? 0}px overscan; ${args.frame.overscan}px required so camera motion never opens holes.`,
+
+[0m
+[0m← [0mWrite src/features/book-experience/compositions/resolve.ts
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/features/book-experience/compositions/resolve.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\resolve.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\resolve.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\resolve.ts
+@@ -100,17 +100,8 @@
+ /**
+  * Derive Moment.compositionIds from Composition.usedIn (ADR-011): usedIn
+  * is the canonical reuse relationship, never an independently edited copy.
+  */
+-export function deriveMomentCompositionIds(
+-  usedIn: { episodeId: string; momentId: string; beatId: string; revisionId: string }[],
+-  momentId: string,
+-): string[] {
+-  void usedIn;
+-  return [];
+-}
+-
+-/** Derive per-moment composition lists from assembled usedIn entries. */
+ export function deriveMomentCompositions(
+   entries: { compositionId: string; momentId: string }[],
+   momentId: string,
+ ): string[] {
+
+[0m
+[0m← [0mWrite src/features/book-experience/compositions/repository.ts
+Wrote file successfully.
+[0m
+Composition assembly drafted — now the preview rendering extensions.
+[0m← [0mWrite src/features/book-experience/preview/states.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/preview/transitions.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/preview/responsive.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/compositions/actions.ts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/features/book-experience/compositions/index.ts
+Wrote file successfully.
+[0m
+[0m→ [0mRead src/features/book-experience/visuals/components/VisualReview.tsx[90m [offset=81][0m
+No text inputs in prior art — following that pattern for the review UI.
+[0m
+[0m← [0mWrite src/features/book-experience/compositions/components/CompositionReview.tsx
+Wrote file successfully.
+[0m
+[0m# [0mTodos
+[✓] Baseline: inventory tracked/untracked changes, verify P8 done, read AGENTS.md + Next guide + prior art
+[✓] Implement compositions domain (assemble, safeCamera, resolve, actions, repository, components)
+[•] Extend preview (rendering, fallback, subtitle, transitions, inspection, states)
+[ ] Worker compositions + thin app routes
+[ ] Add smoke:compose + extend test:preview fixtures
+[ ] Run gates, verify demoable outcome, write patch + status.md
+[0m
+[0m← [0mWrite src/features/book-experience/preview/EpisodePreview.tsx
+Wrote file successfully.
+[0m
+[0m← [0mEdit src/features/book-experience/preview/index.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\preview\index.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\preview\index.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\preview\index.ts
+@@ -1,3 +1,7 @@
+ export * from "./PreviewPlayer.tsx";
+ export * from "./CssFallback.tsx";
+ export * from "./DepthScene.tsx";
++export * from "./EpisodePreview.tsx";
++export * from "./transitions.ts";
++export * from "./responsive.ts";
++export * from "./states.ts";
+
+[0m
+Preview extensions done — now worker assembly and thin routes.
+[0m# [0mTodos
+[✓] Baseline: inventory tracked/untracked changes, verify P8 done, read AGENTS.md + Next guide + prior art
+[✓] Implement compositions domain (assemble, safeCamera, resolve, actions, repository, components)
+[✓] Extend preview (rendering, fallback, subtitle, transitions, inspection, states)
+[•] Worker compositions + thin app routes
+[ ] Add smoke:compose + extend test:preview fixtures
+[ ] Run gates, verify demoable outcome, write patch + status.md
+[0m
+[0m← [0mWrite worker/compositions/assemble.mts
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/app/api/books/[bookId]/compositions/route.ts
+Wrote file successfully.
+[0m
+[0m→ [0mRead src/app/studio/preview/page.tsx
+[0m
+[0m← [0mWrite src/app/studio/books/[bookId]/compose/ComposeWorkspace.tsx
+Wrote file successfully.
+[0m
+[0m← [0mWrite src/app/studio/books/[bookId]/compose/page.tsx
+Wrote file successfully.
+[0m
+Now the deterministic Episode fixture and preview-route registration.
+[0m← [0mWrite fixtures/book-experience/harbor-composed.json
+Wrote file successfully.
+[0m
+[0m→ [0mRead src/app/api/studio/preview/route.ts[90m [limit=12][0m
+[0m
+[0m← [0mEdit src/app/api/studio/preview/route.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\app\api\studio\preview\route.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\app\api\studio\preview\route.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\app\api\studio\preview\route.ts
+@@ -5,9 +5,9 @@
+ import { compileFixtureBundle } from "@/features/book-experience/functions/compileBundle";
+ 
+ export const dynamic = "force-dynamic";
+ 
+-const KNOWN_FIXTURES = ["room-entry"] as const;
++const KNOWN_FIXTURES = ["room-entry", "harbor-composed"] as const;
+ 
+ // Local deterministic preview endpoint (P2). Serves the assembled draft
+ // EpisodeBundle compiled through the canonical schemas. Local fixture
+ // reads only; never writes to Firebase, S3 or any cloud service.
+
+[0m
+Fixture and routes in place — writing the smoke gate.
+[0m# [0mTodos
+[✓] Baseline: inventory tracked/untracked changes, verify P8 done, read AGENTS.md + Next guide + prior art
+[✓] Implement compositions domain (assemble, safeCamera, resolve, actions, repository, components)
+[✓] Extend preview (rendering, fallback, subtitle, transitions, inspection, states)
+[✓] Worker compositions + thin app routes
+[•] Add smoke:compose + extend test:preview fixtures
+[ ] Run gates, verify demoable outcome, write patch + status.md
+[0m
+[0m← [0mWrite tests/smoke/smoke-compose.mts
+Wrote file successfully.
+[0m
+[0m→ [0mRead package.json[90m [offset=28, limit=8][0m
+[0m
+[0m← [0mEdit package.json
+Index: C:\Users\LENOVO\bookward-dashbaord\package.json
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\package.json
++++ C:\Users\LENOVO\bookward-dashbaord\package.json
+@@ -28,8 +28,9 @@
+   "smoke:book-model": "node --experimental-strip-types tests/smoke/smoke-book-model.mts",
+   "smoke:story-planning": "node --experimental-strip-types tests/smoke/smoke-story-planning.mts",
+   "smoke:beats": "node --experimental-strip-types tests/smoke/smoke-beats.mts",
+   "smoke:visual-generation": "node --experimental-strip-types tests/smoke/smoke-visual-generation.mts",
++  "smoke:compose": "node --experimental-strip-types tests/smoke/smoke-compose.mts",
+   "test:preview": "node --experimental-strip-types tests/book-experience/preview-check.mts",
+   "lint": "eslint"
+ },
+ "dependencies": {
+
+[0m
+[0m← [0mEdit tests/book-experience/preview-check.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
+@@ -2,8 +2,14 @@
+ import { join } from "node:path";
+ 
+ import { compileFixtureBundle } from "../../src/features/book-experience/functions/compileBundle.ts";
+ import { resolveFrame } from "../../src/features/book-experience/functions/resolveFrame.ts";
++import { executeTransition } from "../../src/features/book-experience/preview/transitions.ts";
++import { focalVisible, isCropContained, selectResponsiveCrop } from "../../src/features/book-experience/preview/responsive.ts";
++import { describePreviewState } from "../../src/features/book-experience/preview/states.ts";
++import { assembleComposition } from "../../src/features/book-experience/compositions/assemble.ts";
++import { computeSafeCamera } from "../../src/features/book-experience/compositions/safeCamera.ts";
++import { getNextAction } from "../../src/features/book-experience/compositions/actions.ts";
+ 
+ // test:preview gate (P2). Deterministic local proof without a server or a
+ // browser: the fixture compiles through canonical schemas, every Beat
+ // resolves finite frames, the endpoint performs no cloud writes, and the
+
+[0m
+[0m← [0mEdit tests/book-experience/preview-check.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
+@@ -80,12 +80,160 @@
+   "src/app/studio/preview/page.tsx",
+   "src/app/api/studio/preview/route.ts",
+   "tests/book-experience/preview.spec.ts",
+   "playwright.config.ts",
++  "fixtures/book-experience/harbor-composed.json",
++  "src/features/book-experience/compositions/assemble.ts",
++  "src/features/book-experience/preview/EpisodePreview.tsx",
++  "src/app/studio/books/[bookId]/compose/page.tsx",
++  "src/app/api/books/[bookId]/compositions/route.ts",
++  "tests/smoke/smoke-compose.mts",
+ ]) {
+   check(`Required file exists: ${required}`, existsSync(required));
+ }
+ 
++check(
++  "Preview endpoint serves the assembled harbor fixture",
++  routeSource.includes("harbor-composed"),
++);
++
++// P9: source-to-episode progression through the assembled harbor fixture.
++const harbor = JSON.parse(
++  readFileSync("fixtures/book-experience/harbor-composed.json", "utf8"),
++) as unknown;
++const harborBundle = compileFixtureBundle(harbor);
++check("Harbor Episode compiles to a bundle with 2 Beats", harborBundle.beats.length === 2);
++let harborFinite = true;
++for (const beat of harborBundle.beats) {
++  for (const progress of [0, 0.5, 1]) {
++    const frame = resolveFrame(harborBundle, beat.id, progress);
++    const numbers = [frame.pose.x, frame.pose.y, frame.pose.zoom, frame.pose.rotate];
++    const transition = executeTransition(beat.transitionIn.type, progress);
++    const transitionNumbers = [
++      transition.opacity,
++      transition.translateX,
++      transition.translateY,
++      transition.scale,
++    ];
++    if (
++      !numbers.every(Number.isFinite) ||
++      !transitionNumbers.every(Number.isFinite) ||
++      frame.subtitleHtml.length === 0
++    ) {
++      harborFinite = false;
++    }
++  }
++}
++check("Harbor Beats resolve finite frames, transitions and subtitles", harborFinite);
++check(
++  "Harbor cameras sit inside the fixture safeCamera",
++  harborBundle.beats.every((beat) => {
++    const composition = harborBundle.compositions[beat.compositionId];
++    const safe = composition.safeCamera;
++    return (
++      Math.abs(beat.camera.from.x) <= safe.maxPanX &&
++      Math.abs(beat.camera.to.x) <= safe.maxPanX &&
++      beat.camera.to.zoom <= safe.maxZoom
++    );
++  }),
++);
++
++// P9: deterministic transitions, responsive crops and explicit states.
++let transitionsFinite = true;
++for (const type of ["cut", "fade", "slide", "zoomThrough", "parallaxShift"] as const) {
++  for (const progress of [0, 0.5, 1]) {
++    const executed = executeTransition(type, progress);
++    if (![executed.opacity, executed.translateX, executed.translateY, executed.scale].every(Number.isFinite)) {
++      transitionsFinite = false;
++    }
++  }
++}
++check("Every transition type executes finite stage values", transitionsFinite);
++check(
++  "Reduced motion degrades transitions to static frames",
++  executeTransition("slide", 0.5, { reducedMotion: true }).translateX === 0,
++);
++const harborResponsive = harborBundle.compositions["cmp_harbor_v1"].responsive;
++check(
++  "Portrait and landscape viewports select matching crops with a visible focal point",
++  selectResponsiveCrop(harborResponsive, { w: 390, h: 844 }).aspect === "portrait" &&
++    selectResponsiveCrop(harborResponsive, { w: 1280, h: 800 }).aspect === "landscape" &&
++    isCropContained(harborResponsive.portraitCrop) &&
++    isCropContained(harborResponsive.landscapeCrop) &&
++    focalVisible(harborResponsive, harborResponsive.portraitCrop),
++);
++check(
++  "Preview states stay explicit (loading/empty/error/outdated/partial/ready)",
++  describePreviewState({ loaded: false, scopeExists: true }).state === "loading" &&
++    describePreviewState({ loaded: true, scopeExists: false }).state === "empty" &&
++    describePreviewState({ loaded: true, scopeExists: true, error: "x" }).state === "error" &&
++    describePreviewState({ loaded: true, scopeExists: true, outdatedReason: "x" }).state === "outdated" &&
++    describePreviewState({ loaded: true, scopeExists: true, missingLayerIds: ["L1"] }).state === "partial" &&
++    describePreviewState({ loaded: true, scopeExists: true, missingCompositionIds: [], missingLayerIds: [] }).state ===
++      "ready",
++);
++
++// P9: direct Episode preview surface over the real bundle contract.
++const episodePreviewSource = readFileSync(
++  "src/features/book-experience/preview/EpisodePreview.tsx",
++  "utf8",
++);
++for (const testId of [
++  "episode-preview",
++  "scope-episode",
++  "scope-moment",
++  "scope-beat",
++  "layer-inspector",
++  "fallback-toggle",
++  "context-loss-note",
++  "subtitle",
++]) {
++  check(`EpisodePreview exposes "${testId}"`, episodePreviewSource.includes(testId));
++}
++check(
++  "EpisodePreview handles WebGL context loss with deterministic fallback",
++  episodePreviewSource.includes("webglcontextlost"),
++);
++check(
++  "EpisodePreview has no camera authoring input",
++  !/set camera|Set camera|camera-author|focusLayerId"|prompt\(/i.test(episodePreviewSource),
++);
++const compositionReviewSource = readFileSync(
++  "src/features/book-experience/compositions/components/CompositionReview.tsx",
++  "utf8",
++);
++check(
++  "CompositionReview inspects layers with approve-and-continue and no camera input",
++  compositionReviewSource.includes("layer-inspector") &&
++    compositionReviewSource.includes("Approve and continue") &&
++    !/set camera|Set camera|<textarea|type="text"|type="number"/i.test(compositionReviewSource),
++);
++
++// P9: assembly seam smoke (full matrix lives in smoke:compose).
++const probeSafe = computeSafeCamera({
++  frame: { w: 1600, h: 2000, overscan: 160 },
++  coverages: [{ layerId: "L0", role: "background", overscanPresentPx: 160 }],
++});
++check("Assembly seam computes safeCamera from real coverage", probeSafe.maxPanX === 0.1);
++const probeActions = getNextAction({
++  bookId: "book_harbor",
++  episodeId: "ep_01",
++  momentId: "ep_01_m01",
++  compositionId: "cmp_harbor_v1",
++  compositionStatus: "review",
++  issues: [],
++  preview: { loaded: true, scopeExists: true, missingCompositionIds: [], missingLayerIds: [] },
++  selectedTargetIds: [],
++  failedLayerIds: [],
++});
++check(
++  "Assembly seam exposes approve-and-continue with no manual entry",
++  probeActions.some((action) => action.id === "cmp_harbor_v1.approve-and-continue" && action.enabled),
++);
++void assembleComposition;
++const packageScripts = readFileSync("package.json", "utf8");
++check("smoke:compose script is declared", packageScripts.includes("smoke:compose"));
++
+ const roots = [
+   "src/features/book-experience/schemas",
+   "src/features/book-experience/functions",
+   "src/features/book-experience/preview",
+
+[0m
+[0m← [0mEdit tests/book-experience/preview-check.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\book-experience\preview-check.mts
+@@ -236,8 +236,10 @@
+ const roots = [
+   "src/features/book-experience/schemas",
+   "src/features/book-experience/functions",
+   "src/features/book-experience/preview",
++  "src/features/book-experience/compositions",
++  "worker/compositions",
+ ];
+ const oversized: string[] = [];
+ for (const root of roots) {
+   for (const entry of readdirSync(root)) {
+
+[0m
+Tests written — running the new gates.
+[0m$ [0mnode --experimental-strip-types tests/smoke/smoke-compose.mts 2>&1 | tail -n 70
+(node:9984) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9984) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/LENOVO/bookward-dashbaord/src/features/book-experience/compositions/safeCamera.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\LENOVO\bookward-dashbaord\package.json.
+PASS  Valid layers assemble into a generated composition
+PASS  safeCamera derives from actual coverage (0.1/0.08/1.1/0.08)
+PASS  Composition.usedIn owns reuse across both Beats
+PASS  Clean assembly has no approval problem
+PASS  Mixed frames yield no composition with FRAME_MISMATCH
+PASS  depthMesh without aligned depth yields no composition
+PASS  depthMesh without mesh subdivisions yields no composition
+PASS  Missing checksum yields no composition
+FAIL  Foreground without real alpha stays inspectable but blocked
+PASS  Thin background coverage blocks with zero pan headroom
+PASS  Missing background blocks safeCamera computation
+PASS  Baked-in text blocks approval; subtitles stay HTML
+PASS  Misaligned depth blocks depthMesh approval
+PASS  Planned pose is safe; extreme pose is not
+PASS  Camera extremes clamp to the safe bounds
+PASS  AI replan flags changed shots; safe shots pass through
+PASS  Unsafe planned camera blocks the composition
+PASS  Explicit focusLayerId resolves directly
+PASS  Focus entity resolves to its generated layer
+PASS  Missing semantic target names regeneration, never a silent fallback
+PASS  Shot states without layers are named for regeneration
+PASS  Responsive crops stay contained with a visible focal point
+PASS  Portrait viewports use the portrait crop; landscape the landscape crop
+PASS  Planned fade validates; long moves and unknown types block
+PASS  Overlong transitions require AI replan
+PASS  Unknown transition types fail explicitly
+PASS  Blocked approval names the layer-regeneration action
+PASS  Clean review enables approve-and-continue with no camera/layer/text entry
+PASS  Composition path follows the canonical Firestore layout
+PASS  Fingerprint approval is idempotent
+PASS  Approval with blocking issues throws
+PASS  Outdated compositions cannot regain approval
+PASS  Worker assembly records the draft with no issues
+PASS  Worker flags unsafe shots for AI replan
+PASS  Worker approves the clean draft
+PASS  Worker refuses the blocked draft
+PASS  Regenerated revision assembles cleanly while the rejected approval is gone
+PASS  Harbor Episode compiles and every Beat resolves finite frames with subtitles
+PASS  Loading state is explicit
+PASS  Empty scopes name Beat planning
+PASS  Errors surface verbatim
+PASS  Outdated drafts name the correction
+PASS  Partial drafts list explicit placeholders
+PASS  Ready previews carry no approval problem
+PASS  src/features/book-experience/compositions/components/CompositionReview.tsx has no camera/layer/text inputs
+PASS  src/features/book-experience/preview/EpisodePreview.tsx has no camera/layer/text inputs
+PASS  src/app/studio/books/[bookId]/compose/ComposeWorkspace.tsx has no camera/layer/text inputs
+PASS  Compositions route gates approval on zero issues with fingerprint pins
+PASS  Compositions route requires a regeneration reason and distinct keys
+PASS  Compositions route has no prompt/camera/layer editing
+PASS  Every P9 file stays below 1000 lines
+
+50/51 checks passed
+[0m
+One assertion mismatch (message vs code) — fixing the test.
+[0m← [0mEdit tests/smoke/smoke-compose.mts
+Index: C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-compose.mts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-compose.mts
++++ C:\Users\LENOVO\bookward-dashbaord\tests\smoke\smoke-compose.mts
+@@ -213,9 +213,9 @@
+ check(
+   "Foreground without real alpha stays inspectable but blocked",
+   flatForeground.composition !== null &&
+     flatForeground.issues.some((issue) => issue.code === "MISSING_ALPHA") &&
+-    (compositionApprovalProblem(flatForeground.composition, flatForeground.issues) ?? "").includes("MISSING_ALPHA"),
++    (compositionApprovalProblem(flatForeground.composition, flatForeground.issues) ?? "").includes("real alpha"),
+ );
+ const thinBackground = assembleComposition({
+   ...baseArgs(),
+   layers: [{ ...backgroundLayer, overscanPresentPx: 40 }, foregroundLayer],
+
+[0m
+[0m$ [0mnode --experimental-strip-types tests/smoke/smoke-compose.mts 2>&1 | tail -n 5 && node --experimental-strip-types tests/book-experience/preview-check.mts 2>&1 | tail -n 50
+PASS  Compositions route requires a regeneration reason and distinct keys
+PASS  Compositions route has no prompt/camera/layer editing
+PASS  Every P9 file stays below 1000 lines
+
+51/51 checks passed
+PASS  Preview endpoint performs no cloud writes
+PASS  Player exposes control "scope-episode"
+PASS  Player exposes control "scope-moment"
+PASS  Player exposes control "scope-beat"
+PASS  Player exposes control "play"
+PASS  Player exposes control "pause"
+PASS  Player exposes control "scrub"
+PASS  Player exposes control "next"
+PASS  Player exposes control "previous"
+PASS  Player exposes control "fallback-toggle"
+PASS  Player exposes control "subtitle"
+PASS  Player exposes control "provenance"
+PASS  Player has no camera authoring input
+PASS  WebGL stage renders one runtime depthMesh
+PASS  CSS fallback renders flat parallax layers
+PASS  Required file exists: src/app/studio/preview/page.tsx
+PASS  Required file exists: src/app/api/studio/preview/route.ts
+PASS  Required file exists: tests/book-experience/preview.spec.ts
+PASS  Required file exists: playwright.config.ts
+PASS  Required file exists: fixtures/book-experience/harbor-composed.json
+PASS  Required file exists: src/features/book-experience/compositions/assemble.ts
+PASS  Required file exists: src/features/book-experience/preview/EpisodePreview.tsx
+PASS  Required file exists: src/app/studio/books/[bookId]/compose/page.tsx
+PASS  Required file exists: src/app/api/books/[bookId]/compositions/route.ts
+PASS  Required file exists: tests/smoke/smoke-compose.mts
+PASS  Preview endpoint serves the assembled harbor fixture
+PASS  Harbor Episode compiles to a bundle with 2 Beats
+PASS  Harbor Beats resolve finite frames, transitions and subtitles
+PASS  Harbor cameras sit inside the fixture safeCamera
+PASS  Every transition type executes finite stage values
+PASS  Reduced motion degrades transitions to static frames
+PASS  Portrait and landscape viewports select matching crops with a visible focal point
+PASS  Preview states stay explicit (loading/empty/error/outdated/partial/ready)
+PASS  EpisodePreview exposes "episode-preview"
+PASS  EpisodePreview exposes "scope-episode"
+PASS  EpisodePreview exposes "scope-moment"
+PASS  EpisodePreview exposes "scope-beat"
+PASS  EpisodePreview exposes "layer-inspector"
+PASS  EpisodePreview exposes "fallback-toggle"
+PASS  EpisodePreview exposes "context-loss-note"
+PASS  EpisodePreview exposes "subtitle"
+PASS  EpisodePreview handles WebGL context loss with deterministic fallback
+PASS  EpisodePreview has no camera authoring input
+PASS  CompositionReview inspects layers with approve-and-continue and no camera input
+PASS  Assembly seam computes safeCamera from real coverage
+PASS  Assembly seam exposes approve-and-continue with no manual entry
+PASS  smoke:compose script is declared
+PASS  Every new feature file stays below 1000 lines
+
+51/51 checks passed
+[0m
+New gates green — running lint, build, and the beats regression.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 20
+> editorial-studio@0.1.0 lint
+> eslint
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 40
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 142ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 10.9s
+  Running TypeScript ...
+src/features/book-experience/compositions/assemble.ts(11,27): error TS2305: Module '"../schemas/primitives.ts"' has no exported member 'ReferencePin'.
+Failed to type check.
+[0m
+[0m← [0mEdit src/features/book-experience/compositions/assemble.ts
+Index: C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\assemble.ts
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\assemble.ts
++++ C:\Users\LENOVO\bookward-dashbaord\src\features\book-experience\compositions\assemble.ts
+@@ -7,9 +7,10 @@
+ // generated draft whose issues block approval but stay inspectable.
+ 
+ import type { Composition } from "../schemas/composition.ts";
+ import { CompositionSchema } from "../schemas/composition.ts";
+-import type { CameraPose, ReferencePin, Responsive } from "../schemas/primitives.ts";
++import type { CameraPose, Responsive } from "../schemas/primitives.ts";
++import type { ReferencePin } from "../schemas/model.ts";
+ import type { CameraFrame } from "./safeCamera.ts";
+ import { computeSafeCamera, safeCameraApprovalProblem } from "./safeCamera.ts";
+ 
+ export type CompositionIssue = { code: string; message: string };
+
+[0m
+[0m$ [0mnpm.cmd run build 2>&1 | tail -n 40
+✓ Generating static pages using 3 workers (11/11) in 894ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/compositions
+├ ƒ /api/books/[bookId]/episodes
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/jobs/approve
+├ ƒ /api/books/[bookId]/model
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/canonical
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/books/[bookId]/visuals
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/compose
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+[0m
+Build green with new routes — verifying no regressions.
+[0m$ [0mnpm.cmd run lint 2>&1 | tail -n 5; npm.cmd run smoke:beats 2>&1 | tail -n 4
+> editorial-studio@0.1.0 lint
+> eslint
+
+PASS  Beat review approves without camera or text entry
+PASS  Every new P7 file stays below 1000 lines
+
+42/42 checks passed
+[0m
+All gates green — getting live endpoint evidence for the new fixture.
+[0m$ [0mnohup npm.cmd run start -- -p 8901 > /tmp/p9-server.log 2>&1 & echo "started $!"; sleep 12; curl -s "http://localhost:8901/api/studio/preview?fixture=harbor-composed" | head -c 600; echo
+started 43988
+{"provenance":"fixture harbor-composed: deterministic local fake; no paid generation; no model-quality claim","bundle":{"sourceId":"src_harbor","canonicalHash":"hash-harbor","schemaVersion":1,"bookId":"book_harbor","episodeId":"ep_01","version":1,"revisionId":"rev_harbor_01","order":1,"title":"Harbor Light","summary":"Mara steps into the salt air as the captain calls her to the deck.","beats":[{"id":"ep_01_m01_b01","order":1,"seq":0,"type":"quote","text":{"quote":{"paragraphId":"p000000","start":0,"end":56,"text":"Mara pushed the door open and stepped into the salt air."}},"compositionId":"cmp
+[0m
+[0m$ [0mcurl -s "http://localhost:8901/studio/books/book_harbor/compose" | grep -o -m1 "compose-workspace\|Loading assembled Episode" ; kill %1 2>/dev/null; pkill -f "next-server.*8901" 2>/dev/null; echo killed
+killed
+[0m
+[0m$ [0mcurl -s -m 5 "http://localhost:8901/api/studio/preview?fixture=room-entry" | head -c 120; echo "exit=$?"
+{"provenance":"fixture room-entry: deterministic local fake for Studio preview; no paid generation; no model-quality claexit=0
+[0m
+Server still running — cleaning it up properly.
+[0m$ [0mps aux | grep -i "next-server\|next start" | grep -v grep | head -n 10
+(no output)
+[0m
+[0m$ [0mcurl -s -m 5 -o /dev/null -w "%{http_code}\n" "http://localhost:8901/studio/books/book_harbor/compose"; netstat -ano 2>/dev/null | grep 8901 | head -n 5; tasklist 2>/dev/null | grep -i node | head -n 10
+307
+  TCP    0.0.0.0:8901           0.0.0.0:0              LISTENING       7652
+  TCP    [::]:8901              [::]:0                 LISTENING       7652
+  TCP    [::1]:50628            [::1]:8901             TIME_WAIT       0
+  TCP    [::1]:50638            [::1]:8901             TIME_WAIT       0
+  TCP    [::1]:50654            [::1]:8901             TIME_WAIT       0
+node.exe                      9852 Console                    7     42,028 K
+node.exe                      7652 Console                    7     79,052 K
+[0m
+[0m$ [0mtaskkill //PID 7652 //F 2>&1; sleep 3; curl -s -m 5 -o /dev/null -w "%{http_code}\n" "http://localhost:8901/api/studio/preview?fixture=room-entry" || echo "server stopped"
+SUCCESS: The process with PID 7652 has been terminated.
+000
+server stopped
+[0m
+[0m$ [0mnetstat -ano 2>/dev/null | grep -E ":(8900|8901)" | grep LISTEN; echo "---"; curl -s -m 5 -o /dev/null -w "%{http_code}\n" "http://localhost:8900/api/studio/preview?fixture=room-entry" || echo "8900 down"
+---
+000
+8900 down
+[0m
+Environment clean — final verification and packaging.
+[0m$ [0mgit status --short | head -n 60; echo "===DIFFSTAT==="; git diff --stat | tail -n 15
+M .patches/P4-studio.patch
+ M docs/features/25d-schema-foundation/.run/inflight
+ M docs/features/25d-schema-foundation/loop-run-20260918-221559.log
+ M docs/features/25d-schema-foundation/status.md
+ M package.json
+ M src/app/api/studio/preview/route.ts
+ M src/features/book-experience/preview/index.ts
+ M tests/book-experience/preview-check.mts
+ M worker/commentary.mts
+ M worker/image-api.mts
+?? .patches/P5-new-files/
+?? .patches/P5-studio.patch
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? .patches/P7-new-files/
+?? .patches/P7-studio.patch
+?? .patches/P8-new-files/
+?? .patches/P8-studio.patch
+?? docs/features/25d-schema-foundation/.run/P4.result
+?? docs/features/25d-schema-foundation/.run/P5.result
+?? docs/features/25d-schema-foundation/.run/P6.result
+?? docs/features/25d-schema-foundation/.run/P7.result
+?? docs/features/25d-schema-foundation/.run/P8.result
+?? docs/features/25d-schema-foundation/.run/settled.P4
+?? docs/features/25d-schema-foundation/.run/settled.P5
+?? docs/features/25d-schema-foundation/.run/settled.P6
+?? docs/features/25d-schema-foundation/.run/settled.P7
+?? docs/features/25d-schema-foundation/.run/settled.P8
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log
+?? docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log
+?? docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log
+?? docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log
+?? docs/features/25d-schema-foundation/logs/P6-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P7-attempt1-000747.log
+?? docs/features/25d-schema-foundation/logs/P7-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P8-attempt1-002422.log
+?? docs/features/25d-schema-foundation/logs/P8-gate-attempt1.log
+?? docs/features/25d-schema-foundation/logs/P9-attempt1-003730.log
+?? fixtures/book-experience/harbor-composed.json
+?? src/app/api/books/[bookId]/compositions/
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/app/api/books/[bookId]/visuals/
+?? src/app/studio/books/[bookId]/compose/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/beats/
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/compositions/
+?? src/features/book-experience/coverage/
+?? src/features/book-experience/preview/EpisodePreview.tsx
+?? src/features/book-experience/preview/responsive.ts
+?? src/features/book-experience/preview/states.ts
+?? src/features/book-experience/preview/transitions.ts
+?? src/features/book-experience/story-map/
+?? src/features/book-experience/visuals/
+?? src/features/episodes/adapters.ts
+?? src/features/images/adapters.ts
+?? src/features/moment-text/grounding.ts
+?? src/features/moments/adapters.ts
+?? src/features/visual/adapters.ts
+===DIFFSTAT===
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+ .patches/P4-studio.patch                           | 892 ++++++++++++---------
+ docs/features/25d-schema-foundation/.run/inflight  |   2 +-
+ .../loop-run-20260918-221559.log                   |  45 ++
+ docs/features/25d-schema-foundation/status.md      | 119 ++-
+ package.json                                       |   5 +
+ src/app/api/studio/preview/route.ts                |   2 +-
+ src/features/book-experience/preview/index.ts      |   4 +
+ tests/book-experience/preview-check.mts            | 156 ++++
+ worker/commentary.mts                              |  46 ++
+ worker/image-api.mts                               |  15 +
+ 10 files changed, 873 insertions(+), 413 deletions(-)
+[0m
+[0m$ [0mgit diff --stat -- new.md; echo "new.md clean if empty"; grep -rniE "sk-[A-Za-z0-9]{10}|BEGIN [A-Z ]*PRIVATE KEY|api[_-]?key.{0,10}[\"']?[A-Za-z0-9]{16}" src/features/book-experience/compositions/ src/features/book-experience/preview/EpisodePreview.tsx src/features/book-experience/preview/transitions.ts src/features/book-experience/preview/responsive.ts src/features/book-experience/preview/states.ts "src/app/api/books/[bookId]/compositions/" "src/app/studio/books/[bookId]/compose/" worker/compositions/ tests/smoke/smoke-compose.mts fixtures/book-experience/harbor-composed.json 2>&1 | head -n 5; echo "secret-scan done"
+new.md clean if empty
+secret-scan done
+[0m
+[0m$ [0mls .patches/ && ls .patches/P8-new-files/ | head -n 20
+P0-new-files
+P0-studio.patch
+P1-new-files
+P1-studio.patch
+P2-new-files
+P2-studio.patch
+P3-new-files
+P3-studio.patch
+P4-new-files
+P4-studio.patch
+P5-new-files
+P5-studio.patch
+P6-new-files
+P6-studio.patch
+P7-new-files
+P7-studio.patch
+P8-new-files
+P8-studio.patch
+src
+tests
+worker
+[0m
+[0m$ [0mgit diff --binary --output=.patches/P9-studio.patch && ls -la .patches/P9-studio.patch && mkdir -p ".patches/P9-new-files" && cp "src/features/book-experience/compositions/assemble.ts" "src/features/book-experience/compositions/safeCamera.ts" "src/features/book-experience/compositions/resolve.ts" "src/features/book-experience/compositions/actions.ts" "src/features/book-experience/compositions/repository.ts" "src/features/book-experience/compositions/index.ts" "src/features/book-experience/compositions/components/CompositionReview.tsx" "src/features/book-experience/preview/EpisodePreview.tsx" "src/features/book-experience/preview/transitions.ts" "src/features/book-experience/preview/responsive.ts" "src/features/book-experience/preview/states.ts" "worker/compositions/assemble.mts" "src/app/api/books/[bookId]/compositions/route.ts" "src/app/studio/books/[bookId]/compose/page.tsx" "src/app/studio/books/[bookId]/compose/ComposeWorkspace.tsx" "tests/smoke/smoke-compose.mts" "fixtures/book-experience/harbor-composed.json" ".patches/P9-new-files/" && ls ".patches/P9-new-files/"
+warning: in the working copy of '.patches/P4-studio.patch', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/features/25d-schema-foundation/loop-run-20260918-221559.log', LF will be replaced by CRLF the next time Git touches it
+-rw-r--r-- 1 LENOVO 197121 149615 Sep 19 00:54 .patches/P9-studio.patch
+actions.ts
+assemble.mts
+assemble.ts
+ComposeWorkspace.tsx
+CompositionReview.tsx
+EpisodePreview.tsx
+harbor-composed.json
+index.ts
+page.tsx
+repository.ts
+resolve.ts
+responsive.ts
+route.ts
+safeCamera.ts
+smoke-compose.mts
+states.ts
+transitions.ts
+[0m
+Patches saved — recording results in status.md.
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -14,9 +14,9 @@
+ | P5 | qa-pending | P4 | 2026-09-18 | lint pass; build pass (25 app routes + proxy, incl. …/model); smoke:book-model 29/29; smoke:schemas 14/14; smoke:bible 8/8 | Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies. |
+ | P6 | done | P5 | 2026-09-18 | lint pass; build pass (26 routes); smoke:story-planning 31/31; smoke:episodes 18/18; smoke:moments 21/21 | AI StoryMap/Episode/Moment ranges with strict tiling, bounded repair, approval-only UI; later-episode production independent of published siblings. Patch .patches/P6-studio.patch + new-file copies. |
+ | P7 | done | P6 | 2026-09-18 | lint pass; build pass (26 routes); smoke:beats 42/42; smoke:text 10/10; smoke:posting pass; test:preview 23/23 | AI Beat planning with complete-book representation: structured quotes/dialogue/commentary, sentence grounding, verbatim offsets, reveal-safe views, semantic cameras/transitions, BeatReview with subtitles + coverage + pending-visual placeholders, no camera/text entry. Patch .patches/P7-studio.patch + new-file copies. |
+ | P8 | done | P7 | 2026-09-18 | lint pass; build pass (27 routes); smoke:visual-generation 50/50; smoke:images 6/6; smoke:batch 4/4; smoke:visual 10/10 | Reference-first single/batch generation via ImageProvider + fake S3 boundary: approved visualProfile/reference versions gate scenes, one coordinate frame per composition, clean backgrounds with hidden coverage, RGBA foregrounds, honest depth bit depth, targeted regeneration reusing approved siblings by immutable key. Patch .patches/P8-studio.patch + new-file copies. |
+-| P9 | in-progress | P8 | — | Not run | Not started. |
++| P9 | qa-pending | P8 | 2026-09-18 | lint pass; build pass (28 routes); smoke:compose 51/51; smoke:beats 42/42; test:preview 51/51 | Code complete unattended: assembly, safeCamera, Episode preview with blockers and approve-and-continue; owner must play all scopes, test extremes/crops/motion/fallback, follow a rejected layer to regeneration, and visually certify art quality (steps in Progress log); paid regeneration never exercised. Patch .patches/P9-studio.patch + new-file copies. |
+ | P10 | todo | P9 | — | Not run | Not started. |
+ | P11 | todo | P10 | — | Not run | Not started. |
+ | P12 | todo | P11 | — | Not run | Not started. |
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+
+[0m
+[0m← [0mEdit docs/features/25d-schema-foundation/status.md
+Index: C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+===================================================================
+--- C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
++++ C:\Users\LENOVO\bookward-dashbaord\docs\features\25d-schema-foundation\status.md
+@@ -22,8 +22,24 @@
+ | P13 | blocked | P12 | — | Not run | HUMAN-ONLY; D-1 requires owner-run real model sample and release checks. |
+ 
+ ## Progress log
+ 
++### 2026-09-18 — P9 qa-pending: automatic 2.5D assembly and actionable previews (unattended)
++
++- Baseline (pre-edit): P8 done, P9 row in-progress. Tracked diff was runner state plus landed-but-uncommitted P5–P8 work (`package.json` scripts, `worker/commentary.mts`, `worker/image-api.mts`, `.patches/P4-studio.patch` regeneration, `.run/inflight`, loop log, `status.md`); untracked entries were P5–P8 patch artifacts, runner logs/results and landed-but-uncommitted P5–P8 code (`src/app/api/books/[bookId]/episodes|model|visuals/`, `book-experience/beats|book-model|coverage|story-map|visuals/`, adapters, `worker/beats|book-model|story-planning|visuals/`, three smoke files). `new.md` untouched (still untouched after this phase). P9 work is unstaged only (tracked edits: `package.json` one-line script, `src/app/api/studio/preview/route.ts` one-line fixture registration, `src/features/book-experience/preview/index.ts` export appendix, `tests/book-experience/preview-check.mts` extension; new files listed below).
++- Dependency check: P8 done permits progress. No placeholder; all P9 work is real code against fakes/fixtures. No paid regeneration, no live writes, no weakened camera/coverage validation, no camera/layer/text entry by the owner (ADR-003).
++- Read AGENTS.md plus bundled Next guide `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md` before changing Next code (new compositions route uses the documented GET/POST handler pattern with `await context.params`, matching the episodes/model/visuals routes).
++- New domain `src/features/book-experience/compositions/`: `assemble.ts` (assembleComposition/compositionApprovalProblem: shared-canvas validation, foreground alpha, depthMesh depth+mesh alignment, background overscan, structural failures yield no composition, content failures stay inspectable but blocked), `safeCamera.ts` (computeSafeCamera from actual overscan coverage and depth displacement, clampCameraPose/isCameraSafe/replanCameraToSafe, UNSAFE_CAMERA blocks), `resolve.ts` (resolveSemanticTarget/unresolvedShotEntities to layer IDs, buildResponsive focal crops, validateTransition, deriveMomentCompositions from usedIn per ADR-011), `actions.ts` (getNextAction: approve-and-continue/generate selected/regenerate layer/retry AI planning/preview with named blockers and targetActionId), `repository.ts` (FakeCompositionStore: immutable proposals, fingerprint approvals, outdated invalidation, canonical composition path), `components/CompositionReview.tsx` (read-only layer/depth inspector with parallax scrub, AI cameras with rationale, exact resolving action per blocker; verified no textarea/text/number/camera inputs by source grep).
++- Preview extensions `src/features/book-experience/preview/`: `transitions.ts` (executeTransition for cut/fade/slide/zoomThrough/parallaxShift with deterministic reduced-motion static), `responsive.ts` (selectResponsiveCrop portrait/landscape, focalVisible, isCropContained), `states.ts` (explicit empty/loading/error/outdated/partial/ready with honest placeholders), `EpisodePreview.tsx` (direct Beat/Moment/Episode scopes over the exact bundle contract, transition execution in both stages, webglcontextlost → deterministic CSS fallback, layer/depth inspector, blockers with resolve buttons, approve/generate/regenerate actions; no camera/layer/text inputs).
++- Fixture `fixtures/book-experience/harbor-composed.json` (deterministic local fake: ep_01, ep_01_m01, 2 Beats with verbatim whole-paragraph quote/dialogue, cmp_harbor_v1 with L0 plane + L1 depthMesh, safeCamera 0.1/0.08/1.1/0.08, responsive crops) registered in the preview endpoint alongside room-entry.
++- Worker `worker/compositions/assemble.mts` (runCompositionAssembly through FakeCompositionStore, AI replan flags per Beat, approveComposedComposition requires zero issues). Thin route `src/app/api/books/[bookId]/compositions/route.ts` (GET status counts; POST compositions.approve with fingerprint compare-and-swap and zero-issue gating / compositions.regenerate failed-only with reason and distinct idempotency key). Thin page `src/app/studio/books/[bookId]/compose/` (ComposeWorkspace over the fixture bundle with explicit loading/error states). Every new file <1000 lines; plan.md, prompts.md, CONTEXT.md untouched; no new dependencies; no secrets in new files.
++- Test seams: `tests/smoke/smoke-compose.mts` 51/51 (prior art: smoke-image-prompt.mts PASS style, preview.spec.ts from P2). Covers assembly valid/structural/content failures, safeCamera extremes with clamp/replan, semantic resolution, responsive crops, transition validation, next-action blockers with targetActionId, fingerprint approvals with outdated invalidation, worker pass plus blocked-approve refusal, rejected-layer → regeneration → clean re-assembly → real rendering progression (harbor fixture compiles, every Beat resolves finite frames/transitions/subtitles), UI input-absence, route gating, file sizes. Extended `test:preview` 23→51 checks (harbor source-to-episode progression, all five transitions, crops, all six preview states, EpisodePreview surface with context-loss handling, assembly seam probes, smoke:compose declaration; all 23 prior checks unchanged and green). One test-authoring fix: the alpha-block assertion matched the issue code instead of the human message; corrected to the message text (behavior unchanged). One build fix: ReferencePin imports from schemas/model.ts, not primitives.ts (behavior unchanged).
++- Gates (all green): lint pass; build pass (route table 27→28 with …/compositions plus …/compose page); smoke:compose 51/51; smoke:beats 42/42; test:preview 51/51. Evidence: "PASS Blocked approval names the layer-regeneration action" and "PASS Clean review enables approve-and-continue with no camera/layer/text entry" and live `next start` endpoint returning `"provenance":"fixture harbor-composed: deterministic local fake…"`, ep_01 with 2 Beats and exact quote "Mara pushed the door open…" — an assembled Episode previews end to end and each blocker names its resolving action. The temporary server was stopped afterwards (no listener left on :8900/:8901).
++- Demoable outcome met locally: EpisodePreview + CompositionReview expose the assembled Episode with layer/depth inspection, per-blocker resolve buttons and approve-and-continue, and the smoke run rejects a foreground layer, regenerates it alone and returns to an approvable preview. OWNER STEPS REMAIN (qa-pending, do not mark done until): (1) Before: deterministic harbor-composed fixture was used; substitute owner-supplied generated assets when available, never paid regeneration in this phase. (2) During: confirm no paid regeneration ran and no camera/coverage validation was weakened. (3) After: play Beat, Moment and Episode scopes; test camera extremes, portrait/landscape, reduced motion and forced CSS fallback; follow a rejected-layer blocker to regeneration and back to preview with no manual scene authoring; visually inspect silhouettes, holes, layer order, subtitle legibility, motion comfort and fallback — browser automation cannot certify artistic quality. Note: `/studio/books/[bookId]/compose` returned 307 without a session (auth proxy, expected); verify signed-in/dev-bypass access in the browser pass. Real-asset assembly quality remains P13/D-1 owner QA.
++- Patch: `.patches/P9-studio.patch` (tracked binary diff) plus new-file copies under `.patches/P9-new-files/`. No staging, no commit (suggested message below), no deploy, no live writes.
++- Suggested commit message: `P9: automatic 2.5D assembly with safeCamera and actionable episode preview`.
++- Out of scope (logged, not fixed): legacy visual/images/composition consumers still serve the old one-image model until P10–P12 migrate them; non-gate suites not re-run; smoke-e2e/smoke-formats remain forbidden as autonomous gates per Scaffold deferred.
++
+ ### 2026-09-18 — P8 done: immutable visual references and single/batch generation (unattended)
+ 
+ - Baseline (pre-edit): P7 done, P8 row in-progress. Tracked diff was runner state only (`.patches/P4-studio.patch` regeneration, `.run/inflight`, `loop-run-20260918-221559.log`, `status.md`, `package.json` one-line P7 script, `worker/commentary.mts` P7 appendix); untracked entries were P5/P6/P7 patch artifacts, runner logs/results and landed-but-uncommitted P5/P6/P7 code plus prior-attempt `logs/P8-attempt1-002422.log` (no P8 source had landed). `new.md` untouched (still untouched after this phase). P8 work is unstaged only (tracked edits: `package.json` one-line script, `worker/image-api.mts` pure key-builder appendix; new files listed below).
+ - Dependency check: P7 done permits progress. No placeholder; all P8 work is real code against fakes/fixtures. No paid generation, no live writes, no segmentation/depth/inpaint vendors, no manual upload/edit tools (ADR-008/ADR-012).
+
+[0m
+Final gate confirmation after the last edit.
+[0m$ [0mnpm.cmd run smoke:compose 2>&1 | tail -n 2 && npm.cmd run test:preview 2>&1 | tail -n 2 && git status --short | grep -v "^ M docs/features\|^ M .patches/P4\|^?? docs/features\|^?? .patches/P[578]" | head -n 30
+51/51 checks passed
+
+51/51 checks passed
+ M package.json
+ M src/app/api/studio/preview/route.ts
+ M src/features/book-experience/preview/index.ts
+ M tests/book-experience/preview-check.mts
+ M worker/commentary.mts
+ M worker/image-api.mts
+?? .patches/P6-new-files/
+?? .patches/P6-studio.patch
+?? .patches/P9-new-files/
+?? .patches/P9-studio.patch
+?? fixtures/book-experience/harbor-composed.json
+?? src/app/api/books/[bookId]/compositions/
+?? src/app/api/books/[bookId]/episodes/
+?? src/app/api/books/[bookId]/model/
+?? src/app/api/books/[bookId]/visuals/
+?? src/app/studio/books/[bookId]/compose/
+?? src/features/bible/adapters.ts
+?? src/features/book-experience/beats/
+?? src/features/book-experience/book-model/
+?? src/features/book-experience/compositions/
+?? src/features/book-experience/coverage/
+?? src/features/book-experience/preview/EpisodePreview.tsx
+?? src/features/book-experience/preview/responsive.ts
+?? src/features/book-experience/preview/states.ts
+?? src/features/book-experience/preview/transitions.ts
+?? src/features/book-experience/story-map/
+?? src/features/book-experience/visuals/
+?? src/features/episodes/adapters.ts
+?? src/features/images/adapters.ts
+?? src/features/moment-text/grounding.ts
+[0m
+[0m# [0mTodos
+[✓] Baseline: inventory tracked/untracked changes, verify P8 done, read AGENTS.md + Next guide + prior art
+[✓] Implement compositions domain (assemble, safeCamera, resolve, actions, repository, components)
+[✓] Extend preview (rendering, fallback, subtitle, transitions, inspection, states)
+[✓] Worker compositions + thin app routes
+[✓] Add smoke:compose + extend test:preview fixtures
+[✓] Run gates, verify demoable outcome, write patch + status.md
+[0m
+P9 complete, ending **qa-pending** (unattended supervised phase — never done).
+
+**What landed** (unstaged only, `new.md`/plan/prompts/CONTEXT untouched):
+- `src/features/book-experience/compositions/` — `assemble.ts` (shared-canvas/alpha/depth/overscan validation; structural failures yield no composition, content failures stay inspectable but blocked), `safeCamera.ts` (computed from actual overscan + displacement; clamp/replan, owner never edits cameras), `resolve.ts` (semantic targets → layer IDs, focal responsive crops, transition validation, usedIn-derived Moment lists per ADR-011), `actions.ts` (approve-and-continue / generate selected / regenerate layer / retry / preview with `targetActionId` blockers), `repository.ts` (immutable proposals, fingerprint approvals, outdated invalidation), `components/CompositionReview.tsx` (read-only inspector + scrub, no camera/layer/text inputs).
+- `preview/` extensions — `transitions.ts` (all 5 types + reduced-motion static), `responsive.ts` (portrait/landscape crops, focal containment), `states.ts` (explicit empty/loading/error/outdated/partial/ready), `EpisodePreview.tsx` (Beat/Moment/Episode scopes, transition execution in both stages, `webglcontextlost` → deterministic CSS fallback, inspector, per-blocker resolve buttons).
+- `fixtures/book-experience/harbor-composed.json` (ep_01, 2 verbatim Beats, L0 plane + L1 depthMesh), registered in the preview endpoint; `worker/compositions/assemble.mts`; thin `…/compositions` API route and `…/compose` page.
+- `smoke:compose` 51/51; `test:preview` extended 23→51 (all prior checks green).
+
+**Gates (final tree, all green):** lint pass; build pass (28 routes); smoke:compose 51/51; smoke:beats 42/42; test:preview 51/51. Live evidence: `next start` served `harbor-composed` with ep_01 + exact quote; server stopped afterwards, no listeners left.
+
+**Owner steps remain** (in status.md Notes): play all three scopes; test camera extremes, portrait/landscape, reduced motion, forced fallback; follow a rejected-layer blocker to regeneration and back with no manual authoring; visually certify silhouettes, holes, layer order, subtitles, motion comfort, fallback. Patch saved at `.patches/P9-studio.patch` + `.patches/P9-new-files/`. Suggested commit: `P9: automatic 2.5D assembly with safeCamera and actionable episode preview`. No commit, no deploy, no live writes.

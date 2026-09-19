@@ -1,0 +1,59 @@
+LOOP: 25d-schema-foundation — agent=openrouter, up to 1 phase(s) in flight (mode=waves, waves from prompts.md, strict_deps=0, at_keyboard=attempt, force_forward=1)
+LOOP: dispatched P4  (in flight: P4 )
+LOOP: phase P4 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P4-attempt1-221619.log)
+  P4 agent| **Owner steps remain (in status.md Notes):** inspect lease-recovery/approval-idempotency/cost PASS lines; approve a fixture checkpoint twice → exactly one successor; interrupt + resume a fixture multi-step job with no duplicate charges; confirm no `images.*` job without explicit selection. Live kill/restart is P13.
+  P4 agent| 
+  P4 agent| **Artifacts:** `.patches/P4-studio.patch` + `.patches/P4-new-files/` copies. Suggested commit: `P4: durable job engine, provider boundaries and approval-driven pipeline`. All files <1000 lines; plan.md/prompts.md/CONTEXT.md/`new.md` untouched; no secrets; no new dependencies.
+LOOP: rate/usage limit detected — fleet paused 30m (all loops resume automatically)
+LOOP: phase P4 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P4-attempt1-224753.log)
+  P4 agent| **Owner steps remain (in Notes/Progress):** run `smoke:job-engine` and inspect lease/approval/cost lines; approve a fixture checkpoint twice (expect one successor); interrupt/resume a multi-step job (expect retained checkpoints, no duplicate charges); confirm no `images.*` job without explicit selection. Live kill/restart belongs to P13.
+  P4 agent| 
+  P4 agent| Suggested commit message: `P4: durable job engine, provider boundaries and approval-driven pipeline`.
+LOOP: rate/usage limit detected — fleet paused 30m (all loops resume automatically)
+LOOP: pause expired — resuming
+LOOP: phase P4 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P4-attempt1-232826.log)
+  P4 agent| **Owner steps remain (exact checks):** (1) run `npm.cmd run smoke:job-engine` and inspect lease-recovery, approval-idempotency, cost-accounting PASS lines; (2) approve a fixture checkpoint twice → exactly one successor planning job; (3) interrupt a fixture multi-step job, resume → retained checkpoints, no duplicate completed-call charges; (4) confirm no `images.*` job without explicit single/batch selection. Live kill/restart belongs to P13.
+  P4 agent| 
+  P4 agent| Suggested commit message: `P4: durable job engine, provider boundaries and approval-driven pipeline`.
+LOOP: P4 qa-pending — complete, awaiting the owner's eyes: Code complete unattended (commits 972b1ff, 97bc450; zero source edits this attempt): one-document-per-job engine, provider boundaries, approval pipeline, lease recovery, idempotent costs; owner must verify lease recovery, approval idempotency and cost evidence in fixture runs plus confirm no visual auto-start (steps in Progress log); live kill/restart belongs to P13. Patch .patches/P4-studio.patch + new-file copies.
+LOOP: P4 finished — qa-pending (counts as complete)
+LOOP: dispatched P5  (in flight: P5 )
+LOOP: phase P5 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P5-attempt1-233705.log)
+  P5 agent| **Owner steps remain (in status.md Notes):** (1) run `smoke:book-model` and inspect alias/flashback lines; (2) review the fixture in BookModelReview — state at storyTime 1 vs 10, identity at seq 2 vs 4; (3) reject a proposal, inspect AI revision (approved spec survives), then approve with no data entry; (4) confirm fakes-only, no paid calls. Real-book model quality stays a P13 owner check.
+  P5 agent| 
+  P5 agent| **Patch:** `.patches/P5-studio.patch` + verified copies in `.patches/P5-new-files/`. Nothing staged. Suggested commit: `P5: rolling ledger, consolidated book model and evidence review`.
+LOOP: P5 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: rolling ledger + Book Model review; owner must inspect deterministic replay, evidence validity and retained approvals in fixture runs plus approve/reject/regenerate without entering data (steps in Progress log); real-book model quality belongs to P13. Patch .patches/P5-studio.patch + new-file copies.
+LOOP: P5 finished — qa-pending (counts as complete)
+LOOP: phase P6 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P6-attempt1-235710.log)
+LOOP: dispatched P6  (in flight: P6 )
+  P6 agent| **Artifacts:** `.patches/P6-studio.patch` (regenerated final) + 16 files under `.patches/P6-new-files/`. Nothing staged/committed. Suggested commit: `P6: AI story planning with strict coverage, bounded repair and approval review`.
+  P6 agent| 
+  P6 agent| **Preserved:** `new.md`, plan/prompts/CONTEXT untouched; P5/owner changes intact. No new dependencies, no secrets, every file <1000 lines.
+LOOP: P6 waiting for the gate lock → npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:story-planning && npm.cmd run smoke:episodes && npm.cmd run smoke:moments
+LOOP: P6 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:story-planning && npm.cmd run smoke:episodes && npm.cmd run smoke:moments
+LOOP: P6 finished — done
+LOOP: dispatched P7  (in flight: P7 )
+LOOP: phase P7 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P7-attempt1-000747.log)
+  P7 agent| **Suggested commit message for studio:** `P7: AI beat planning with verbatim, reveal-safe coverage review`
+  P7 agent| 
+  P7 agent| **Owner QA (local spot check):** render BeatReview with the smoke-fixture Beats — confirm the long passage reads whole across two subtitles, the internal thought is fully worded, quotes match source offsets, the deckhand identity hides until p000004, and removing a paragraph representation blocks Approve.
+LOOP: P7 waiting for the gate lock → npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:beats && npm.cmd run smoke:text && npm.cmd run smoke:posting && npm.cmd run test:preview
+LOOP: P7 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:beats && npm.cmd run smoke:text && npm.cmd run smoke:posting && npm.cmd run test:preview
+LOOP: P7 finished — done
+LOOP: phase P8 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P8-attempt1-002422.log)
+LOOP: dispatched P8  (in flight: P8 )
+  P8 agent| **Artifacts:** `.patches/P8-studio.patch` + `.patches/P8-new-files/` (13 files); status.md P8 row → done with Progress log and Deferred entries; `new.md` untouched; every file <1000 lines; no secrets; no scope creep.
+  P8 agent| 
+  P8 agent| **Suggested commit message (not committed):** `P8: reference-first visual generation with single/batch selection and targeted regeneration`
+LOOP: P8 waiting for the gate lock → npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:visual-generation && npm.cmd run smoke:images && npm.cmd run smoke:batch && npm.cmd run smoke:visual
+LOOP: P8 done — gate passed: npm.cmd run lint && npm.cmd run build && npm.cmd run smoke:visual-generation && npm.cmd run smoke:images && npm.cmd run smoke:batch && npm.cmd run smoke:visual
+LOOP: P8 finished — done
+LOOP: dispatched P9  (in flight: P9 )
+LOOP: phase P9 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P9-attempt1-003730.log)
+  P9 agent| **Gates (final tree, all green):** lint pass; build pass (28 routes); smoke:compose 51/51; smoke:beats 42/42; test:preview 51/51. Live evidence: `next start` served `harbor-composed` with ep_01 + exact quote; server stopped afterwards, no listeners left.
+  P9 agent| 
+  P9 agent| **Owner steps remain** (in status.md Notes): play all three scopes; test camera extremes, portrait/landscape, reduced motion, forced fallback; follow a rejected-layer blocker to regeneration and back with no manual authoring; visually certify silhouettes, holes, layer order, subtitles, motion comfort, fallback. Patch saved at `.patches/P9-studio.patch` + `.patches/P9-new-files/`. Suggested commit: `P9: automatic 2.5D assembly with safeCamera and actionable episode preview`. No commit, no deploy, no live writes.
+LOOP: P9 qa-pending — complete, awaiting the owner's eyes: Code complete unattended: assembly, safeCamera, Episode preview with blockers and approve-and-continue; owner must play all scopes, test extremes/crops/motion/fallback, follow a rejected layer to regeneration, and visually certify art quality (steps in Progress log); paid regeneration never exercised. Patch .patches/P9-studio.patch + new-file copies.
+LOOP: P9 finished — qa-pending (counts as complete)
+LOOP: phase P10 attempt 1 → fresh openrouter process (timeout 2700s, log: C:/Users/LENOVO/bookward-dashbaord/docs/features/25d-schema-foundation/logs/P10-attempt1-005518.log)
+LOOP: dispatched P10  (in flight: P10 )

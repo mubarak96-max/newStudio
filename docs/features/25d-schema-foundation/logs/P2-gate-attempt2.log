@@ -1,0 +1,111 @@
+
+> editorial-studio@0.1.0 lint
+> eslint
+
+
+> editorial-studio@0.1.0 build
+> next build
+
+▲ Next.js 16.3.1 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 104ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.0s
+  Running TypeScript ...
+  Finished TypeScript in 11.6s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/11) ...
+  Generating static pages using 7 workers (2/11) 
+  Generating static pages using 7 workers (5/11) 
+  Generating static pages using 7 workers (8/11) 
+✓ Generating static pages using 7 workers (11/11) in 1892ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/auth/dev-token
+├ ƒ /api/auth/mode
+├ ƒ /api/auth/session
+├ ƒ /api/books
+├ ƒ /api/books/[bookId]/jobs
+├ ƒ /api/books/[bookId]/settings
+├ ƒ /api/books/[bookId]/sources
+├ ƒ /api/books/[bookId]/sources/[sourceId]/approve
+├ ƒ /api/books/[bookId]/sources/[sourceId]/bible
+├ ƒ /api/books/[bookId]/sources/[sourceId]/edit
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes
+├ ƒ /api/books/[bookId]/sources/[sourceId]/episodes/[episodeId]/moments
+├ ƒ /api/books/[bookId]/sources/[sourceId]/uncertainties
+├ ƒ /api/books/[bookId]/visual
+├ ƒ /api/jobs
+├ ƒ /api/studio/preview
+├ ƒ /studio
+├ ƒ /studio/books/[bookId]
+├ ƒ /studio/books/[bookId]/sources/[sourceId]
+└ ƒ /studio/preview
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> editorial-studio@0.1.0 smoke:schemas
+> node --experimental-strip-types tests/smoke/smoke-schemas.mts
+
+(node:10536) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/book-experience/schemas/beat.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Fixture source parses with story and classified non-story paragraphs
+PASS  Moment parses with three readingBeats in source order
+PASS  Every Beat parses through the canonical schema
+PASS  Composition parses with planes plus one depthMesh
+PASS  EpisodeBundle parse/compile round-trip is stable
+PASS  resolveFrame at 0 returns the camera from-pose
+PASS  resolveFrame at 1 returns the camera to-pose
+PASS  resolveFrame is deterministic
+PASS  Nearer depthMesh layer shifts more than the background plane
+PASS  Subtitle HTML carries the exact quote and escapes markup
+PASS  Camera zoom below 1 is rejected
+PASS  depthMesh without aligned depth is rejected
+PASS  Unsupported schemaVersion is rejected
+PASS  Coverage gaps are actionable, not silent
+
+14/14 checks passed
+
+> editorial-studio@0.1.0 test:preview
+> node --experimental-strip-types tests/book-experience/preview-check.mts
+
+(node:18496) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/studio/src/features/book-experience/functions/compileBundle.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\studio\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS  Fixture compiles to an EpisodeBundle with 3 Beats
+PASS  Every Beat resolves finite frames with HTML subtitles
+PASS  Preview endpoint is fixture-scoped
+PASS  Preview endpoint performs no cloud writes
+PASS  Player exposes control "scope-episode"
+PASS  Player exposes control "scope-moment"
+PASS  Player exposes control "scope-beat"
+PASS  Player exposes control "play"
+PASS  Player exposes control "pause"
+PASS  Player exposes control "scrub"
+PASS  Player exposes control "next"
+PASS  Player exposes control "previous"
+PASS  Player exposes control "fallback-toggle"
+PASS  Player exposes control "subtitle"
+PASS  Player exposes control "provenance"
+PASS  Player has no camera authoring input
+PASS  WebGL stage renders one runtime depthMesh
+PASS  CSS fallback renders flat parallax layers
+PASS  Required file exists: src/app/studio/preview/page.tsx
+PASS  Required file exists: src/app/api/studio/preview/route.ts
+PASS  Required file exists: tests/book-experience/preview.spec.ts
+PASS  Required file exists: playwright.config.ts
+PASS  Every new feature file stays below 1000 lines
+
+23/23 checks passed
