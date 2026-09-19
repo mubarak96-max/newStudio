@@ -5,10 +5,14 @@ import Link from 'next/link';
 import { ArrowLeft, BookOpen, ExternalLink } from 'lucide-react';
 import { DashboardFrame } from '@/components/dashboard/DashboardFrame';
 import { getBook, getPdfDownloadUrl, type Book } from '@/lib/books';
+import { BookExtraction } from './BookExtraction';
+
+type DashboardTab = 'overview' | 'extraction';
 
 export function BookDashboard({ bookId }: { bookId: string }) {
   const [book, setBook] = useState<Book | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [tab, setTab] = useState<DashboardTab>('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -132,18 +136,52 @@ export function BookDashboard({ bookId }: { bookId: string }) {
           </div>
         </div>
 
-        <div>
-          <p className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
-            Dashboard
-          </p>
-          <h3 className='mt-2 text-xl font-semibold tracking-tight'>Your Shops</h3>
+        <div
+          role='tablist'
+          aria-label='Book sections'
+          className='inline-flex rounded-lg border border-border bg-card p-1 text-sm shadow-sm'
+        >
+          {(
+            [
+              { key: 'overview', label: 'Overview' },
+              { key: 'extraction', label: 'Extraction' },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.key}
+              type='button'
+              role='tab'
+              aria-selected={tab === item.key}
+              onClick={() => setTab(item.key)}
+              className={`rounded-md px-4 py-1.5 font-medium transition-colors ${
+                tab === item.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
-        <div className='rounded-lg border border-border bg-card p-6 text-card-foreground'>
-          <p className='text-sm text-muted-foreground'>
-            Shop content not copied — wire up your data source here.
-          </p>
-        </div>
+        {tab === 'overview' ? (
+          <>
+            <div>
+              <p className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
+                Dashboard
+              </p>
+              <h3 className='mt-2 text-xl font-semibold tracking-tight'>Your Shops</h3>
+            </div>
+
+            <div className='rounded-lg border border-border bg-card p-6 text-card-foreground'>
+              <p className='text-sm text-muted-foreground'>
+                Shop content not copied — wire up your data source here.
+              </p>
+            </div>
+          </>
+        ) : (
+          book && <BookExtraction book={book} />
+        )}
       </section>
     </DashboardFrame>
   );
