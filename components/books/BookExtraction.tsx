@@ -434,6 +434,13 @@ export function BookExtraction({ book }: { book: Book }) {
             </div>
           )}
 
+          {job?.status === 'completed' && job.warning && (
+            <div className='mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm'>
+              <p className='font-medium'>Completed with skipped passages.</p>
+              <p className='mt-1 text-muted-foreground'>{job.warning}</p>
+            </div>
+          )}
+
           {job?.status === 'failed' && (
             <div className='mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm'>
               <p className='font-medium'>Book Model job failed.</p>

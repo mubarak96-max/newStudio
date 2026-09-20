@@ -59,6 +59,7 @@ export type PipelineJob = {
   checkpoint: { storagePath: string; windowIndex: number } | null;
   attempts: number;
   error?: string;
+  warning?: string;
   costUsd: number;
   workerVersion?: string;
   model?: string;
@@ -408,6 +409,7 @@ export function subscribePipelineJob(
         checkpoint: data.checkpoint ?? null,
         attempts: data.attempts ?? 0,
         error: data.error ?? undefined,
+        warning: data.warning ?? undefined,
         costUsd: data.costUsd ?? 0,
         workerVersion: data.workerVersion ?? undefined,
         model: data.model ?? undefined,

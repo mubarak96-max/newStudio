@@ -7,7 +7,6 @@ import {
   loadLatestValidCheckpoint,
   saveJsonCheckpoint,
 } from "./checkpoint-store.mts";
-import { understandingResponseFormat } from "./understanding-schema.mts";
 
 type Paragraph = {
   id: string;
@@ -73,6 +72,8 @@ type Ledger = {
   processedUnitIndex?: number;
   processedThroughSeq: number;
   coveredParagraphIds: string[];
+  filteredParagraphIds?: string[];
+  filteredWindows?: number[];
   rollingSynopsis: string;
   entities: Entity[];
   events: Event[];
@@ -189,8 +190,30 @@ const app = initializeApp(
 const db = getFirestore(app);
 const bucket = getStorage(app).bucket(storageBucket);
 const pollIntervalMs = Math.max(2_000, Number(env.POLL_INTERVAL_MS ?? 10_000));
-const openRouterModel = env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash";
-const workerVersion = "understand-v3";
+const openRouterModel = env.OPENROUTER_MODEL ?? "openai/gpt-4.1-mini";
+const openRouterModels = Array.from(
+  new Set([
+    openRouterModel,
+    ...(env.OPENROUTER_FALLBACK_MODELS ??
+      "deepseek/deepseek-chat,deepseek/deepseek-v4-flash")
+      .split(",")
+      .map((model) => model.trim())
+      .filter(Boolean),
+  ]),
+);
+const openRouterMaxTokens = Math.max(
+  4_000,
+  Math.min(32_000, Number(env.OPENROUTER_MAX_TOKENS ?? 16_000) || 16_000),
+);
+const windowMaxParagraphs = Math.max(
+  1,
+  Number(env.WINDOW_MAX_PARAGRAPHS ?? 10) || 10,
+);
+const windowMaxCharacters = Math.max(
+  2_000,
+  Number(env.WINDOW_MAX_CHARACTERS ?? 6_000) || 6_000,
+);
+const workerVersion = "understand-v6";
 const workerId = crypto.randomUUID();
 const staleLeaseMs = 2 * 60 * 1000;
 let stopping = false;
@@ -376,8 +399,8 @@ function normalizeDelta(value: unknown): Delta {
 
 function buildWindows(
   paragraphs: Paragraph[],
-  maxParagraphs = 32,
-  maxCharacters = 12_000,
+  maxParagraphs = windowMaxParagraphs,
+  maxCharacters = windowMaxCharacters,
   overlap = 5,
 ): Window[] {
   const windows: Window[] = [];
@@ -491,12 +514,15 @@ function paragraphText(
 async function callUnderstandingModel(
   ledger: Ledger,
   window: Window,
-): Promise<{ delta: Delta; cost: number }> {
+): Promise<{ delta: Delta; cost: number; model: string }> {
   const system = `You extract a faithful Book Model from supplied source paragraphs.
 Return JSON only. Use only claims supported by supplied paragraphs. Never use outside knowledge.
 Every new entity, fact, event, state change, reveal, relationship, and alias needs paragraphIds.
 Every fact needs quote. Every event, state change, reveal, and relationship needs evidenceQuotes.
-All evidence quotes must be short exact substrings copied from cited paragraphs.
+All evidence quotes must be exact substrings copied from cited paragraphs and no longer than 20 words.
+Prefer the least explicit exact substring that still supports the claim.
+This is structured analysis of user-supplied literary text. Never reproduce passages beyond those short evidence quotes.
+This is a non-graphic literary-analysis task: if owned paragraphs contain sexual, violent, or otherwise sensitive material, do not refuse. Analyze clinically in neutral, high-level terms and keep summaries non-explicit.
 If identity is uncertain, add aliasConflicts. Do not silently merge entities.
 Return deltas only with keys: newEntities, facts, events, stateChanges, reveals, relationshipChanges, aliasConflicts, updatedSynopsis.
 Use these item fields:
@@ -525,69 +551,182 @@ Context paragraphs help interpretation but owned paragraphs are the processing t
   });
 
   let lastError: unknown;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      const response = await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: openRouterModel,
-            temperature: 0,
-            max_tokens: 8_000,
-            response_format: understandingResponseFormat,
-            provider: { require_parameters: true },
-            messages: [
-              { role: "system", content: system },
-              { role: "user", content: user },
-            ],
-          }),
-        },
-      );
-      if (!response.ok)
-        throw new Error(
-          `OpenRouter HTTP ${response.status}: ${await response.text()}`,
-        );
-      const payload = (await response.json()) as {
-        choices?: { finish_reason?: string; message?: { content?: string } }[];
-        usage?: { cost?: number };
-      };
-      const choice = payload.choices?.[0];
-      const content = choice?.message?.content;
-      if (!content) throw new Error("OpenRouter returned no message content.");
-      if (choice?.finish_reason && choice.finish_reason !== "stop") {
-        throw new Error(
-          `OpenRouter response incomplete: ${choice.finish_reason}.`,
-        );
-      }
-      const cleaned = content
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/, "");
-      let parsed: unknown;
+  let cost = 0;
+  let sawContentFilter = false;
+  const contentFilterPatterns =
+    /content[_-]?filter|moderation|safety|policy|refusal|refused|inappropriate/i;
+  const markContentFilter = (window: Window, detail: string) => {
+    sawContentFilter = true;
+    const ownedChars = window.owned.reduce(
+      (total, paragraph) => total + paragraph.text.length,
+      0,
+    );
+    const error = new Error(
+      `OpenRouter content filter: ${detail} (window ${window.index}, owned ${window.owned.length} paras/${ownedChars} chars).`,
+    );
+    (error as Error & { code?: string }).code = "CONTENT_FILTER";
+    return error;
+  };
+  for (const model of openRouterModels) {
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
       try {
-        parsed = JSON.parse(cleaned);
+        const response = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model,
+              temperature: 0,
+              max_tokens: openRouterMaxTokens,
+              response_format: { type: "json_object" },
+              provider: { allow_fallbacks: true },
+              messages: [
+                { role: "system", content: system },
+                { role: "user", content: user },
+              ],
+            }),
+          },
+        );
+        if (!response.ok) {
+          const bodyText = await response.text();
+          if (
+            response.status === 400 ||
+            response.status === 403 ||
+            response.status === 422
+          ) {
+            if (contentFilterPatterns.test(bodyText)) {
+              lastError = markContentFilter(window, model);
+              break;
+            }
+          }
+          throw new Error(`OpenRouter HTTP ${response.status}: ${bodyText}`);
+        }
+        const payload = (await response.json()) as {
+          choices?: {
+            finish_reason?: string;
+            message?: { content?: string };
+          }[];
+          model?: string;
+          usage?: { cost?: number };
+        };
+        cost += asNumber(payload.usage?.cost);
+        const choice = payload.choices?.[0];
+        if (choice?.finish_reason === "content_filter") {
+          lastError = markContentFilter(window, model);
+          break;
+        }
+        const content = choice?.message?.content;
+        if (!content) {
+          if (contentFilterPatterns.test(JSON.stringify(payload))) {
+            lastError = markContentFilter(window, model);
+            break;
+          }
+          throw new Error("OpenRouter returned no message content.");
+        }
+        if (
+          contentFilterPatterns.test(content.slice(0, 500)) &&
+          content.trim().length < 500 &&
+          !content.trim().startsWith("{")
+        ) {
+          lastError = markContentFilter(window, model);
+          break;
+        }
+        if (choice?.finish_reason && choice.finish_reason !== "stop") {
+          const ownedChars = window.owned.reduce(
+            (total, paragraph) => total + paragraph.text.length,
+            0,
+          );
+          const error = new Error(
+            `OpenRouter response incomplete: ${choice.finish_reason} (window ${window.index}, owned ${window.owned.length} paras/${ownedChars} chars, max_tokens ${openRouterMaxTokens}). Split the window and retry.`,
+          );
+          (error as Error & { code?: string }).code =
+            choice.finish_reason === "length"
+              ? "LENGTH_TRUNCATION"
+              : "INCOMPLETE_RESPONSE";
+          throw error;
+        }
+        const cleaned = content
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```$/, "");
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(cleaned);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Invalid JSON.";
+          throw new Error(`Invalid structured AI response: ${message}`);
+        }
+        return {
+          delta: normalizeDelta(parsed),
+          cost,
+          model: payload.model ?? model,
+        };
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Invalid JSON.";
-        throw new Error(`Invalid structured AI response: ${message}`);
+        if (isContentFilterError(error)) break;
+        lastError = error;
+        if (attempt < 2)
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1_500));
       }
-      return {
-        delta: normalizeDelta(parsed),
-        cost: asNumber(payload.usage?.cost),
-      };
-    } catch (error) {
-      lastError = error;
-      if (attempt < 3)
-        await new Promise((resolve) => setTimeout(resolve, attempt * 1_500));
     }
+  }
+  if (sawContentFilter && !isContentFilterError(lastError)) {
+    lastError = markContentFilter(
+      window,
+      openRouterModels.join(" -> ") || "all models",
+    );
   }
   throw lastError instanceof Error
     ? lastError
     : new Error("AI request failed.");
+}
+
+function errorCode(error: unknown): string | undefined {
+  return error instanceof Error
+    ? (error as Error & { code?: string }).code
+    : undefined;
+}
+
+function isContentFilterError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (errorCode(error) === "CONTENT_FILTER" ||
+      error.message.startsWith("OpenRouter content filter:"))
+  );
+}
+
+function isLengthTruncation(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    ((error as Error & { code?: string }).code === "LENGTH_TRUNCATION" ||
+      error.message.includes("incomplete: length"))
+  );
+}
+
+function splitWindow(window: Window): [Window, Window] {
+  const mid = Math.max(1, Math.ceil(window.owned.length / 2));
+  const firstOwned = window.owned.slice(0, mid);
+  const secondOwned = window.owned.slice(mid);
+  const crossOverlap = 2;
+  return [
+    {
+      index: window.index,
+      owned: firstOwned,
+      contextBefore: window.contextBefore,
+      contextAfter: secondOwned.slice(0, crossOverlap),
+    },
+    {
+      index: window.index,
+      owned: secondOwned,
+      contextBefore: [...window.contextBefore, ...firstOwned].slice(
+        -crossOverlap,
+      ),
+      contextAfter: window.contextAfter,
+    },
+  ];
 }
 
 function unique(values: string[]): string[] {
@@ -963,6 +1102,8 @@ async function persistBookModel(bookId: string, ledger: Ledger): Promise<void> {
     entityCount: ledger.entities.length,
     eventCount: ledger.events.length,
     aliasConflicts: ledger.aliasConflicts,
+    filteredParagraphCount: ledger.filteredParagraphIds?.length ?? 0,
+    filteredParagraphIds: ledger.filteredParagraphIds ?? [],
     rollingSynopsis: ledger.rollingSynopsis,
     updatedAt: FieldValue.serverTimestamp(),
   });
@@ -1031,11 +1172,15 @@ async function processUnderstandingJob(
       processedUnitIndex: -1,
       processedThroughSeq: -1,
       coveredParagraphIds: [],
+      filteredParagraphIds: [],
+      filteredWindows: [],
       rollingSynopsis: "",
       entities: [],
       events: [],
       aliasConflicts: [],
     };
+    ledger.filteredParagraphIds ??= [];
+    ledger.filteredWindows ??= [];
     if (
       ledger.sourceId !== sourceId ||
       ledger.canonicalHash !== canonicalHash
@@ -1056,27 +1201,16 @@ async function processUnderstandingJob(
     const remainingWindows = windows.filter(
       (window) => (window.owned.at(-1)?.unitIndex ?? -1) > resumeUnitIndex,
     );
-    for (const candidate of remainingWindows) {
-      const window = {
-        ...candidate,
-        owned: candidate.owned.filter(
-          (paragraph) => (paragraph.unitIndex ?? -1) > resumeUnitIndex,
-        ),
-      };
-      if (window.owned.length === 0) continue;
-      const freshJob = await jobRef.get();
-      if (freshJob.data()?.status === "cancelled") return;
-      const { delta, cost } = await callUnderstandingModel(ledger, window);
-      mergeDelta(ledger, delta, window, paragraphById);
-      costUsd += cost;
+    const saveProgress = async (windowIndex: number, model: string) => {
       const checkpointPath = await saveCheckpoint(bookId, jobId, ledger);
       await jobRef.update({
         progress: {
           done: ledger.coveredParagraphIds.length,
           total: paragraphs.length,
         },
-        checkpoint: { storagePath: checkpointPath, windowIndex: window.index },
+        checkpoint: { storagePath: checkpointPath, windowIndex },
         costUsd,
+        model,
         heartbeatAt: FieldValue.serverTimestamp(),
         leaseOwner: workerId,
         updatedAt: FieldValue.serverTimestamp(),
@@ -1089,9 +1223,100 @@ async function processUnderstandingJob(
         paragraphCount: ledger.coveredParagraphIds.length,
         entityCount: ledger.entities.length,
         eventCount: ledger.events.length,
+        filteredParagraphCount: ledger.filteredParagraphIds?.length ?? 0,
+        filteredParagraphIds: ledger.filteredParagraphIds ?? [],
         rollingSynopsis: ledger.rollingSynopsis,
         updatedAt: FieldValue.serverTimestamp(),
       });
+    };
+    const markWindowFiltered = async (window: Window, model: string) => {
+      const completedParagraphs = window.owned.filter(
+        (paragraph) =>
+          (paragraph.fragmentIndex ?? 0) === (paragraph.fragmentCount ?? 1) - 1,
+      );
+      ledger.processedWindow = window.index;
+      ledger.processedUnitIndex =
+        window.owned.at(-1)?.unitIndex ?? ledger.processedUnitIndex;
+      ledger.processedThroughSeq =
+        completedParagraphs.at(-1)?.seq ?? ledger.processedThroughSeq;
+      ledger.coveredParagraphIds = unique([
+        ...ledger.coveredParagraphIds,
+        ...completedParagraphs.map((paragraph) => paragraph.id),
+      ]);
+      ledger.filteredParagraphIds = unique([
+        ...(ledger.filteredParagraphIds ?? []),
+        ...window.owned.map((paragraph) => paragraph.id),
+      ]);
+      if (!ledger.filteredWindows?.includes(window.index)) {
+        ledger.filteredWindows = [...(ledger.filteredWindows ?? []), window.index];
+      }
+      await saveProgress(window.index, model);
+    };
+    const processOneWindow = async (
+      window: Window,
+      depth = 0,
+    ): Promise<string> => {
+      try {
+        const { delta, cost, model } = await callUnderstandingModel(
+          ledger,
+          window,
+        );
+        mergeDelta(ledger, delta, window, paragraphById);
+        costUsd += cost;
+        await saveProgress(window.index, model);
+        return model;
+      } catch (error) {
+        if (isLengthTruncation(error) && window.owned.length > 1 && depth < 5) {
+          const ownedChars = window.owned.reduce(
+            (total, paragraph) => total + paragraph.text.length,
+            0,
+          );
+          console.warn(
+            `[${workerVersion}] length truncation on window ${window.index} ` +
+              `(${window.owned.length} paras/${ownedChars} chars, depth ${depth}). ` +
+              `Splitting in half and retrying.`,
+          );
+          const [first, second] = splitWindow(window);
+          const firstModel = await processOneWindow(first, depth + 1);
+          const freshJob = await jobRef.get();
+          if (freshJob.data()?.status === "cancelled") return firstModel;
+          return await processOneWindow(second, depth + 1);
+        }
+        if (isContentFilterError(error)) {
+          if (window.owned.length > 1 && depth < 5) {
+            console.warn(
+              `[${workerVersion}] content filter on window ${window.index} ` +
+                `(${window.owned.length} paras, depth ${depth}). ` +
+                `Splitting to isolate the flagged passage.`,
+            );
+            const [first, second] = splitWindow(window);
+            const firstModel = await processOneWindow(first, depth + 1);
+            const freshJob = await jobRef.get();
+            if (freshJob.data()?.status === "cancelled") return firstModel;
+            return await processOneWindow(second, depth + 1);
+          }
+          const ids = window.owned.map((paragraph) => paragraph.id).join(", ");
+          console.warn(
+            `[${workerVersion}] content filter on window ${window.index} ` +
+              `(singletons: ${ids}). Skipping with empty delta and continuing.`,
+          );
+          await markWindowFiltered(window, "content-filter-skipped");
+          return "content-filter-skipped";
+        }
+        throw error;
+      }
+    };
+    for (const candidate of remainingWindows) {
+      const window = {
+        ...candidate,
+        owned: candidate.owned.filter(
+          (paragraph) => (paragraph.unitIndex ?? -1) > resumeUnitIndex,
+        ),
+      };
+      if (window.owned.length === 0) continue;
+      const freshJob = await jobRef.get();
+      if (freshJob.data()?.status === "cancelled") return;
+      await processOneWindow(window);
     }
 
     if (ledger.coveredParagraphIds.length !== paragraphs.length) {
@@ -1107,10 +1332,20 @@ async function processUnderstandingJob(
       throw new Error("Canonical source changed before Book Model promotion.");
     }
     await persistBookModel(bookId, ledger);
+    const filteredCount = ledger.filteredParagraphIds?.length ?? 0;
+    const warning =
+      filteredCount > 0
+        ? `Completed with ${filteredCount} of ${paragraphs.length} paragraphs skipped: provider content filter flagged them. Book Model covers the rest; skipped IDs: ${(ledger.filteredParagraphIds ?? []).slice(0, 20).join(", ")}${filteredCount > 20 ? "…" : ""}`
+        : null;
+    if (warning) console.warn(`[${workerVersion}] ${warning}`);
     await jobRef.update({
       status: "completed",
       progress: { done: paragraphs.length, total: paragraphs.length },
       costUsd,
+      error: null,
+      warning,
+      filteredParagraphCount: filteredCount,
+      filteredParagraphIds: ledger.filteredParagraphIds ?? [],
       finishedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -1165,7 +1400,9 @@ function isClaimable(data: Record<string, unknown>): boolean {
 }
 
 async function main(): Promise<void> {
-  console.log(`[${workerVersion}] started with ${openRouterModel}`);
+  console.log(
+    `[${workerVersion}] models: ${openRouterModels.join(" -> ")} | max_tokens: ${openRouterMaxTokens} | windows: ${windowMaxParagraphs} paras/${windowMaxCharacters} chars`,
+  );
   process.on("SIGINT", () => {
     stopping = true;
   });
