@@ -1,17 +1,11 @@
-## Context
-
-## The Visual Book Platform transforms a source book into an ordered, interactive visual experience. User uploads a PDF, reviews the extracted source, runs a browser-orchestrated pipeline, approves the resulting model and visuals, and publishes data. The final processed data is a cinematic sequence of text, visuals, transitions, and camera movements.
-
-## 1. System overview
-
 ```
                 ┌────────────────────────────┐
-   PDF ───────▶ │  STUDIO (Next.js)          │  editors upload, review, approve, publish
+   PDF ───────▶ │  STUDIO (Next.js)          │
                 │  - upload / extraction UI  │
                 │  - book model review       │
                 │  - episode / moment / beat │
                 │  - visual review + 2.5D    │
-                │  - embedded Player preview │
+               │
                 └─────────────┬──────────────┘
                               │ enqueues jobs, reads/writes Firestore
                 ┌─────────────▼──────────────┐
@@ -28,85 +22,41 @@
                 ┌─────────────▼──────────────┐
                 │  CDN (CloudFront over S3)  │  images, depth maps, episode bundles
                 └─────────────┬──────────────┘
-                              │ read-only
-                ┌─────────────▼──────────────┐
-                │  READER (Next.js)          │  users experience books
-                │  - library, book page      │
-                │  - Player (shared package) │
-                └────────────────────────────┘
 ```
 
 **Stack**
 
 - Next.js, TypeScript everywhere
-- Firebase Auth, Firestore (working data + user progress), Firebase Storage (source PDFs, canonical text). Auth is off for development
+- Firestore (working data + user progress), Firebase Storage (source PDFs, canonical text). Auth is off for development
 - AWS S3 + CloudFront (all generated visuals)
-- Worker: Node service with a queue. Must support jobs of 30+ minutes, retries, and concurrency limits.
-- LLM and image generation behind provider adapters (`LlmProvider`, `ImageProvider`, `DepthProvider`, `SegmentProvider`, `InpaintProvider`) so models can be swapped without touching pipeline logic
+- Worker: Node service with a queue. Must support jobs of 30+ minutes, retries, and
 - Player rendering: three.js via react-three-fiber, CSS-3D fallback
 
----
-
-## 2. Non-negotiable invariants
-
 These are enforced by validators in code, not by prompting.
-
-1. **Book order is the spine.** Every paragraph has a global `seq`. Episodes, moments and beats are ordered by `seq`. Navigation follows book order; chronology is metadata only.
-2. **No text loss.** The canonical text is immutable after extraction lock. Every episode range must tile the story text; every moment range must tile its episode. Gaps and overlaps fail validation.
-3. **Verbatim or nothing.** Quotes and dialogue in beats are exact substrings of their source paragraph (`paragraphId + start + end`). Anything that fails a substring check is rejected.
-4. **Provenance on every claim.** Facts, events, states, commentary sentences all carry `paragraphIds`. Nothing exists in the model without a pointer back to the text.
-5. **Spoiler safety.** Reveals are timestamped by `seq`. Nothing shown at position N (image, inspect card, commentary) may depend on information first revealed after N.
-6. **Two time axes.** `seq` = where in the book. `storyTime` = when in the story (for flashbacks/time skips). Entity _state_ is resolved by `storyTime`; _reveal_ is resolved by `seq`.
-
----
-
-## 3. Canonical identifiers
-
-| Thing        | ID format                                                           | Notes                                                        |
-| ------------ | ------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Book         | `bookId` (Firestore auto)                                           |                                                              |
-| Paragraph    | `p` + 6-digit seq, e.g. `p000412`                                   | `seq` is 0-based global order including non-story paragraphs |
-| Text chunk   | `c0001`, `c0002`…                                                   | 20 paragraphs each (as designed)                             |
-| Entity       | `ch_` / `loc_` / `obj_` / `grp_` + slug, e.g. `ch_elizabeth_bennet` | Stable across re-runs when possible; aliases map to it       |
-| Entity state | `entityId@stateId`, e.g. `ch_jane_eyre@adult_governess`             |                                                              |
-| Event        | `ev_` + 4-digit order                                               |                                                              |
-| Episode      | `ep_01`, `ep_02`…                                                   | Order = book order                                           |
-| Moment       | `ep_03_m07`                                                         |                                                              |
-| Beat         | `ep_03_m07_b02`                                                     |                                                              |
-| Composition  | `cmp_` + hash prefix                                                | Reusable across moments                                      |
-| Layer        | `L0` (background) … `Ln` (nearest)                                  |                                                              |
-
----
 
 ## 4. Firestore data model
 
 ```
-books/{bookId}                                   ─ one doc
-  title, author, genres[], description, coverPhotoUrl
-  sourceFile { storagePath, originalFileName, sizeBytes, pageCount, checksum }
-  structure { chapters: [{ id, title, seqStart, seqEnd, isStory }] }      [added]
-  stats { paragraphCount, storyParagraphCount, wordCount, tokenEstimate } [added]
-  visualProfile { artStyle, palette[], lens, lighting, negativeRules[], lockedAt }  [moved up from visuals]
-  pipeline { stage, stageStatus, lastJobId, updatedAt }                   [added]
-  publishing { publishedEpisodeIds[], latestVersion, publishedAt }        [added]
-  createdBy, createdAt, updatedAt
+books/{bookId}                                   ─ one doc containg all about the book
+  metaData:{title, author, genres[], description, coverPhotoUrl}
+  sourceFile: { storagePath, originalFileName, sizeBytes, pageCount, checksum }
+  visualProfile: { artStyle, palette[], lens, lighting, negativeRules[], lockedAt }
+  pipeline: { stage, stageStatus, lastJobId, updatedAt }                   [added]
+createdAt, updatedAt
 
 books/{bookId}/textChunks/{chunkId}              ─ 20 paragraphs per doc (as designed)
-  index, startPage, endPage, seqStart, seqEnd
+  info:{index, startPage, endPage, seqStart, seqEnd}
   paragraphs: [{
-    id, seq, page, chapterId, text, hash,
-    kind: "body" | "heading" | "frontmatter" | "backmatter" | "note" | "caption",
-    isStory: boolean                                                       [added — never delete, only flag]
+    id, seq, page, chapterId, text, hash]
   }]
-  ─ plus Firebase Storage: books/{bookId}/text/canonical.json (whole book, single file, used by validators)
+
 
 books/{bookId}/entities/{entityId}               ─ [changed] one collection, `type` field, replaces characters/locations/objects/aliases lists
   type: "character" | "location" | "object" | "group"
   canonicalName, aliases: [{ name, firstSeq, paragraphIds[] }]            [changed — aliases live on the entity]
   importance: "major" | "supporting" | "minor"
   firstSeq, lastSeq
-  facts: [{ key, value, quote, paragraphIds[] }]                           ─ from the book
-  fills: [{ key, value, reason, editedBy? }]                               ─ chosen where the book is silent; editable
+  facts: [{ key, value, quote, paragraphIds[] }]                           ─ from the book                            ─ chosen where the book is silent; editable
   states: [{ stateId, label, validFromStoryTime, validToStoryTime, validFromSeq, changes: {key:value}, paragraphIds[] }]
   reveals: [{ what, seq, paragraphIds[] }]                                 [changed — reveal timeline lives per entity]
   relationships: [{ toEntityId, type, validFromSeq, validToSeq, paragraphIds[] }]
@@ -172,8 +122,6 @@ users/{uid}/progress/{bookId}                    ─ Reader-owned
   episodeId, beatId, percent, updatedAt
 ```
 
-**Removed / merged from the draft**
-
 - `sourceProvenance.AllSourceProvenance` → provenance is embedded on every fact, state, event and commentary sentence instead of a parallel list.
 - `appearanceChanges` → folded into `entities.states`.
 - `revealTimeline` → per-entity `reveals`; the story map holds an aggregated view if needed.
@@ -184,7 +132,7 @@ users/{uid}/progress/{bookId}                    ─ Reader-owned
 
 ---
 
-## 5. Reading beat (shared type)
+## 5. Reading beat
 
 ```ts
 type Beat = {
@@ -223,73 +171,6 @@ type Beat = {
 
 Rules: a beat has exactly one composition. A quote beat carries at most ~60 words on screen; longer passages split into consecutive beats over the same composition with camera drift. Dialogue beats show one exchange (2–4 lines).
 
----
-
-## 6. Published episode bundle (Reader contract)
-
-```ts
-type EpisodeBundle = {
-  schemaVersion: 1;
-  bookId: string;
-  episodeId: string;
-  version: number;
-  order: number;
-  title: string;
-  summary: string;
-  prev?: string;
-  next?: string; // episode ids, if published
-  beats: Beat[]; // fully resolved, in order
-  compositions: Record<
-    string,
-    {
-      master: AssetRef;
-      depth: AssetRef;
-      layers: {
-        layerId: string;
-        role: string;
-        image: AssetRef;
-        mask?: AssetRef;
-        depth?: AssetRef;
-        hiddenArea?: AssetRef;
-        zOrder: number;
-        depthRange: [number, number];
-        transform: Transform;
-      }[];
-      safeCamera: SafeCamera;
-      responsive: Responsive;
-    }
-  >;
-  entities: Record<
-    string,
-    {
-      // spoiler-safe as of this episode's end
-      displayName: string; // the name/alias the reader knows at this point
-      card: { line: string; knownFacts: string[]; firstSeenEpisode: string };
-      image: AssetRef;
-    }
-  >;
-  assetsBaseUrl: string;
-};
-
-type AssetRef = {
-  key: string;
-  w: number;
-  h: number;
-  variants?: { mobile: string; desktop: string };
-};
-```
-
-Everything the Player web app needs for an episode is in this file plus the assets it references.
-
----
-
-## 8. Pipeline stages
-
-```
-uploaded → extracted → extraction_locked
-        → understood → consolidated → model_locked
-        → mapped → map_locked
-        → (per episode) planned → moments → beats → visuals → visuals_approved → composed → previewed → published
 ```
 
 ### A4. Book model review
@@ -340,8 +221,6 @@ Show:
 - `Composition.reuseKey`, `originEpisodeId`, `usedIn`, `shotSnapshot`, `entityStatesUsed`, `continuityRefs`
 - `master`, `depth`, `layers`, `safeCamera`, `responsive`, `qa`, `generation`, `status`
 
-4. If no next episode is active, the user returns naturally to the Book page.
-
 ## Data vocabulary — use these EXACT names
 
 - `Book` — `bookId`, `title`, `author`, `genres`, `description`, `coverPhotoUrl`, `sourceFile`, `structure`, `stats`, `visualProfile`, `pipeline`, `publishing`, `createdBy`, `createdAt`, `updatedAt`
@@ -364,30 +243,15 @@ Show:
 
 Prototype labels, tables, filters, chips, fields, and state names must use these names so the prototype maps directly onto the planned data.
 
-## States to prototype
-
-For every principal screen, include a credible loading, populated, empty, and error state when that state can occur. Also prototype these feature-specific states:
-
-# Studio — Dashboard & Pipeline Plan
-
----
-
----
 
 ## 2. Pipeline design, stage by stage
 
 ### 2.1 Upload
 
-- Accept PDF (and EPUB later — it extracts far more cleanly). Store in Firebase Storage, compute checksum, create `books/{bookId}` with `title/author/genres` from the form (optionally prefill from PDF metadata).
+- Accept PDF  Store in Firebase Storage, compute checksum, create `books/{bookId}`
 
 ### 2.2 Extract complete content
 
-Goal: a canonical, ordered paragraph list that loses nothing and is clean enough to model from.
-
-Steps (worker job `extract`):
-
-1. Text extraction with layout
-2. Assign `seq` and `paragraphId`, hash each paragraph, write `textChunks` (20 per doc) and `canonical.json`.
 
 ### 2.3 AI understands the entire book — the rolling ledger
 
@@ -402,11 +266,13 @@ The constraint: the whole book cannot go in one request, and even if it could, a
   3. _Rolling synopsis_: 150–300 words of "story so far", regenerated every window.
   4. _The window_: paragraphs as `[p000412] text…`.
 - Each call returns **deltas only**:
-  ```
-  newEntities[], newAliases[] (alias → canonicalId or "new"), facts[] (with quote + paragraphIds),
-  events[] (seq range, participants, location, storyTime hint), stateChanges[], reveals[],
-  relationshipChanges[], updatedSynopsis
-  ```
+```
+
+newEntities[], newAliases[] (alias → canonicalId or "new"), facts[] (with quote + paragraphIds),
+events[] (seq range, participants, location, storyTime hint), stateChanges[], reveals[],
+relationshipChanges[], updatedSynopsis
+
+```
 - Code merges deltas into the ledger deterministically (dedupe by canonicalId; alias conflicts go to a review queue). Checkpoint the ledger to Storage after every window. A crash resumes from the last window.
 
 **Pass B — Consolidation (job `consolidate`)**, runs on the ledger only:
@@ -447,12 +313,10 @@ For each moment, with its exact paragraphs and entity specs:
 
 Split each moment into 3–12 beats. Rules in prompt + post-check:
 
-- One composition per beat; quote beats ≤ ~60 words; dialogue beats 2–4 lines; commentary beats 1–2 sentences.
+- One composition per beat; quote beats ≤ ~60 words; dialogue beats 2–4 lines; commentary beats 1–5 sentences.
 - Beats keep source order. A long passage becomes consecutive beats on the same composition with camera drift (push-in, pan to the speaking character, pull-back).
 - Camera poses are proposed by the model in normalized units; clamped to the composition's `safeCamera` after 2.5D build.
 - Transition choice follows the moment boundary type: `cut` within a moment, `fade`/`zoomThrough` across moments, `parallaxShift` for location continuity.
-
-Editors adjust beats in the beat editor with a live Player preview.
 
 ### 2.8 Visual bible (job `build_visual_bible`) — before any composition
 
@@ -460,7 +324,7 @@ Editors adjust beats in the beat editor with a live Player preview.
 - Per major entity: `visual.spec` compiled from facts + fills. Generate a **reference sheet** (front / three-quarter / profile, neutral expression, canonical outfit) and state variants (aged, injured, disguised) as needed. Locations get establishing shots (day/night as needed). Editors approve, regenerate, or edit specs.
 - Pre-reveal spec for characters whose identity or face is hidden until a later `seq`.
 
-The reference sheet is what every later generation conditions on. This is the single biggest lever for consistency; do not skip the approval step.
+The reference sheet is what every later generation conditions on. This is the single biggest lever for consistency
 
 ### 2.9 Compositions (job `generate_compositions`)
 
@@ -491,34 +355,30 @@ MVP renders as layered planes with parallax plus subtle depth displacement on th
 
 | Screen             | Purpose                                                                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Library            | All books, pipeline stage, cost to date, publish state                                                                                                         |
-| Book overview      | Stage rail (upload → … → published), job log, "run next stage", versions                                                                                       |
-| Extraction review  | Page image ↔ paragraph text, merge/split, kind/isStory toggles, chapter boundaries, lock                                                                       |
-| Book model         | Entities table (filter by type), entity detail (facts/fills/states/reveals/relationships/visual), merge-split tool, chronology strip, alias review queue, lock |
-| Story map          | Acts/arcs summary, episode boundary editor on the paragraph timeline, lock                                                                                     |
+| Home            | All books, upload new books                                                                                                          |
+| Dashboard      | The sidebar nav with the pipeline as routes, versions                                                                                       |
+| Extraction  | Exracting pdf                                                                     |
+| Book model         | Entities table (filter by type), entity detail (facts/fills/states/reveals/relationships/visual), chronology strip, alias review queue,
+| Story map          | Acts/arcs summary, episode boundary editor on the paragraph timeline                                                                                  |
 | Episode board      | Moments as cards on a seq timeline; status chips (plan/moments/beats/visuals/2.5D)                                                                             |
 | Moment editor      | Source paragraphs, selections, dialogue attribution, commentary (with grounding flags), visual plan/shots, inspectables                                        |
 | Beat editor        | Beat list, text payload, composition picker, camera keyframes by dragging on the preview, transitions, live Player                                             |
 | Visual bible       | visualProfile lock; entity reference sheets and state variants with approve/regenerate                                                                         |
 | Composition review | Candidates side by side, approve/reject/regenerate; reuse links                                                                                                |
 | 2.5D review        | Layer inspector, depth view, safeCamera bounds, parallax scrub                                                                                                 |
-| Publish            | Preview full episode, checklist (all validators green, all approvals present), publish, version history                                                        |
-| Settings           | Providers/models,                                                                                                                                              |
-
-Design notes: dense, keyboard-friendly, tables over cards for review work. The Player is the same component the Reader uses, so previews are faithful.
-
----
+| Publish            | Preview full episode, checklist (all validators green, all approvals present), publish                                                       |
+| Settings           | AI Providers from openrouter/models,                                                                                                                                              |
 
 ## 7. Build phases
 
 **Phase 1 — Upload & extraction**
-Upload, page renders, extraction job, paragraph editor with paragraphs per page view
+Upload and extraction. This is already done
 
 **Phase 2 — Understanding & book model**
-Windowed ledger pass with checkpoints, consolidation, entity/merge UI, states/reveals/chronology views
+Windowed ledger pass with checkpoints, consolidation, states/reveals/chronology views, etc
 
 **Phase 3 — Story map, episodes, moments, beats**
-Map job + boundary editor, episode plan, moments with selections/dialogue/commentary + grounding check, beats, validators `coverage.*`, `verbatim`, `spoiler`
+Map job, episode plan, moments with selections/dialogue/commentary + grounding check, beats, validators `coverage.*`, `verbatim`, `spoiler`
 
 **Phase 4 — Visual bible & compositions**
 visualProfile, reference sheets with approval, composition generation with reuse
@@ -532,192 +392,181 @@ Also add mesh-per-layer rendering
 
 ## 8. Risks and mitigations
 
-                     |
+                   |
 
-## 2. Fixture model (mirrors the brief exactly — duplicated per app, never imported across)
-
-```ts
-// app/_vbp/fixtures.ts (in EACH app; same shapes, independent copies)
 type Paragraph = {
-  id: string;
-  seq: number;
-  page: number;
-  chapterId: string;
-  text: string;
-  hash: string;
+id: string;
+seq: number;
+page: number;
+chapterId: string;
+text: string;
+hash: string;
 };
 type Entity = {
-  entityId: string;
-  type: "character" | "location" | "object" | "group";
-  canonicalName: string;
-  aliases: { name: string; firstSeq: number; paragraphIds: string[] }[];
-  importance: "major" | "supporting" | "minor";
-  firstSeq: number;
-  lastSeq: number;
-  facts: {
-    key: string;
-    value: string;
-    quote: string;
-    paragraphIds: string[];
-  }[];
-  fills: { key: string; value: string; reason: string }[];
-  states: {
-    stateId: string;
-    label: string;
-    validFromStoryTime: number;
-    validToStoryTime: number;
-    validFromSeq: number;
-    changes: Record<string, string>;
-    paragraphIds: string[];
-  }[];
-  reveals: { what: string; seq: number; paragraphIds: string[] }[];
-  relationships: {
-    toEntityId: string;
-    type: string;
-    validFromSeq: number;
-    validToSeq: number;
-    paragraphIds: string[];
-  }[];
-  visual: {
-    spec: string;
-    referenceSheet: { approved: boolean };
-    stateVariants: Record<string, { approved: boolean }>;
-    preRevealSpec?: string;
-  };
-  status: "draft" | "reviewed" | "locked";
+entityId: string;
+type: "character" | "location" | "object" | "group";
+canonicalName: string;
+aliases: { name: string; firstSeq: number; paragraphIds: string[] }[];
+importance: "major" | "supporting" | "minor";
+firstSeq: number;
+lastSeq: number;
+facts: {
+  key: string;
+  value: string;
+  quote: string;
+  paragraphIds: string[];
+}[];
+fills: { key: string; value: string; reason: string }[];
+states: {
+  stateId: string;
+  label: string;
+  validFromStoryTime: number;
+  validToStoryTime: number;
+  validFromSeq: number;
+  changes: Record<string, string>;
+  paragraphIds: string[];
+}[];
+reveals: { what: string; seq: number; paragraphIds: string[] }[];
+relationships: {
+  toEntityId: string;
+  type: string;
+  validFromSeq: number;
+  validToSeq: number;
+  paragraphIds: string[];
+}[];
+visual: {
+  spec: string;
+  referenceSheet: { approved: boolean };
+  stateVariants: Record<string, { approved: boolean }>;
+  preRevealSpec?: string;
+};
+status: "draft" | "reviewed" | "locked";
 };
 type Representation = {
-  paragraphId: string;
-  modality: "text" | "visual" | "camera" | "transition";
-  description: string;
+paragraphId: string;
+modality: "text" | "visual" | "camera" | "transition";
+description: string;
 };
 type Beat = {
-  id: string;
-  order: number;
-  type: string;
-  text: string;
-  compositionId: string;
-  camera: {
-    from: object;
-    to: object;
-    durationMs: number;
-    easing: string;
-    focusLayerId?: string;
-  };
-  transitionIn: { type: string; durationMs: number };
-  inspectables: string[];
-  autoAdvanceMs?: number;
-  representations: Representation[];
+id: string;
+order: number;
+type: string;
+text: string;
+compositionId: string;
+camera: {
+  from: object;
+  to: object;
+  durationMs: number;
+  easing: string;
+  focusLayerId?: string;
+};
+transitionIn: { type: string; durationMs: number };
+inspectables: string[];
+autoAdvanceMs?: number;
+representations: Representation[];
 };
 type Moment = {
-  momentId: string;
-  order: number;
-  seqStart: number;
-  seqEnd: number;
-  sourceParagraphIds: string[];
-  summary: string;
-  startState: string;
-  endState: string;
-  storyTime: number;
-  characters: { entityId: string; stateId: string }[];
-  locationId: string;
-  locationStateId: string;
-  objectIds: string[];
-  exactTextSelections: {
-    paragraphId: string;
-    start: number;
-    end: number;
-    text: string;
+momentId: string;
+order: number;
+seqStart: number;
+seqEnd: number;
+sourceParagraphIds: string[];
+summary: string;
+startState: string;
+endState: string;
+storyTime: number;
+characters: { entityId: string; stateId: string }[];
+locationId: string;
+locationStateId: string;
+objectIds: string[];
+exactTextSelections: {
+  paragraphId: string;
+  start: number;
+  end: number;
+  text: string;
+}[];
+dialogue: {
+  paragraphId: string;
+  start: number;
+  end: number;
+  text: string;
+  speakerEntityId: string;
+}[];
+commentary: {
+  id: string;
+  text: string;
+  kind: "scene" | "context" | "clarify";
+  groundedIn: string[];
+  verified: boolean;
+}[];
+visualPlan: {
+  shots: {
+    shotId: string;
+    description: string;
+    entityStates: string[];
+    framing: string;
+    mood: string;
+    timeOfDay: string;
+    reuseKey: string;
   }[];
-  dialogue: {
-    paragraphId: string;
-    start: number;
-    end: number;
-    text: string;
-    speakerEntityId: string;
-  }[];
-  commentary: {
-    id: string;
-    text: string;
-    kind: "scene" | "context" | "clarify";
-    groundedIn: string[];
-    verified: boolean;
-  }[];
-  visualPlan: {
-    shots: {
-      shotId: string;
-      description: string;
-      entityStates: string[];
-      framing: string;
-      mood: string;
-      timeOfDay: string;
-      reuseKey: string;
-    }[];
-  };
-  compositionIds: string[];
-  readingBeats: Beat[];
-  inspectableEntities: {
-    entityId: string;
-    beatId: string;
-    hotspot: { x: number; y: number; w: number; h: number };
-  }[];
-  status: string;
+};
+compositionIds: string[];
+readingBeats: Beat[];
+inspectableEntities: {
+  entityId: string;
+  beatId: string;
+  hotspot: { x: number; y: number; w: number; h: number };
+}[];
+status: string;
 };
 type Composition = {
-  compositionId: string;
-  reuseKey: string;
-  originEpisodeId: string;
-  usedIn: { episodeId: string; momentId: string; beatId: string }[];
-  master: { gradient: string; label: string };
-  depth: { layers: number };
-  layers: {
-    layerId: string;
-    role: string;
-    entityId?: string;
-    zOrder: number;
-    depthRange: [number, number];
-  }[];
-  safeCamera: {
-    maxPanX: number;
-    maxPanY: number;
-    maxZoom: number;
-    maxTilt: number;
-  };
-  responsive: {
-    focalPoint: [number, number];
-    portraitCrop: string;
-    landscapeCrop: string;
-  };
-  qa: {
-    textDetected: boolean;
-    agreementScore: number;
-    identityScores: Record<string, number>;
-    issues: string[];
-  };
-  generation: { provider: "placeholder"; model: "css-svg"; costUsd: 0 };
-  status: "generated" | "approved" | "rejected" | "composed" | "published";
+compositionId: string;
+reuseKey: string;
+originEpisodeId: string;
+usedIn: { episodeId: string; momentId: string; beatId: string }[];
+master: { gradient: string; label: string };
+depth: { layers: number };
+layers: {
+  layerId: string;
+  role: string;
+  entityId?: string;
+  zOrder: number;
+  depthRange: [number, number];
+}[];
+safeCamera: {
+  maxPanX: number;
+  maxPanY: number;
+  maxZoom: number;
+  maxTilt: number;
+};
+responsive: {
+  focalPoint: [number, number];
+  portraitCrop: string;
+  landscapeCrop: string;
+};
+qa: {
+  textDetected: boolean;
+  agreementScore: number;
+  identityScores: Record<string, number>;
+  issues: string[];
+};
+generation: { provider: "placeholder"; model: "css-svg"; costUsd: 0 };
+status: "generated" | "approved" | "rejected" | "composed" | "published";
 };
 type Job = {
-  jobId: string;
-  type: string;
-  stage: string;
-  status: string;
-  progress: { done: number; total: number };
-  checkpoint: string;
-  attempts: number;
-  error?: string;
-  startedAt: string;
-  finishedAt?: string;
+jobId: string;
+type: string;
+stage: string;
+status: string;
+progress: { done: number; total: number };
+checkpoint: string;
+attempts: number;
+error?: string;
+startedAt: string;
+finishedAt?: string;
 };
-                                                                                                                                                                                                                                                                              |
-
-
-                                                                                                                                                                                                                                                                              |
+                                                                                                                                                                                                                                                                            |
 
 
 
 ```
-
-OPENROUTER_MODEL=openrouter/meta/muse-spark-1.3-contributor
-
-AGENT=openrouter bash docs/features/25d-schema-foundation/loop.sh
