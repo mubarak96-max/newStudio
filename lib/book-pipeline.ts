@@ -60,6 +60,8 @@ export type PipelineJob = {
   attempts: number;
   error?: string;
   costUsd: number;
+  workerVersion?: string;
+  model?: string;
 };
 
 export type BookModelEntity = {
@@ -351,7 +353,7 @@ export async function enqueueUnderstandingJob(
   const jobRef = await addDoc(collection(db, 'books', bookId, 'jobs'), {
     type: 'understand',
     stage: 'book_model',
-    status: 'queued',
+    status: 'queued_v3',
     sourceId: source.sourceId,
     canonicalHash: source.canonicalHash,
     progress: { done: 0, total: source.paragraphCount },
@@ -390,16 +392,25 @@ export function subscribePipelineJob(
     (snapshot) => {
       if (!snapshot.exists()) return;
       const data = snapshot.data();
+      const rawStatus = data.status;
+      const status =
+        rawStatus === 'queued_v3'
+          ? 'queued'
+          : rawStatus === 'running_v3'
+            ? 'running'
+            : rawStatus;
       onJob({
         jobId: snapshot.id,
         type: data.type ?? 'understand',
         stage: data.stage ?? 'book_model',
-        status: data.status ?? 'queued',
+        status: status ?? 'queued',
         progress: data.progress ?? { done: 0, total: 0 },
         checkpoint: data.checkpoint ?? null,
         attempts: data.attempts ?? 0,
         error: data.error ?? undefined,
         costUsd: data.costUsd ?? 0,
+        workerVersion: data.workerVersion ?? undefined,
+        model: data.model ?? undefined,
       });
     },
     onError
@@ -410,7 +421,7 @@ export async function retryPipelineJob(bookId: string, jobId: string): Promise<v
   if (!db) throw new Error('Firebase is not configured.');
   await ensureAnonymousAuth();
   await updateDoc(doc(db, 'books', bookId, 'jobs', jobId), {
-    status: 'queued',
+    status: 'queued_v3',
     error: null,
     finishedAt: null,
     updatedAt: serverTimestamp(),

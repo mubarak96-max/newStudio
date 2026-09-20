@@ -417,6 +417,11 @@ export function BookExtraction({ book }: { book: Book }) {
                   ? 'Queued. Start `npm run worker` if the worker is not running.'
                   : `${formatCount(job.progress.done)} of ${formatCount(job.progress.total)} paragraphs processed.`}
               </p>
+              {job.workerVersion && (
+                <p className='text-[11px] text-muted-foreground'>
+                  {job.workerVersion} · {job.model}
+                </p>
+              )}
             </div>
           )}
 
@@ -433,6 +438,11 @@ export function BookExtraction({ book }: { book: Book }) {
             <div className='mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm'>
               <p className='font-medium'>Book Model job failed.</p>
               <p className='mt-1 text-muted-foreground'>{job.error}</p>
+              {job.workerVersion && (
+                <p className='mt-2 text-[11px] text-muted-foreground'>
+                  {job.workerVersion} · {job.model}
+                </p>
+              )}
             </div>
           )}
 

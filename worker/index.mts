@@ -3,6 +3,7 @@ import { isAbsolute, resolve } from 'node:path';
 import { applicationDefault, cert, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { loadLatestValidCheckpoint, saveJsonCheckpoint } from './checkpoint-store.mts';
 import { understandingResponseFormat } from './understanding-schema.mts';
 
 type Paragraph = {
@@ -14,6 +15,9 @@ type Paragraph = {
   hash: string;
   kind: string;
   isStory: boolean;
+  unitIndex?: number;
+  fragmentIndex?: number;
+  fragmentCount?: number;
 };
 
 type Evidence = { paragraphIds: string[] };
@@ -63,6 +67,7 @@ type Ledger = {
   sourceId: string;
   canonicalHash: string;
   processedWindow: number;
+  processedUnitIndex?: number;
   processedThroughSeq: number;
   coveredParagraphIds: string[];
   rollingSynopsis: string;
@@ -155,6 +160,7 @@ const db = getFirestore(app);
 const bucket = getStorage(app).bucket(storageBucket);
 const pollIntervalMs = Math.max(2_000, Number(env.POLL_INTERVAL_MS ?? 10_000));
 const openRouterModel = env.OPENROUTER_MODEL ?? 'openai/gpt-4.1-mini';
+const workerVersion = 'understand-v3';
 const workerId = crypto.randomUUID();
 const staleLeaseMs = 2 * 60 * 1000;
 let stopping = false;
@@ -342,6 +348,42 @@ function buildWindows(
   return windows;
 }
 
+function splitForProcessing(text: string, maxCharacters = 6_000): string[] {
+  if (text.length <= maxCharacters) return [text];
+  const fragments: string[] = [];
+  let rest = text;
+  while (rest.length > maxCharacters) {
+    const candidate = rest.slice(0, maxCharacters);
+    const boundary = Math.max(
+      candidate.lastIndexOf('\n'),
+      candidate.lastIndexOf('. '),
+      candidate.lastIndexOf(' ')
+    );
+    const end = boundary > maxCharacters * 0.6 ? boundary + 1 : maxCharacters;
+    fragments.push(rest.slice(0, end));
+    rest = rest.slice(end);
+  }
+  if (rest) fragments.push(rest);
+  return fragments;
+}
+
+function buildProcessingUnits(paragraphs: Paragraph[]): Paragraph[] {
+  const units: Paragraph[] = [];
+  for (const paragraph of paragraphs) {
+    const fragments = splitForProcessing(paragraph.text);
+    fragments.forEach((text, fragmentIndex) => {
+      units.push({
+        ...paragraph,
+        text,
+        unitIndex: units.length,
+        fragmentIndex,
+        fragmentCount: fragments.length,
+      });
+    });
+  }
+  return units;
+}
+
 function selectLedgerContext(ledger: Ledger, window: Window) {
   const source = window.owned.map((paragraph) => paragraph.text.toLowerCase()).join('\n');
   const earliestSeq = window.contextBefore[0]?.seq ?? window.owned[0]?.seq ?? 0;
@@ -370,7 +412,11 @@ function selectLedgerContext(ledger: Ledger, window: Window) {
 }
 
 function paragraphText(paragraph: Paragraph, role: 'context' | 'owned'): string {
-  return `[${paragraph.id} seq=${paragraph.seq} page=${paragraph.page} ${role}] ${paragraph.text}`;
+  const fragment =
+    (paragraph.fragmentCount ?? 1) > 1
+      ? ` part=${(paragraph.fragmentIndex ?? 0) + 1}/${paragraph.fragmentCount}`
+      : '';
+  return `[${paragraph.id} seq=${paragraph.seq} page=${paragraph.page}${fragment} ${role}] ${paragraph.text}`;
 }
 
 async function callUnderstandingModel(ledger: Ledger, window: Window): Promise<{ delta: Delta; cost: number }> {
@@ -414,6 +460,7 @@ Context paragraphs help interpretation but owned paragraphs are the processing t
           temperature: 0,
           max_tokens: 8_000,
           response_format: understandingResponseFormat,
+          provider: { require_parameters: true },
           messages: [
             { role: 'system', content: system },
             { role: 'user', content: user },
@@ -642,10 +689,16 @@ function mergeDelta(ledger: Ledger, delta: Delta, window: Window, paragraphById:
 
   ledger.rollingSynopsis = delta.updatedSynopsis || ledger.rollingSynopsis;
   ledger.processedWindow = window.index;
-  ledger.processedThroughSeq = window.owned.at(-1)?.seq ?? ledger.processedThroughSeq;
+  ledger.processedUnitIndex = window.owned.at(-1)?.unitIndex ?? ledger.processedUnitIndex;
+  const completedParagraphs = window.owned.filter(
+    (paragraph) =>
+      (paragraph.fragmentIndex ?? 0) === (paragraph.fragmentCount ?? 1) - 1
+  );
+  ledger.processedThroughSeq =
+    completedParagraphs.at(-1)?.seq ?? ledger.processedThroughSeq;
   ledger.coveredParagraphIds = unique([
     ...ledger.coveredParagraphIds,
-    ...window.owned.map((paragraph) => paragraph.id),
+    ...completedParagraphs.map((paragraph) => paragraph.id),
   ]);
 }
 
@@ -674,11 +727,7 @@ async function saveCheckpoint(bookId: string, jobId: string, ledger: Ledger): Pr
   const storagePath = `books/${bookId}/sources/${ledger.sourceId}/ledger/${jobId}/window-${String(
     ledger.processedWindow + 1
   ).padStart(5, '0')}.json`;
-  await bucket.file(storagePath).save(JSON.stringify(ledger), {
-    contentType: 'application/json; charset=utf-8',
-    metadata: { cacheControl: 'private, max-age=31536000, immutable' },
-    resumable: false,
-  });
+  await saveJsonCheckpoint(bucket, storagePath, ledger);
   return storagePath;
 }
 
@@ -731,16 +780,19 @@ async function processUnderstandingJob(bookId: string, jobId: string): Promise<v
     const data = snapshot.data();
     if (!snapshot.exists || !data || !isClaimable(data)) return false;
     transaction.update(jobRef, {
-      status: 'running',
+      status: 'running_v3',
       attempts: Number(data.attempts ?? 0) + 1,
       startedAt: FieldValue.serverTimestamp(),
       heartbeatAt: FieldValue.serverTimestamp(),
       leaseOwner: workerId,
+      workerVersion,
+      model: openRouterModel,
       error: null,
     });
     return true;
   });
   if (!claimed) return;
+  console.log(`[${workerVersion}] claimed books/${bookId}/jobs/${jobId}`);
 
   try {
     const jobSnapshot = await jobRef.get();
@@ -758,21 +810,25 @@ async function processUnderstandingJob(bookId: string, jobId: string): Promise<v
       throw new Error('Job source is no longer the active canonical source.');
     }
     const paragraphs = await loadParagraphs(bookId, sourceId, canonicalHash);
+    const processingUnits = buildProcessingUnits(paragraphs);
     const paragraphById = new Map(paragraphs.map((paragraph) => [paragraph.id, paragraph]));
-    const windows = buildWindows(paragraphs);
+    const windows = buildWindows(processingUnits);
     const checkpointPath = asString(
       job.checkpoint && typeof job.checkpoint === 'object'
         ? (job.checkpoint as Record<string, unknown>).storagePath
         : ''
     );
-    const ledger: Ledger = checkpointPath
-      ? JSON.parse(
-          (await bucket.file(checkpointPath).download())[0].toString('utf8')
-        ) as Ledger
-      : {
+    const checkpointPrefix = `books/${bookId}/sources/${sourceId}/ledger/${jobId}/`;
+    const savedCheckpoint = await loadLatestValidCheckpoint<Ledger>(
+      bucket,
+      checkpointPrefix,
+      checkpointPath || undefined
+    );
+    const ledger: Ledger = savedCheckpoint?.value ?? {
           sourceId,
           canonicalHash,
           processedWindow: -1,
+          processedUnitIndex: -1,
           processedThroughSeq: -1,
           coveredParagraphIds: [],
           rollingSynopsis: '',
@@ -783,15 +839,23 @@ async function processUnderstandingJob(bookId: string, jobId: string): Promise<v
     if (ledger.sourceId !== sourceId || ledger.canonicalHash !== canonicalHash) {
       throw new Error('Checkpoint source does not match queued job source.');
     }
+    const resumeUnitIndex =
+      ledger.processedUnitIndex ??
+      processingUnits.reduce(
+        (last, unit) => (unit.seq <= ledger.processedThroughSeq ? unit.unitIndex ?? last : last),
+        -1
+      );
     let costUsd = asNumber(job.costUsd);
 
     const remainingWindows = windows.filter(
-      (window) => (window.owned.at(-1)?.seq ?? -1) > ledger.processedThroughSeq
+      (window) => (window.owned.at(-1)?.unitIndex ?? -1) > resumeUnitIndex
     );
     for (const candidate of remainingWindows) {
       const window = {
         ...candidate,
-        owned: candidate.owned.filter((paragraph) => paragraph.seq > ledger.processedThroughSeq),
+        owned: candidate.owned.filter(
+          (paragraph) => (paragraph.unitIndex ?? -1) > resumeUnitIndex
+        ),
       };
       if (window.owned.length === 0) continue;
       const freshJob = await jobRef.get();
@@ -883,14 +947,15 @@ async function findAndProcessJob(): Promise<boolean> {
 }
 
 function isClaimable(data: Record<string, unknown>): boolean {
-  if (data.status === 'queued') return true;
-  if (data.status !== 'running') return false;
+  if (data.status === 'queued_v3') return true;
+  if (data.status !== 'running_v3') return false;
   const heartbeat = data.heartbeatAt as { toMillis?: () => number } | undefined;
   const heartbeatMs = heartbeat?.toMillis?.() ?? 0;
   return Date.now() - heartbeatMs > staleLeaseMs;
 }
 
 async function main(): Promise<void> {
+  console.log(`[${workerVersion}] started with ${openRouterModel}`);
   process.on('SIGINT', () => {
     stopping = true;
   });
