@@ -1,4 +1,6 @@
-import { applicationDefault, initializeApp } from 'firebase-admin/app';
+import { existsSync } from 'node:fs';
+import { isAbsolute, resolve } from 'node:path';
+import { applicationDefault, cert, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
@@ -116,14 +118,33 @@ const projectId = env.FIREBASE_PROJECT_ID ?? env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 const storageBucket = env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 if (!projectId) throw new Error('Missing FIREBASE_PROJECT_ID.');
 if (!storageBucket) throw new Error('Missing NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET.');
-if (!env.GOOGLE_APPLICATION_CREDENTIALS) {
-  throw new Error('Missing GOOGLE_APPLICATION_CREDENTIALS service-account JSON path.');
-}
 if (!env.OPENROUTER_API_KEY) throw new Error('Missing OPENROUTER_API_KEY.');
+
+const credentialPath = env.GOOGLE_APPLICATION_CREDENTIALS
+  ? isAbsolute(env.GOOGLE_APPLICATION_CREDENTIALS)
+    ? env.GOOGLE_APPLICATION_CREDENTIALS
+    : resolve(process.cwd(), env.GOOGLE_APPLICATION_CREDENTIALS)
+  : null;
+const inlinePrivateKey = env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+const serviceAccountEmail =
+  env.GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL ??
+  env.FIREBASE_CLIENT_EMAIL ??
+  `firebase-adminsdk-fbsvc@${projectId}.iam.gserviceaccount.com`;
+const credential =
+  credentialPath && existsSync(credentialPath)
+    ? applicationDefault()
+    : inlinePrivateKey
+      ? cert({ projectId, clientEmail: serviceAccountEmail, privateKey: inlinePrivateKey })
+      : null;
+if (!credential) {
+  throw new Error(
+    'Firebase Admin credentials unavailable. Provide an existing GOOGLE_APPLICATION_CREDENTIALS file or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.'
+  );
+}
 
 const app = initializeApp(
   {
-    credential: applicationDefault(),
+    credential,
     projectId,
     storageBucket,
   },
@@ -168,6 +189,26 @@ function safeId(value: unknown, fallbackPrefix: string): string {
     .replace(/^_+|_+$/g, '')
     .slice(0, 120);
   return normalized || `${fallbackPrefix}_${crypto.randomUUID().slice(0, 12)}`;
+}
+
+function stringRecord(value: unknown): Record<string, string> {
+  if (Array.isArray(value)) {
+    return Object.fromEntries(
+      value.flatMap((item) => {
+        if (!item || typeof item !== 'object') return [];
+        const row = item as Record<string, unknown>;
+        return typeof row.key === 'string' && typeof row.value === 'string'
+          ? [[row.key, row.value]]
+          : [];
+      })
+    );
+  }
+  if (!value || typeof value !== 'object') return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).flatMap(([key, entry]) =>
+      typeof entry === 'string' ? [[key, entry]] : []
+    )
+  );
 }
 
 function normalizeDelta(value: unknown): Delta {
@@ -227,14 +268,7 @@ function normalizeDelta(value: unknown): Delta {
         label: asString(row.label),
         validFromStoryTime: asNumber(row.validFromStoryTime),
         validFromSeq: asNumber(row.validFromSeq),
-        changes:
-          row.changes && typeof row.changes === 'object'
-            ? Object.fromEntries(
-                Object.entries(row.changes as Record<string, unknown>).flatMap(([key, entry]) =>
-                  typeof entry === 'string' ? [[key, entry]] : []
-                )
-              )
-            : {},
+        changes: stringRecord(row.changes),
         paragraphIds: strings(row.paragraphIds),
         evidenceQuotes: strings(row.evidenceQuotes),
       };
@@ -274,8 +308,8 @@ function normalizeDelta(value: unknown): Delta {
 
 function buildWindows(
   paragraphs: Paragraph[],
-  maxParagraphs = 80,
-  maxCharacters = 28_000,
+  maxParagraphs = 32,
+  maxCharacters = 12_000,
   overlap = 5
 ): Window[] {
   const windows: Window[] = [];
@@ -338,6 +372,114 @@ function paragraphText(paragraph: Paragraph, role: 'context' | 'owned'): string 
   return `[${paragraph.id} seq=${paragraph.seq} page=${paragraph.page} ${role}] ${paragraph.text}`;
 }
 
+const jsonString = { type: 'string' };
+const jsonNumber = { type: 'number' };
+const jsonStringArray = { type: 'array', items: jsonString };
+
+function strictJsonObject(properties: Record<string, unknown>) {
+  return {
+    type: 'object',
+    properties,
+    required: Object.keys(properties),
+    additionalProperties: false,
+  };
+}
+
+function jsonArray(items: Record<string, unknown>) {
+  return { type: 'array', items };
+}
+
+const understandingResponseFormat = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'book_understanding_delta',
+    strict: true,
+    schema: strictJsonObject({
+      newEntities: jsonArray(
+        strictJsonObject({
+          entityId: jsonString,
+          type: { type: 'string', enum: ['character', 'location', 'object', 'group'] },
+          canonicalName: jsonString,
+          aliases: jsonArray(
+            strictJsonObject({
+              name: jsonString,
+              firstSeq: jsonNumber,
+              paragraphIds: jsonStringArray,
+            })
+          ),
+          importance: { type: 'string', enum: ['major', 'supporting', 'minor'] },
+          firstSeq: jsonNumber,
+          lastSeq: jsonNumber,
+          paragraphIds: jsonStringArray,
+        })
+      ),
+      facts: jsonArray(
+        strictJsonObject({
+          entityId: jsonString,
+          key: jsonString,
+          value: jsonString,
+          quote: jsonString,
+          paragraphIds: jsonStringArray,
+        })
+      ),
+      events: jsonArray(
+        strictJsonObject({
+          eventId: jsonString,
+          summary: jsonString,
+          seqStart: jsonNumber,
+          seqEnd: jsonNumber,
+          storyTimeHint: jsonNumber,
+          participants: jsonStringArray,
+          locationId: { anyOf: [jsonString, { type: 'null' }] },
+          objectIds: jsonStringArray,
+          kind: jsonString,
+          paragraphIds: jsonStringArray,
+          evidenceQuotes: jsonStringArray,
+        })
+      ),
+      stateChanges: jsonArray(
+        strictJsonObject({
+          entityId: jsonString,
+          stateId: jsonString,
+          label: jsonString,
+          validFromStoryTime: jsonNumber,
+          validFromSeq: jsonNumber,
+          changes: jsonArray(strictJsonObject({ key: jsonString, value: jsonString })),
+          paragraphIds: jsonStringArray,
+          evidenceQuotes: jsonStringArray,
+        })
+      ),
+      reveals: jsonArray(
+        strictJsonObject({
+          entityId: jsonString,
+          what: jsonString,
+          seq: jsonNumber,
+          paragraphIds: jsonStringArray,
+          evidenceQuotes: jsonStringArray,
+        })
+      ),
+      relationshipChanges: jsonArray(
+        strictJsonObject({
+          entityId: jsonString,
+          toEntityId: jsonString,
+          type: jsonString,
+          validFromSeq: jsonNumber,
+          paragraphIds: jsonStringArray,
+          evidenceQuotes: jsonStringArray,
+        })
+      ),
+      aliasConflicts: jsonArray(
+        strictJsonObject({
+          alias: jsonString,
+          entityIds: jsonStringArray,
+          paragraphIds: jsonStringArray,
+        })
+      ),
+      updatedSynopsis: jsonString,
+    }),
+  },
+};
+
 async function callUnderstandingModel(ledger: Ledger, window: Window): Promise<{ delta: Delta; cost: number }> {
   const system = `You extract a faithful Book Model from supplied source paragraphs.
 Return JSON only. Use only claims supported by supplied paragraphs. Never use outside knowledge.
@@ -350,7 +492,7 @@ Use these item fields:
 newEntities: entityId,type,canonicalName,aliases[{name,firstSeq,paragraphIds}],importance,firstSeq,lastSeq,paragraphIds.
 facts: entityId,key,value,quote,paragraphIds.
 events: eventId,summary,seqStart,seqEnd,storyTimeHint,participants,locationId,objectIds,kind,paragraphIds,evidenceQuotes.
-stateChanges: entityId,stateId,label,validFromStoryTime,validFromSeq,changes,paragraphIds,evidenceQuotes.
+stateChanges: entityId,stateId,label,validFromStoryTime,validFromSeq,changes[{key,value}],paragraphIds,evidenceQuotes.
 reveals: entityId,what,seq,paragraphIds,evidenceQuotes.
 relationshipChanges: entityId,toEntityId,type,validFromSeq,paragraphIds,evidenceQuotes.
 aliasConflicts: alias,entityIds,paragraphIds.
@@ -376,9 +518,9 @@ Context paragraphs help interpretation but owned paragraphs are the processing t
         },
         body: JSON.stringify({
           model: openRouterModel,
-          temperature: 0.1,
+          temperature: 0,
           max_tokens: 8_000,
-          response_format: { type: 'json_object' },
+          response_format: understandingResponseFormat,
           messages: [
             { role: 'system', content: system },
             { role: 'user', content: user },
@@ -387,14 +529,25 @@ Context paragraphs help interpretation but owned paragraphs are the processing t
       });
       if (!response.ok) throw new Error(`OpenRouter HTTP ${response.status}: ${await response.text()}`);
       const payload = (await response.json()) as {
-        choices?: { message?: { content?: string } }[];
+        choices?: { finish_reason?: string; message?: { content?: string } }[];
         usage?: { cost?: number };
       };
-      const content = payload.choices?.[0]?.message?.content;
+      const choice = payload.choices?.[0];
+      const content = choice?.message?.content;
       if (!content) throw new Error('OpenRouter returned no message content.');
+      if (choice?.finish_reason && choice.finish_reason !== 'stop') {
+        throw new Error(`OpenRouter response incomplete: ${choice.finish_reason}.`);
+      }
       const cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Invalid JSON.';
+        throw new Error(`Invalid structured AI response: ${message}`);
+      }
       return {
-        delta: normalizeDelta(JSON.parse(cleaned)),
+        delta: normalizeDelta(parsed),
         cost: asNumber(payload.usage?.cost),
       };
     } catch (error) {
@@ -739,7 +892,15 @@ async function processUnderstandingJob(bookId: string, jobId: string): Promise<v
     }
     let costUsd = asNumber(job.costUsd);
 
-    for (const window of windows.slice(ledger.processedWindow + 1)) {
+    const remainingWindows = windows.filter(
+      (window) => (window.owned.at(-1)?.seq ?? -1) > ledger.processedThroughSeq
+    );
+    for (const candidate of remainingWindows) {
+      const window = {
+        ...candidate,
+        owned: candidate.owned.filter((paragraph) => paragraph.seq > ledger.processedThroughSeq),
+      };
+      if (window.owned.length === 0) continue;
       const freshJob = await jobRef.get();
       if (freshJob.data()?.status === 'cancelled') return;
       const { delta, cost } = await callUnderstandingModel(ledger, window);
