@@ -44,7 +44,7 @@ export type Book = {
     checksum: string;
   };
   activeSourceId?: string;
-  canonical?: { storagePath: string; hash: string };
+  canonical?: { storagePath: string; hash: string; textHash?: string };
   stats?: {
     paragraphCount: number;
     storyParagraphCount: number;

@@ -1,0 +1,13 @@
+
+> newproject@0.1.0 worker
+> node --env-file=.env --experimental-strip-types worker/index.mts
+
+(node:19344) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/Desktop/newproject/lib/canonical.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\Desktop\newproject\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[understand-v9] models: openai/gpt-4.1-mini -> deepseek/deepseek-chat -> deepseek/deepseek-v4-flash | max_tokens: 16000 | windows: <=16 paras / 12000 chars (~3000 tokens), overlap 4
+[understand-v9] claimed books/xL5OYox7MFdsTHeXrZ4s/jobs/spSFxC1LTJpjmayrxSct
+(node:19344) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added to [PassThrough]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:19344) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added to [PassThrough]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+[understand-v9] window 1 (16 paras/10188 chars): dropped 1, unverified 6, remapped 0

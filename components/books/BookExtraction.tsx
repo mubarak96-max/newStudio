@@ -60,10 +60,12 @@ export function BookExtraction({ book }: { book: Book }) {
       sourceId: book.activeSourceId,
       canonicalPath: book.canonical.storagePath,
       canonicalHash: book.canonical.hash,
+      textHash: book.canonical.textHash ?? '',
       paragraphCount: book.stats.paragraphCount,
       chunkCount: 0,
       wordCount: book.stats.wordCount,
       pageCount: book.sourceFile?.pageCount ?? 0,
+      coverage: null,
     };
   });
   const [saving, setSaving] = useState(false);
@@ -168,6 +170,8 @@ export function BookExtraction({ book }: { book: Book }) {
         type: 'understand',
         stage: 'book_model',
         status: 'queued',
+        phase: 'extract',
+        coverage: null,
         progress: { done: 0, total: source.paragraphCount },
         checkpoint: null,
         attempts: 0,
@@ -399,6 +403,16 @@ export function BookExtraction({ book }: { book: Book }) {
             <p className='mt-4 text-xs text-muted-foreground'>
               Source {source.sourceId} · {formatCount(source.paragraphCount)} paragraphs ·{' '}
               {formatCount(source.wordCount)} words
+              {source.coverage && (
+                <>
+                  {' · '}
+                  <span className={source.coverage.ok ? 'text-emerald-600' : 'text-amber-600'}>
+                    {source.coverage.ok
+                      ? 'coverage complete'
+                      : `${formatCount(source.coverage.missingChars)} characters unaccounted for`}
+                  </span>
+                </>
+              )}
             </p>
           )}
 
@@ -415,7 +429,11 @@ export function BookExtraction({ book }: { book: Book }) {
               <p className='text-xs text-muted-foreground'>
                 {job.status === 'queued'
                   ? 'Queued. Start `npm run worker` if the worker is not running.'
-                  : `${formatCount(job.progress.done)} of ${formatCount(job.progress.total)} paragraphs processed.`}
+                  : job.phase === 'extract'
+                    ? `Reading the book: ${formatCount(job.progress.done)} of ${formatCount(job.progress.total)} paragraphs.`
+                    : job.phase === 'repair'
+                      ? 'Re-reading the paragraphs the first pass left undescribed.'
+                      : 'Consolidating the whole-book model: merging entities, writing profiles, chapters and chronology.'}
               </p>
               {job.workerVersion && (
                 <p className='text-[11px] text-muted-foreground'>
@@ -427,7 +445,11 @@ export function BookExtraction({ book }: { book: Book }) {
 
           {job?.status === 'completed' && (
             <div className='mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm'>
-              <span>Book Model ready. Complete paragraph coverage passed.</span>
+              <span>
+                {job.coverage
+                  ? `Book Model ready. ${formatCount(job.coverage.annotatedByModel)} of ${formatCount(job.coverage.storyParagraphs)} story paragraphs described by the model.`
+                  : 'Book Model ready. Complete paragraph coverage passed.'}
+              </span>
               <Link href={`/book/${book.id}/model`} className='font-medium text-primary hover:underline'>
                 Review Book Model
               </Link>

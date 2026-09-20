@@ -1,43 +1,54 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BrainCircuit } from 'lucide-react';
 import { DashboardFrame } from '@/components/dashboard/DashboardFrame';
-import { getBook, type Book } from '@/lib/books';
+import { EntityDetail } from '@/components/books/model/EntityDetail';
 import {
-  loadBookModel,
-  type BookModelEntity,
-  type BookModelEvent,
-} from '@/lib/book-pipeline';
+  AliasConflictPanel,
+  ChapterPanel,
+  CoveragePanel,
+  DiagnosticsPanel,
+  EventPanel,
+  SceneStrip,
+  WorldPanel,
+} from '@/components/books/model/ModelOverview';
+import { Panel } from '@/components/books/model/ModelPrimitives';
+import { getBook, type Book } from '@/lib/books';
+import { loadBookModel, type BookModel, type EntityType } from '@/lib/book-pipeline';
 import { bookNavItems } from '@/lib/navigation';
+
+const entityTypes: EntityType[] = ['character', 'location', 'object', 'group', 'concept'];
+type Tab = 'entities' | 'events' | 'chapters' | 'coverage';
+const tabs: { key: Tab; label: string }[] = [
+  { key: 'entities', label: 'Entities' },
+  { key: 'events', label: 'Events' },
+  { key: 'chapters', label: 'Chapters' },
+  { key: 'coverage', label: 'Coverage' },
+];
 
 export function BookModelPage({ bookId }: { bookId: string }) {
   const [book, setBook] = useState<Book | null>(null);
-  const [entities, setEntities] = useState<BookModelEntity[]>([]);
-  const [events, setEvents] = useState<BookModelEvent[]>([]);
-  const [rollingSynopsis, setRollingSynopsis] = useState('');
-  const [aliasConflicts, setAliasConflicts] = useState<
-    { alias: string; entityIds: string[]; paragraphIds: string[] }[]
-  >([]);
+  const [model, setModel] = useState<BookModel | null>(null);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | BookModelEntity['type']>('all');
+  const [filter, setFilter] = useState<'all' | EntityType>('all');
+  const [tab, setTab] = useState<Tab>('entities');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     Promise.all([getBook(bookId), loadBookModel(bookId)])
-      .then(([loadedBook, model]) => {
+      .then(([loadedBook, loadedModel]) => {
         if (cancelled) return;
         if (!loadedBook) throw new Error('This book no longer exists.');
         setBook(loadedBook);
-        setEntities(model.entities);
-        setEvents(model.events);
-        setRollingSynopsis(model.rollingSynopsis);
-        setAliasConflicts(model.aliasConflicts);
-        setSelectedEntityId(model.entities[0]?.entityId ?? null);
+        setModel(loadedModel);
+        const ranked = [...loadedModel.entities].sort(
+          (left, right) => right.mentionCount - left.mentionCount
+        );
+        setSelectedEntityId(ranked[0]?.entityId ?? null);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -50,11 +61,36 @@ export function BookModelPage({ bookId }: { bookId: string }) {
     };
   }, [bookId]);
 
-  const filteredEntities = useMemo(
-    () => entities.filter((entity) => filter === 'all' || entity.type === filter),
-    [entities, filter]
+  const nameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const entity of model?.entities ?? []) map.set(entity.entityId, entity.canonicalName);
+    return map;
+  }, [model]);
+  const nameOf = useMemo(
+    () => (entityId: string) => nameById.get(entityId) ?? entityId,
+    [nameById]
   );
-  const selectedEntity = entities.find((entity) => entity.entityId === selectedEntityId) ?? null;
+
+  const rankedEntities = useMemo(
+    () =>
+      [...(model?.entities ?? [])].sort(
+        (left, right) => right.mentionCount - left.mentionCount || left.firstSeq - right.firstSeq
+      ),
+    [model]
+  );
+  const filteredEntities = useMemo(
+    () => rankedEntities.filter((entity) => filter === 'all' || entity.type === filter),
+    [rankedEntities, filter]
+  );
+  const typeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entity of rankedEntities) {
+      counts.set(entity.type, (counts.get(entity.type) ?? 0) + 1);
+    }
+    return counts;
+  }, [rankedEntities]);
+  const selectedEntity =
+    rankedEntities.find((entity) => entity.entityId === selectedEntityId) ?? null;
 
   if (loading) {
     return (
@@ -67,7 +103,7 @@ export function BookModelPage({ bookId }: { bookId: string }) {
     );
   }
 
-  if (error || !book) {
+  if (error || !book || !model) {
     return (
       <DashboardFrame navItems={bookNavItems(bookId)} roleLabel='Book Model'>
         <Link href={`/book/${bookId}`} className='text-sm text-primary hover:underline'>
@@ -103,188 +139,116 @@ export function BookModelPage({ bookId }: { bookId: string }) {
               <h2 className='text-2xl font-semibold tracking-tight'>Book Model</h2>
             </div>
             <p className='mt-1 text-sm text-muted-foreground'>
-              {entities.length} entities and {events.length} source-grounded events.
+              {model.entities.length} entities · {model.events.length} events ·{' '}
+              {model.sceneRanges.length} scenes ·{' '}
+              {model.coverage
+                ? `${model.coverage.annotated} of ${model.coverage.storyParagraphs} paragraphs annotated`
+                : 'no coverage report'}
             </p>
           </div>
           <div className='flex flex-wrap gap-2'>
-            {(['all', 'character', 'location', 'object', 'group'] as const).map((type) => (
+            {tabs.map((item) => (
               <button
-                key={type}
+                key={item.key}
                 type='button'
-                onClick={() => setFilter(type)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium capitalize ${
-                  filter === type
+                onClick={() => setTab(item.key)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  tab === item.key
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-border text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {type}
+                {item.label}
               </button>
             ))}
           </div>
         </div>
 
-        {rollingSynopsis && (
-          <div className='rounded-xl border border-border bg-card p-6'>
-            <h3 className='text-sm font-semibold'>Rolling synopsis</h3>
-            <p className='mt-2 text-sm leading-relaxed text-muted-foreground'>{rollingSynopsis}</p>
-          </div>
+        {model.world && <WorldPanel world={model.world} />}
+
+        {model.rollingSynopsis && <Panel title='Synopsis'>{model.rollingSynopsis}</Panel>}
+
+        {model.aliasConflicts.length > 0 && (
+          <AliasConflictPanel conflicts={model.aliasConflicts} nameOf={nameOf} />
         )}
 
-        {aliasConflicts.length > 0 && (
-          <div className='rounded-xl border border-amber-500/40 bg-amber-500/10 p-6'>
-            <h3 className='text-sm font-semibold'>Alias conflicts requiring review</h3>
-            <div className='mt-3 space-y-2'>
-              {aliasConflicts.map((conflict) => (
-                <EvidenceRow
-                  key={`${conflict.alias}-${conflict.entityIds.join('-')}`}
-                  title={conflict.alias}
-                  detail={conflict.entityIds.join(' or ')}
-                  paragraphIds={conflict.paragraphIds}
-                />
-              ))}
+        {tab === 'entities' &&
+          (model.entities.length === 0 ? (
+            <div className='rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground'>
+              No Book Model exists yet. Save canonical text and run whole-book processing from
+              Extraction.
             </div>
-          </div>
-        )}
-
-        {entities.length === 0 ? (
-          <div className='rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground'>
-            No Book Model exists yet. Save canonical text and run whole-book processing from
-            Extraction.
-          </div>
-        ) : (
-          <div className='grid gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.5fr)]'>
-            <div className='max-h-[70vh] overflow-y-auto rounded-xl border border-border bg-card p-2'>
-              {filteredEntities.map((entity) => (
-                <button
-                  key={entity.entityId}
-                  type='button'
-                  onClick={() => setSelectedEntityId(entity.entityId)}
-                  className={`mb-1 flex w-full items-start justify-between gap-3 rounded-lg px-3 py-3 text-left ${
-                    selectedEntityId === entity.entityId ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
-                  }`}
-                >
-                  <span>
-                    <span className='block text-sm font-medium'>{entity.canonicalName}</span>
-                    <span className='mt-0.5 block text-xs text-muted-foreground'>
-                      {entity.entityId} · seq {entity.firstSeq}–{entity.lastSeq}
+          ) : (
+            <>
+              <div className='flex flex-wrap gap-2'>
+                {(['all', ...entityTypes] as const).map((type) => (
+                  <button
+                    key={type}
+                    type='button'
+                    onClick={() => setFilter(type)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium capitalize ${
+                      filter === type
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {type}
+                    <span className='ml-1.5 opacity-70'>
+                      {type === 'all' ? rankedEntities.length : (typeCounts.get(type) ?? 0)}
                     </span>
-                  </span>
-                  <span className='rounded-full border border-border px-2 py-0.5 text-[11px] capitalize text-muted-foreground'>
-                    {entity.type}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {selectedEntity && (
-              <div className='space-y-5 rounded-xl border border-border bg-card p-6'>
-                <div>
-                  <h3 className='text-xl font-semibold'>{selectedEntity.canonicalName}</h3>
-                  <p className='mt-1 text-xs text-muted-foreground'>
-                    {selectedEntity.importance} · {selectedEntity.status}
-                  </p>
-                </div>
-
-                <ModelSection title='Aliases'>
-                  {selectedEntity.aliases.map((alias) => (
-                    <EvidenceRow
-                      key={`${alias.name}-${alias.firstSeq}`}
-                      title={alias.name}
-                      detail={`First seq ${alias.firstSeq}`}
-                      paragraphIds={alias.paragraphIds}
-                    />
-                  ))}
-                </ModelSection>
-
-                <ModelSection title='Facts'>
-                  {selectedEntity.facts.map((fact) => (
-                    <EvidenceRow
-                      key={`${fact.key}-${fact.value}`}
-                      title={`${fact.key}: ${fact.value}`}
-                      detail={`“${fact.quote}”`}
-                      paragraphIds={fact.paragraphIds}
-                    />
-                  ))}
-                </ModelSection>
-
-                <ModelSection title='States and reveals'>
-                  {selectedEntity.states.map((state) => (
-                    <EvidenceRow
-                      key={state.stateId}
-                      title={state.label}
-                      detail={`From seq ${state.validFromSeq}`}
-                      paragraphIds={state.paragraphIds}
-                    />
-                  ))}
-                  {selectedEntity.reveals.map((reveal) => (
-                    <EvidenceRow
-                      key={`${reveal.seq}-${reveal.what}`}
-                      title={reveal.what}
-                      detail={`Reveal seq ${reveal.seq}`}
-                      paragraphIds={reveal.paragraphIds}
-                    />
-                  ))}
-                </ModelSection>
-
-                <ModelSection title='Relationships'>
-                  {selectedEntity.relationships.map((relationship) => (
-                    <EvidenceRow
-                      key={`${relationship.toEntityId}-${relationship.type}`}
-                      title={`${relationship.type}: ${relationship.toEntityId}`}
-                      detail={`From seq ${relationship.validFromSeq}`}
-                      paragraphIds={relationship.paragraphIds}
-                    />
-                  ))}
-                </ModelSection>
+                  </button>
+                ))}
               </div>
+              <div className='grid gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.5fr)]'>
+                <div className='max-h-[70vh] overflow-y-auto rounded-xl border border-border bg-card p-2'>
+                  {filteredEntities.map((entity) => (
+                    <button
+                      key={entity.entityId}
+                      type='button'
+                      onClick={() => setSelectedEntityId(entity.entityId)}
+                      className={`mb-1 flex w-full items-start justify-between gap-3 rounded-lg px-3 py-3 text-left ${
+                        selectedEntityId === entity.entityId
+                          ? 'bg-primary/10 text-primary'
+                          : 'hover:bg-accent'
+                      }`}
+                    >
+                      <span>
+                        <span className='block text-sm font-medium'>{entity.canonicalName}</span>
+                        <span className='mt-0.5 block text-xs text-muted-foreground'>
+                          {entity.mentionCount} mentions · seq {entity.firstSeq}–{entity.lastSeq}
+                        </span>
+                      </span>
+                      <span className='rounded-full border border-border px-2 py-0.5 text-[11px] capitalize text-muted-foreground'>
+                        {entity.importance}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {selectedEntity && <EntityDetail entity={selectedEntity} nameOf={nameOf} />}
+              </div>
+            </>
+          ))}
+
+        {tab === 'events' && <EventPanel events={model.events} nameOf={nameOf} />}
+
+        {tab === 'chapters' && (
+          <>
+            {model.chapterSummaries.length > 0 && (
+              <ChapterPanel chapters={model.chapterSummaries} />
             )}
-          </div>
+            <SceneStrip scenes={model.sceneRanges} nameOf={nameOf} />
+          </>
         )}
 
-        {events.length > 0 && (
-          <div className='rounded-xl border border-border bg-card p-6'>
-            <h3 className='text-lg font-semibold'>Event chronology</h3>
-            <div className='mt-4 space-y-3'>
-              {events.map((event) => (
-                <EvidenceRow
-                  key={event.eventId}
-                  title={`${event.order}. ${event.summary}`}
-                  detail={`seq ${event.seqStart}–${event.seqEnd} · storyTime ${event.storyTime}`}
-                  paragraphIds={event.paragraphIds}
-                />
-              ))}
-            </div>
-          </div>
+        {tab === 'coverage' && (
+          <>
+            {model.coverage && <CoveragePanel coverage={model.coverage} />}
+            {model.diagnostics && (
+              <DiagnosticsPanel diagnostics={model.diagnostics} nameOf={nameOf} />
+            )}
+          </>
         )}
       </section>
     </DashboardFrame>
-  );
-}
-
-function ModelSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section>
-      <h4 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>{title}</h4>
-      <div className='mt-2 space-y-2'>{children}</div>
-    </section>
-  );
-}
-
-function EvidenceRow({
-  title,
-  detail,
-  paragraphIds,
-}: {
-  title: string;
-  detail: string;
-  paragraphIds: string[];
-}) {
-  return (
-    <div className='rounded-lg border border-border bg-background p-3'>
-      <p className='text-sm font-medium'>{title}</p>
-      <p className='mt-1 text-xs text-muted-foreground'>{detail}</p>
-      <p className='mt-2 font-mono text-[11px] text-primary'>{paragraphIds.join(', ')}</p>
-    </div>
   );
 }
