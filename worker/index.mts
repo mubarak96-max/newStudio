@@ -3,6 +3,7 @@ import { isAbsolute, resolve } from 'node:path';
 import { applicationDefault, cert, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { understandingResponseFormat } from './understanding-schema.mts';
 
 type Paragraph = {
   id: string;
@@ -371,114 +372,6 @@ function selectLedgerContext(ledger: Ledger, window: Window) {
 function paragraphText(paragraph: Paragraph, role: 'context' | 'owned'): string {
   return `[${paragraph.id} seq=${paragraph.seq} page=${paragraph.page} ${role}] ${paragraph.text}`;
 }
-
-const jsonString = { type: 'string' };
-const jsonNumber = { type: 'number' };
-const jsonStringArray = { type: 'array', items: jsonString };
-
-function strictJsonObject(properties: Record<string, unknown>) {
-  return {
-    type: 'object',
-    properties,
-    required: Object.keys(properties),
-    additionalProperties: false,
-  };
-}
-
-function jsonArray(items: Record<string, unknown>) {
-  return { type: 'array', items };
-}
-
-const understandingResponseFormat = {
-  type: 'json_schema',
-  json_schema: {
-    name: 'book_understanding_delta',
-    strict: true,
-    schema: strictJsonObject({
-      newEntities: jsonArray(
-        strictJsonObject({
-          entityId: jsonString,
-          type: { type: 'string', enum: ['character', 'location', 'object', 'group'] },
-          canonicalName: jsonString,
-          aliases: jsonArray(
-            strictJsonObject({
-              name: jsonString,
-              firstSeq: jsonNumber,
-              paragraphIds: jsonStringArray,
-            })
-          ),
-          importance: { type: 'string', enum: ['major', 'supporting', 'minor'] },
-          firstSeq: jsonNumber,
-          lastSeq: jsonNumber,
-          paragraphIds: jsonStringArray,
-        })
-      ),
-      facts: jsonArray(
-        strictJsonObject({
-          entityId: jsonString,
-          key: jsonString,
-          value: jsonString,
-          quote: jsonString,
-          paragraphIds: jsonStringArray,
-        })
-      ),
-      events: jsonArray(
-        strictJsonObject({
-          eventId: jsonString,
-          summary: jsonString,
-          seqStart: jsonNumber,
-          seqEnd: jsonNumber,
-          storyTimeHint: jsonNumber,
-          participants: jsonStringArray,
-          locationId: { anyOf: [jsonString, { type: 'null' }] },
-          objectIds: jsonStringArray,
-          kind: jsonString,
-          paragraphIds: jsonStringArray,
-          evidenceQuotes: jsonStringArray,
-        })
-      ),
-      stateChanges: jsonArray(
-        strictJsonObject({
-          entityId: jsonString,
-          stateId: jsonString,
-          label: jsonString,
-          validFromStoryTime: jsonNumber,
-          validFromSeq: jsonNumber,
-          changes: jsonArray(strictJsonObject({ key: jsonString, value: jsonString })),
-          paragraphIds: jsonStringArray,
-          evidenceQuotes: jsonStringArray,
-        })
-      ),
-      reveals: jsonArray(
-        strictJsonObject({
-          entityId: jsonString,
-          what: jsonString,
-          seq: jsonNumber,
-          paragraphIds: jsonStringArray,
-          evidenceQuotes: jsonStringArray,
-        })
-      ),
-      relationshipChanges: jsonArray(
-        strictJsonObject({
-          entityId: jsonString,
-          toEntityId: jsonString,
-          type: jsonString,
-          validFromSeq: jsonNumber,
-          paragraphIds: jsonStringArray,
-          evidenceQuotes: jsonStringArray,
-        })
-      ),
-      aliasConflicts: jsonArray(
-        strictJsonObject({
-          alias: jsonString,
-          entityIds: jsonStringArray,
-          paragraphIds: jsonStringArray,
-        })
-      ),
-      updatedSynopsis: jsonString,
-    }),
-  },
-};
 
 async function callUnderstandingModel(ledger: Ledger, window: Window): Promise<{ delta: Delta; cost: number }> {
   const system = `You extract a faithful Book Model from supplied source paragraphs.
