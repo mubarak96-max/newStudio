@@ -1,15 +1,19 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import {
   AlertTriangle,
+  BrainCircuit,
   Check,
   ChevronLeft,
   ChevronRight,
+  CloudUpload,
   Copy,
   Download,
   FileText,
   Loader2,
+  RefreshCw,
   Search,
   X,
 } from 'lucide-react';
@@ -22,6 +26,15 @@ import {
   type ExtractionProgress,
   type ExtractionResult,
 } from '@/lib/pdf-extract';
+import {
+  cancelPipelineJob,
+  enqueueUnderstandingJob,
+  persistCanonicalSource,
+  retryPipelineJob,
+  subscribePipelineJob,
+  type CanonicalSource,
+  type PipelineJob,
+} from '@/lib/book-pipeline';
 
 type Phase = 'idle' | 'downloading' | 'extracting' | 'done' | 'error';
 type ViewMode = 'full' | 'pages';
@@ -41,6 +54,22 @@ export function BookExtraction({ book }: { book: Book }) {
   const [pageIndex, setPageIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [copied, setCopied] = useState(false);
+  const [source, setSource] = useState<CanonicalSource | null>(() => {
+    if (!book.activeSourceId || !book.canonical || !book.stats) return null;
+    return {
+      sourceId: book.activeSourceId,
+      canonicalPath: book.canonical.storagePath,
+      canonicalHash: book.canonical.hash,
+      paragraphCount: book.stats.paragraphCount,
+      chunkCount: 0,
+      wordCount: book.stats.wordCount,
+      pageCount: book.sourceFile?.pageCount ?? 0,
+    };
+  });
+  const [saving, setSaving] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(book.pipeline?.lastJobId ?? null);
+  const [job, setJob] = useState<PipelineJob | null>(null);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -66,6 +95,16 @@ export function BookExtraction({ book }: { book: Book }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!jobId) return;
+    return subscribePipelineJob(
+      book.id,
+      jobId,
+      setJob,
+      (err) => setPipelineError(err instanceof Error ? err.message : 'Could not read job status.')
+    );
+  }, [book.id, jobId]);
+
   const startExtraction = async () => {
     if (!pdfUrl || phase === 'downloading' || phase === 'extracting') return;
     abortRef.current?.abort();
@@ -86,6 +125,7 @@ export function BookExtraction({ book }: { book: Book }) {
         onProgress: (p) => setProgress(p),
       });
       setResult(extraction);
+      setSource(null);
       setView(extraction.totalChars > 500_000 ? 'pages' : 'full');
       setPhase('done');
     } catch (err) {
@@ -101,6 +141,61 @@ export function BookExtraction({ book }: { book: Book }) {
 
   const cancelExtraction = () => {
     abortRef.current?.abort();
+  };
+
+  const saveCanonicalSource = async () => {
+    if (!result || saving) return;
+    setSaving(true);
+    setPipelineError(null);
+    try {
+      const saved = await persistCanonicalSource(book.id, result, book.sourceFile?.sourceId);
+      setSource(saved);
+    } catch (err) {
+      setPipelineError(err instanceof Error ? err.message : 'Could not save canonical source.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startUnderstanding = async () => {
+    if (!source || job?.status === 'queued' || job?.status === 'running') return;
+    setPipelineError(null);
+    try {
+      const nextJobId = await enqueueUnderstandingJob(book.id, source);
+      setJobId(nextJobId);
+      setJob({
+        jobId: nextJobId,
+        type: 'understand',
+        stage: 'book_model',
+        status: 'queued',
+        progress: { done: 0, total: source.paragraphCount },
+        checkpoint: null,
+        attempts: 0,
+        costUsd: 0,
+      });
+    } catch (err) {
+      setPipelineError(err instanceof Error ? err.message : 'Could not enqueue Book Model job.');
+    }
+  };
+
+  const retryUnderstanding = async () => {
+    if (!jobId) return;
+    setPipelineError(null);
+    try {
+      await retryPipelineJob(book.id, jobId);
+    } catch (err) {
+      setPipelineError(err instanceof Error ? err.message : 'Could not retry job.');
+    }
+  };
+
+  const cancelUnderstanding = async () => {
+    if (!jobId) return;
+    setPipelineError(null);
+    try {
+      await cancelPipelineJob(book.id, jobId);
+    } catch (err) {
+      setPipelineError(err instanceof Error ? err.message : 'Could not cancel job.');
+    }
   };
 
   const handleCopy = async () => {
@@ -169,7 +264,7 @@ export function BookExtraction({ book }: { book: Book }) {
               <p className='mt-1 max-w-2xl text-sm text-muted-foreground'>
                 Reads every page in order — native PDF text first, automatic on-device
                 OCR for pages without embedded text. No page or character limits.
-                Nothing is saved; results stay in your browser until you download them.
+                Save the completed extraction as immutable canonical text before AI processing.
               </p>
             </div>
           </div>
@@ -235,6 +330,119 @@ export function BookExtraction({ book }: { book: Book }) {
           </div>
         )}
       </div>
+
+      {(result || source || jobId) && (
+        <div className='rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm'>
+          <div className='flex flex-wrap items-start justify-between gap-4'>
+            <div className='flex items-start gap-3'>
+              <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
+                <BrainCircuit aria-hidden='true' className='h-5 w-5' />
+              </div>
+              <div>
+                <h3 className='text-lg font-semibold tracking-tight'>Whole-book processing</h3>
+                <p className='mt-1 max-w-2xl text-sm text-muted-foreground'>
+                  Saves canonical text and 20-paragraph chunks, then queues the rolling-ledger
+                  worker. Every paragraph must complete before the Book Model becomes ready.
+                </p>
+              </div>
+            </div>
+            <div className='flex flex-wrap gap-2'>
+              {result && (
+                <button
+                  type='button'
+                  onClick={saveCanonicalSource}
+                  disabled={saving || job?.status === 'running'}
+                  className='inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50'
+                >
+                  {saving ? (
+                    <Loader2 className='h-4 w-4 animate-spin' aria-hidden='true' />
+                  ) : (
+                    <CloudUpload className='h-4 w-4' aria-hidden='true' />
+                  )}
+                  {saving ? 'Saving source…' : source ? 'Save new source version' : 'Save canonical source'}
+                </button>
+              )}
+              {source && job?.status !== 'running' && job?.status !== 'queued' && (
+                <button
+                  type='button'
+                  onClick={startUnderstanding}
+                  className='inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90'
+                >
+                  <BrainCircuit className='h-4 w-4' aria-hidden='true' />
+                  {job?.status === 'completed' ? 'Build new model version' : 'Build Book Model'}
+                </button>
+              )}
+              {(job?.status === 'running' || job?.status === 'queued') && (
+                <button
+                  type='button'
+                  onClick={cancelUnderstanding}
+                  className='inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent'
+                >
+                  <X className='h-4 w-4' aria-hidden='true' />
+                  Cancel job
+                </button>
+              )}
+              {job?.status === 'failed' && (
+                <button
+                  type='button'
+                  onClick={retryUnderstanding}
+                  className='inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90'
+                >
+                  <RefreshCw className='h-4 w-4' aria-hidden='true' />
+                  Resume job
+                </button>
+              )}
+            </div>
+          </div>
+
+          {source && (
+            <p className='mt-4 text-xs text-muted-foreground'>
+              Source {source.sourceId} · {formatCount(source.paragraphCount)} paragraphs ·{' '}
+              {formatCount(source.wordCount)} words
+            </p>
+          )}
+
+          {job && (job.status === 'queued' || job.status === 'running') && (
+            <div className='mt-4 space-y-2'>
+              <div className='h-2 overflow-hidden rounded-full bg-muted'>
+                <div
+                  className='h-full rounded-full bg-primary transition-all'
+                  style={{
+                    width: `${job.progress.total > 0 ? Math.round((job.progress.done / job.progress.total) * 100) : 0}%`,
+                  }}
+                />
+              </div>
+              <p className='text-xs text-muted-foreground'>
+                {job.status === 'queued'
+                  ? 'Queued. Start `npm run worker` if the worker is not running.'
+                  : `${formatCount(job.progress.done)} of ${formatCount(job.progress.total)} paragraphs processed.`}
+              </p>
+            </div>
+          )}
+
+          {job?.status === 'completed' && (
+            <div className='mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm'>
+              <span>Book Model ready. Complete paragraph coverage passed.</span>
+              <Link href={`/book/${book.id}/model`} className='font-medium text-primary hover:underline'>
+                Review Book Model
+              </Link>
+            </div>
+          )}
+
+          {job?.status === 'failed' && (
+            <div className='mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm'>
+              <p className='font-medium'>Book Model job failed.</p>
+              <p className='mt-1 text-muted-foreground'>{job.error}</p>
+            </div>
+          )}
+
+          {pipelineError && (
+            <div className='mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm'>
+              {pipelineError}
+            </div>
+          )}
+        </div>
+      )}
 
       {result && phase === 'done' && (
         <>

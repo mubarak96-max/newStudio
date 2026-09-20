@@ -35,6 +35,28 @@ export type Book = {
   description: string;
   coverPhotoUrl: string;
   storagePath: string;
+  sourceFile?: {
+    sourceId: string;
+    storagePath: string;
+    originalFileName: string;
+    sizeBytes: number;
+    pageCount: number | null;
+    checksum: string;
+  };
+  activeSourceId?: string;
+  canonical?: { storagePath: string; hash: string };
+  stats?: {
+    paragraphCount: number;
+    storyParagraphCount: number;
+    wordCount: number;
+    tokenEstimate: number;
+  };
+  pipeline?: {
+    stage: string;
+    stageStatus: string;
+    lastJobId?: string;
+    updatedAt: string;
+  };
   createdAt?: Date | null;
 };
 
@@ -63,7 +85,12 @@ function snapToBook(snap: QueryDocumentSnapshot<DocumentData>): Book {
     genres: Array.isArray(genres) ? genres : [],
     description: meta.description ?? data.description ?? '',
     coverPhotoUrl: meta.coverPhotoUrl ?? data.coverPhotoUrl ?? '',
-    storagePath: meta.storagePath ?? data.storagePath ?? '',
+    storagePath: data.sourceFile?.storagePath ?? meta.storagePath ?? data.storagePath ?? '',
+    sourceFile: data.sourceFile,
+    activeSourceId: data.activeSourceId,
+    canonical: data.canonical,
+    stats: data.stats,
+    pipeline: data.pipeline,
     createdAt,
   };
 }
@@ -104,6 +131,11 @@ export async function getPdfDownloadUrl(storagePath: string): Promise<string> {
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'file';
+}
+
+async function sha256File(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function uploadWithProgress(
@@ -152,8 +184,18 @@ export async function uploadBook(
     throw new Error('The cover must be an image file.');
   }
 
+  const checksum = await sha256File(input.pdfFile);
+  const sourceId = `src_${checksum.slice(0, 16)}`;
+
   // 1. Create books/{bookId} with the metaData shape.
   const docRef = await addDoc(collection(db, BOOKS_COLLECTION), {
+    schemaVersion: 1,
+    bookId: '',
+    title,
+    author,
+    genres: input.genres,
+    description,
+    coverPhotoUrl: '',
     metaData: {
       title,
       author,
@@ -162,12 +204,28 @@ export async function uploadBook(
       coverPhotoUrl: '',
       storagePath: '',
     },
+    sourceFile: {
+      sourceId,
+      storagePath: '',
+      originalFileName: input.pdfFile.name,
+      sizeBytes: input.pdfFile.size,
+      pageCount: null,
+      checksum,
+    },
+    structure: { chapters: [] },
+    stats: { paragraphCount: 0, storyParagraphCount: 0, wordCount: 0, tokenEstimate: 0 },
+    pipeline: {
+      stage: 'upload',
+      stageStatus: 'running',
+      updatedAt: new Date().toISOString(),
+    },
+    publishing: { publishedEpisodeIds: [], latestVersion: 0 },
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
   // 2. Upload the source PDF to Storage.
-  const pdfPath = `books/${docRef.id}/source-${Date.now()}-${sanitizeFileName(input.pdfFile.name)}`;
+  const pdfPath = `books/${docRef.id}/sources/${sourceId}/original/${sanitizeFileName(input.pdfFile.name)}`;
   await uploadWithProgress(pdfPath, input.pdfFile, 'application/pdf', (f) => {
     // PDF is the bulk of the work; reserve the tail for the cover.
     onProgress?.(Math.round(f * (input.coverFile ? 85 : 100)));
@@ -188,8 +246,16 @@ export async function uploadBook(
 
   // 4. Point the doc at both Storage objects.
   await updateDoc(docRef, {
+    bookId: docRef.id,
+    coverPhotoUrl,
     'metaData.storagePath': pdfPath,
     'metaData.coverPhotoUrl': coverPhotoUrl,
+    'sourceFile.storagePath': pdfPath,
+    pipeline: {
+      stage: 'upload',
+      stageStatus: 'approved',
+      updatedAt: new Date().toISOString(),
+    },
     updatedAt: serverTimestamp(),
   });
 

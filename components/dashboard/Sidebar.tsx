@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home } from 'lucide-react';
+import { BrainCircuit, Home } from 'lucide-react';
 import {
   FileText,
   type LucideIcon,
@@ -22,6 +22,7 @@ type SidebarProps = {
 
 const navIcons: Record<DashboardNavItem['icon'], LucideIcon> = {
   extraction: FileText,
+  model: BrainCircuit,
 };
 
 function isActiveRoute(pathname: string | null, route: string) {
