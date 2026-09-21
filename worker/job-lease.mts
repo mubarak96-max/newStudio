@@ -10,7 +10,11 @@ export function isClaimable(data: Record<string, unknown>, staleLeaseMs: number)
 }
 
 /** Transactional claim so two workers never run the same job; a stale lease is taken over. */
-export async function claimJob(jobRef: DocumentReference, staleLeaseMs: number): Promise<boolean> {
+export async function claimJob(
+  jobRef: DocumentReference,
+  staleLeaseMs: number,
+  version: string = workerVersion,
+): Promise<boolean> {
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(jobRef);
     const data = snapshot.data();
@@ -21,7 +25,7 @@ export async function claimJob(jobRef: DocumentReference, staleLeaseMs: number):
       startedAt: FieldValue.serverTimestamp(),
       heartbeatAt: FieldValue.serverTimestamp(),
       leaseOwner: workerId,
-      workerVersion,
+      workerVersion: version,
       model: openRouterModel,
       error: null,
     });

@@ -136,6 +136,18 @@ export const momentMinWords = envNumber("MOMENT_MIN_WORDS", 120, 20);
 export const momentMaxWords = envNumber("MOMENT_MAX_WORDS", 1_100, 300);
 /** Moment calls are independent of each other, so several run at once. */
 export const storyConcurrency = envNumber("STORY_CONCURRENCY", 4, 1, 12);
+export const imageModel = env.IMAGE_MODEL ?? "google/gemini-3.1-flash-lite-image";
+/** Same model on the Gemini API directly, used for asynchronous half-price batches. */
+export const geminiImageModel = env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-lite-image";
+/** Images per Gemini batch; results are held in memory while they are saved. */
+export const geminiBatchSize = envNumber("GEMINI_BATCH_SIZE", 50, 1, 200);
+/**
+ * Gemini batch results report tokens, not money: cost is estimated from list
+ * prices (per token) at the 50% batch discount and flagged as an estimate.
+ */
+export const geminiInputUsdPerToken = envNumber("GEMINI_INPUT_USD_PER_TOKEN", 0.00000025, 0);
+export const geminiOutputUsdPerToken = envNumber("GEMINI_IMAGE_OUTPUT_USD_PER_TOKEN", 0.00003, 0);
+export const batchPollIntervalMs = envNumber("BATCH_POLL_INTERVAL_MS", 60_000, 15_000);
 /** Forecast only: what one generated image is expected to cost with the configured image model. */
 export const imageCostUsd = envNumber("IMAGE_COST_USD", 0.04, 0);
 

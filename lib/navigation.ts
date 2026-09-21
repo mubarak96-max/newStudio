@@ -2,7 +2,7 @@ export type DashboardNavItem = {
   key: string;
   name: string;
   route: string;
-  icon: 'extraction' | 'model' | 'story' | 'beats' | 'visuals';
+  icon: 'extraction' | 'model' | 'story' | 'beats' | 'visuals' | 'images';
 };
 
 /**
@@ -42,6 +42,12 @@ export function bookNavItems(bookId: string): DashboardNavItem[] {
       name: 'Visuals',
       route: `/book/${bookId}/visuals`,
       icon: 'visuals',
+    },
+    {
+      key: 'book-images',
+      name: 'Images',
+      route: `/book/${bookId}/images`,
+      icon: 'images',
     },
   ];
 }

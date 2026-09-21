@@ -14,7 +14,7 @@ export type PlannedMoment = { episodeId: string; moment: Moment };
 
 type EntityLookup = (entityId: string) => { name: string; type: string } | undefined;
 
-function styleLine(profile: VisualProfile): string {
+export function styleLine(profile: VisualProfile): string {
   return [
     `${profile.artStyle} (${profile.medium})`,
     profile.palette.length > 0 ? `palette: ${profile.palette.join(", ")}` : "",
@@ -116,7 +116,7 @@ export function buildCompositionPlans(
         negativePrompt,
         layers,
         stage25d: planStage25d(envelope, layers),
-        responsive: { focalPoint: [0.5, 0.45], aspect: "portrait" },
+        responsive: { focalPoint: [0.5, 0.45], aspect: "9:16" },
         status: "planned",
       });
     }

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BrainCircuit, Clapperboard, Film, Home, Palette } from 'lucide-react';
+import { BrainCircuit, Clapperboard, Film, Home, ImageIcon, Palette } from 'lucide-react';
 import {
   FileText,
   type LucideIcon,
@@ -26,6 +26,7 @@ const navIcons: Record<DashboardNavItem['icon'], LucideIcon> = {
   story: Clapperboard,
   beats: Film,
   visuals: Palette,
+  images: ImageIcon,
 };
 
 function isActiveRoute(pathname: string | null, route: string) {

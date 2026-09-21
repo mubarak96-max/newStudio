@@ -32,6 +32,8 @@ export type JobContext = {
   ) => Promise<Record<string, unknown> | null>;
   onActivity: (activity: JobActivity) => Promise<void>;
   cancelled: () => Promise<boolean>;
+  /** Records spend from calls made outside `callModel`, such as image generation. */
+  addCost: (usd: number) => void;
 };
 
 export type JobDefinition<TState> = {
@@ -72,7 +74,7 @@ export async function processJob<TState>(
   jobId: string,
   staleLeaseMs: number,
 ): Promise<void> {
-  if (!(await claimJob(db.doc(`books/${bookId}/jobs/${jobId}`), staleLeaseMs))) return;
+  if (!(await claimJob(db.doc(`books/${bookId}/jobs/${jobId}`), staleLeaseMs, definition.version))) return;
   console.log(`[${definition.version}] claimed books/${bookId}/jobs/${jobId}`);
   await runLeasedJob(definition, bookId, jobId);
 }
@@ -129,6 +131,9 @@ export async function runLeasedJob<TState>(
         });
       },
       cancelled: async () => (await jobRef.get()).data()?.status === "cancelled",
+      addCost: (usd) => {
+        costUsd += usd;
+      },
       callModel: async (label, system, payload, options = {}) => {
         try {
           const result = await callJsonModel({

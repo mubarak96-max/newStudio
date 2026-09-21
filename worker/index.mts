@@ -1,5 +1,6 @@
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import {
+  batchPollIntervalMs,
   db,
   openRouterMaxTokens,
   openRouterModels,
@@ -13,6 +14,8 @@ import {
 } from "./config.mts";
 import { isClaimable } from "./job-lease.mts";
 import { beatsJob } from "./beats/job.mts";
+import { imageBatchJob, pollImageBatches } from "./images/batch.mts";
+import { imageJob } from "./images/job.mts";
 import { processJob } from "./job-runner.mts";
 import { storyJob } from "./story/job.mts";
 import { processUnderstandingJob } from "./understand-job.mts";
@@ -25,6 +28,7 @@ let collectionGroupJobsUnavailable = false;
 
 function toJobRef(snapshot: QueryDocumentSnapshot): JobRef | null {
   const bookId = snapshot.ref.parent.parent?.id;
+  // Jobs written before job types existed are understanding jobs.
   return bookId ? { bookId, jobId: snapshot.id, type: String(snapshot.data().type ?? "understand") } : null;
 }
 
@@ -92,7 +96,15 @@ async function main(): Promise<void> {
     stopping = true;
   });
 
+  let lastBatchPoll = 0;
   while (!stopping) {
+    // Gemini batches finish on their own schedule; check them between jobs.
+    if (Date.now() - lastBatchPoll >= batchPollIntervalMs) {
+      lastBatchPoll = Date.now();
+      await pollImageBatches((message) => console.log(`[images-batch] ${message}`)).catch((error: unknown) =>
+        console.warn(`[images-batch] poll failed: ${error instanceof Error ? error.message : String(error)}`),
+      );
+    }
     const job = await findClaimableJob();
     if (job?.type === "story") {
       await processJob(storyJob, job.bookId, job.jobId, staleLeaseMs);
@@ -100,8 +112,20 @@ async function main(): Promise<void> {
       await processJob(beatsJob, job.bookId, job.jobId, staleLeaseMs);
     } else if (job?.type === "visuals") {
       await processJob(visualsJob, job.bookId, job.jobId, staleLeaseMs);
-    } else if (job) {
+    } else if (job?.type === "image") {
+      await processJob(imageJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job?.type === "imageBatch") {
+      await processJob(imageBatchJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job?.type === "understand") {
       await processUnderstandingJob(job.bookId, job.jobId, staleLeaseMs);
+    } else if (job) {
+      // Running an unknown job as something else is how a stale worker once
+      // re-ran whole-book understanding for an image request; refuse instead.
+      console.warn(`[${workerVersion}] unknown job type "${job.type}" for books/${job.bookId}/jobs/${job.jobId}; marking it failed.`);
+      await db.doc(`books/${job.bookId}/jobs/${job.jobId}`).update({
+        status: "failed",
+        error: `This worker does not know job type "${job.type}". Update and restart the worker, then retry.`,
+      });
     } else {
       await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     }

@@ -1,11 +1,15 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "./config.mts";
 
-/** Pipeline order: each finished job queues the next one. Understanding queues story. */
+/** Pipeline order: each finished job queues the next one. Understanding queues story. Images are queued only by Studio. */
 export const jobStages = {
   story: "story_plan",
   beats: "beats",
   visuals: "visual_plan",
+  /** Owner-triggered, one image per job; never queued by another job. */
+  image: "images",
+  /** Owner-triggered Gemini batch submission; results are collected by the batch poller. */
+  imageBatch: "images",
 } as const;
 
 export type ChainedJobType = keyof typeof jobStages;

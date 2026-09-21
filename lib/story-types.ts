@@ -284,9 +284,95 @@ export type CompositionPlan = Lineage & {
   negativePrompt: string;
   layers: LayerPlan[];
   stage25d: Stage25dPlan;
-  responsive: { focalPoint: [number, number]; aspect: 'portrait' };
+  /** Mobile first: every layer is generated on the same 9:16 phone canvas. */
+  responsive: { focalPoint: [number, number]; aspect: '9:16' };
   status: 'planned';
 };
+
+/**
+ * One image the owner generates on demand. The target ID is derived from what
+ * it depicts, so regenerating adds a version to the same document:
+ *   ref__{entityId} · var__{entityId}__{stateId} · layer__{compositionId}__{layerId}
+ */
+export type AssetKind = 'reference' | 'variant' | 'layer';
+
+export type AssetTarget = {
+  kind: AssetKind;
+  entityId: string | null;
+  stateId: string | null;
+  compositionId: string | null;
+  layerId: string | null;
+};
+
+export type AssetVersion = {
+  versionId: string;
+  s3Key: string;
+  url: string;
+  contentType: string;
+  width: number | null;
+  height: number | null;
+  sizeBytes: number;
+  checksum: string;
+  model: string;
+  costUsd: number;
+  prompt: string;
+  note: string | null;
+  /** Approved references this image was conditioned on, pinned by version. */
+  references: { targetId: string; versionId: string }[];
+  /** Foreground layers come back on flat green for the 2.5D step to key out. */
+  alpha: 'none' | 'chroma-green';
+  /** OpenRouter returns one image at once; Gemini batches return later at half price. */
+  provider: 'openrouter' | 'gemini-batch';
+  /** False when the cost is estimated from token counts rather than billed by the provider. */
+  costExact: boolean;
+  createdAt: string;
+};
+
+export type ImageBatchItem = {
+  key: string;
+  targetId: string;
+  target: AssetTarget;
+  note: string | null;
+  prompt: string;
+  role: string;
+  alpha: AssetVersion['alpha'];
+  episodeId: string | null;
+  references: AssetVersion['references'];
+};
+
+export type ImageBatch = Lineage & {
+  batchId: string;
+  /** Gemini's name for the batch, `batches/…`. */
+  providerName: string;
+  model: string;
+  status: 'submitted' | 'running' | 'completed' | 'failed';
+  providerState: string;
+  items: ImageBatchItem[];
+  counts: { total: number; saved: number; failed: number };
+  error: string | null;
+  jobId: string;
+  submittedAt: string;
+  completedAt: string | null;
+};
+
+export type VisualAsset = Lineage &
+  AssetTarget & {
+    targetId: string;
+    episodeId: string | null;
+    /** `batched`: waiting inside a Gemini batch whose results have not arrived yet. */
+    status: 'generating' | 'batched' | 'generated' | 'approved' | 'failed';
+    versions: AssetVersion[];
+    approvedVersionId: string | null;
+    error: string | null;
+    lastJobId: string | null;
+    batchId?: string | null;
+  };
+
+export function assetTargetId(target: AssetTarget): string {
+  if (target.kind === 'reference') return `ref__${target.entityId}`;
+  if (target.kind === 'variant') return `var__${target.entityId}__${target.stateId}`;
+  return `layer__${target.compositionId}__${target.layerId}`;
+}
 
 export type VisualForecast = {
   compositions: number;
