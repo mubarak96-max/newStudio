@@ -11,3 +11,17 @@ To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\Desktop\ne
 (node:19344) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 error listeners added to [PassThrough]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
 (node:19344) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added to [PassThrough]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
 [understand-v9] window 1 (16 paras/10188 chars): dropped 1, unverified 6, remapped 0
+[understand-v9] window 2 (16 paras/2732 chars): dropped 4, unverified 6, remapped 0
+[understand-v9] window 3 (16 paras/552 chars): dropped 2, unverified 0, remapped 0
+[understand-v9] window 4 (6 paras/1352 chars): dropped 5, unverified 3, remapped 0
+[understand-v9] window 5 (16 paras/5340 chars): dropped 4, unverified 14, remapped 0
+[understand-v9] window 6 (16 paras/7590 chars): dropped 1, unverified 3, remapped 0
+[understand-v9] window 7 (16 paras/1899 chars): dropped 0, unverified 2, remapped 0
+[understand-v9] window 9 (16 paras/10534 chars): dropped 1, unverified 2, remapped 0
+[understand-v9] window 10 (5 paras/2665 chars): dropped 0, unverified 3, remapped 0
+[understand-v9] window 11 (16 paras/8203 chars): dropped 0, unverified 7, remapped 0
+[understand-v9] window 12 (5 paras/2055 chars): dropped 1, unverified 9, remapped 0
+[understand-v9] window 13 (16 paras/7818 chars): dropped 1, unverified 18, remapped 0
+[understand-v9] window 14 (16 paras/7772 chars): dropped 0, unverified 14, remapped 0
+[understand-v9] window 15 (4 paras/2954 chars): dropped 1, unverified 3, remapped 0
+[understand-v9] window 16 (16 paras/10925 chars): dropped 0, unverified 6, remapped 0

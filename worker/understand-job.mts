@@ -41,6 +41,14 @@ function ownedChars(window: Window): number {
   return window.owned.reduce((total, paragraph) => total + paragraph.text.length, 0);
 }
 
+type JobActivity = {
+  label: string;
+  detail: string;
+  done: number;
+  total: number;
+  unit: string;
+};
+
 function chaptersOf(paragraphs: Paragraph[], bookChapters: unknown): Chapter[] {
   const fromBook = Array.isArray(bookChapters)
     ? (bookChapters as Record<string, unknown>[]).map((chapter) => ({
@@ -128,6 +136,17 @@ export async function processUnderstandingJob(
     let checkpointCounter = asNumber(job.checkpointCounter);
     let costUsd = asNumber(job.costUsd);
     let lastModel = openRouterModel;
+    let activity: JobActivity | null = null;
+
+    const reportActivity = async (nextActivity: JobActivity) => {
+      activity = nextActivity;
+      await jobRef.update({
+        activity,
+        heartbeatAt: FieldValue.serverTimestamp(),
+        leaseOwner: workerId,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    };
 
     const saveProgress = async (label: string) => {
       checkpointCounter += 1;
@@ -141,6 +160,7 @@ export async function processUnderstandingJob(
         checkpointCounter,
         costUsd,
         model: lastModel,
+        activity,
         heartbeatAt: FieldValue.serverTimestamp(),
         leaseOwner: workerId,
         updatedAt: FieldValue.serverTimestamp(),
@@ -204,8 +224,17 @@ export async function processUnderstandingJob(
         };
         if (window.owned.length === 0) continue;
         if (await cancelled()) return;
+        activity = {
+          label: `Reading window ${candidate.index + 1} of ${windows.length}`,
+          detail: `${window.owned.length} paragraphs / ${ownedChars(window)} characters`,
+          done: candidate.index,
+          total: windows.length,
+          unit: "windows",
+        };
+        await reportActivity(activity);
         await extractWindow(window, false);
         advanceProgress(ledger, window);
+        activity = { ...activity, done: candidate.index + 1 };
         await saveProgress(`window-${String(window.index).padStart(5, "0")}`);
       }
       if (ledger.coveredParagraphIds.length !== paragraphs.length) {
@@ -223,9 +252,19 @@ export async function processUnderstandingJob(
         if (missing.length === 0) break;
         log(`repair round ${round}: ${missing.length} story paragraphs without annotation.`);
         const repairWindows = buildRepairWindows(units, new Set(missing), windows.length + round * 10_000);
-        for (const window of repairWindows) {
+        for (let index = 0; index < repairWindows.length; index += 1) {
+          const window = repairWindows[index]!;
           if (await cancelled()) return;
+          activity = {
+            label: `Repair round ${round}: window ${index + 1} of ${repairWindows.length}`,
+            detail: `${missing.length} paragraphs needed another reading pass`,
+            done: index,
+            total: repairWindows.length,
+            unit: "windows",
+          };
+          await reportActivity(activity);
           await extractWindow(window, true);
+          activity = { ...activity, done: index + 1 };
         }
         ledger.diagnostics.repairRoundsRun = round;
         await saveProgress(`repair-${round}`);
@@ -243,8 +282,10 @@ export async function processUnderstandingJob(
         paragraphs,
         chapters,
         log,
+        onActivity: reportActivity,
         onStep: async (step, cost) => {
           costUsd += cost;
+          if (activity) activity = { ...activity, done: Math.min(activity.done + 1, activity.total) };
           await saveProgress(`consolidate-${step}`);
         },
       });
@@ -281,6 +322,7 @@ export async function processUnderstandingJob(
       progress: { done: paragraphs.length, total: paragraphs.length },
       costUsd,
       model: lastModel,
+      activity: null,
       error: null,
       warning,
       coverage,

@@ -173,6 +173,7 @@ export function BookExtraction({ book }: { book: Book }) {
         phase: 'extract',
         coverage: null,
         progress: { done: 0, total: source.paragraphCount },
+        activity: null,
         checkpoint: null,
         attempts: 0,
         costUsd: 0,
@@ -238,6 +239,14 @@ export function BookExtraction({ book }: { book: Book }) {
 
   const activePage = result?.pages[pageIndex] ?? null;
   const busy = phase === 'downloading' || phase === 'extracting';
+  const activeJobProgress = job?.status === 'running' ? job.activity : null;
+  const activeJobPercent = activeJobProgress
+    ? activeJobProgress.total > 0
+      ? Math.round((activeJobProgress.done / activeJobProgress.total) * 100)
+      : 0
+    : job?.progress.total
+      ? Math.round((job.progress.done / job.progress.total) * 100)
+      : 0;
 
   if (!book.storagePath) {
     return (
@@ -421,12 +430,36 @@ export function BookExtraction({ book }: { book: Book }) {
               <div className='h-2 overflow-hidden rounded-full bg-muted'>
                 <div
                   className='h-full rounded-full bg-primary transition-all'
-                  style={{
-                    width: `${job.progress.total > 0 ? Math.round((job.progress.done / job.progress.total) * 100) : 0}%`,
-                  }}
+                  style={{ width: `${activeJobPercent}%` }}
                 />
               </div>
-              <p className='text-xs text-muted-foreground'>
+              <div className='flex items-start gap-2 text-xs text-muted-foreground'>
+                {job.status === 'running' && (
+                  <Loader2 className='mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin' aria-hidden='true' />
+                )}
+                <div className='space-y-1'>
+                  <p className='font-medium text-foreground'>
+                    {job.status === 'running' && activeJobProgress
+                      ? activeJobProgress.label
+                      : job.status === 'queued'
+                        ? 'Queued'
+                        : job.phase === 'extract'
+                          ? 'Reading the book'
+                          : job.phase === 'repair'
+                            ? 'Re-reading missing paragraphs'
+                            : 'Consolidating the whole-book model'}
+                  </p>
+                  {activeJobProgress ? (
+                    <>
+                      <p>{activeJobProgress.detail}</p>
+                      <p>
+                        {formatCount(activeJobProgress.done)} of {formatCount(activeJobProgress.total)}{' '}
+                        {activeJobProgress.unit} complete · Paragraph coverage{' '}
+                        {formatCount(job.progress.done)} of {formatCount(job.progress.total)}
+                      </p>
+                    </>
+                  ) : (
+                    <p>
                 {job.status === 'queued'
                   ? 'Queued. Start `npm run worker` if the worker is not running.'
                   : job.phase === 'extract'
@@ -434,7 +467,10 @@ export function BookExtraction({ book }: { book: Book }) {
                     : job.phase === 'repair'
                       ? 'Re-reading the paragraphs the first pass left undescribed.'
                       : 'Consolidating the whole-book model: merging entities, writing profiles, chapters and chronology.'}
-              </p>
+                    </p>
+                  )}
+                </div>
+              </div>
               {job.workerVersion && (
                 <p className='text-[11px] text-muted-foreground'>
                   {job.workerVersion} · {job.model}

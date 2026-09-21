@@ -124,6 +124,6 @@ export const repairRounds = envNumber("REPAIR_ROUNDS", 2, 0, 5);
 export const maxContextEntities = envNumber("MAX_CONTEXT_ENTITIES", 160, 20);
 export const profileBatchSize = envNumber("PROFILE_BATCH_SIZE", 8, 1, 30);
 
-export const workerVersion = "understand-v9";
+export const workerVersion = "understand-v10";
 export const workerId = crypto.randomUUID();
 export const staleLeaseMs = 2 * 60 * 1000;

@@ -24,6 +24,13 @@ export type ConsolidationContext = {
   ledger: Ledger;
   paragraphs: Paragraph[];
   chapters: Chapter[];
+  onActivity: (activity: {
+    label: string;
+    detail: string;
+    done: number;
+    total: number;
+    unit: string;
+  }) => Promise<void>;
   /** Called after each completed step so a checkpoint can be written. */
   onStep: (step: string, cost: number) => Promise<void>;
   log: (message: string) => void;
@@ -212,9 +219,18 @@ async function stepProfiles(context: ConsolidationContext): Promise<number> {
   const paragraphById = new Map(context.paragraphs.map((paragraph) => [paragraph.id, paragraph]));
   const nameOf = (id: string) => findEntity(ledger, id)?.canonicalName ?? id;
   const pending = entitiesByMentions(ledger).filter((entity) => !entity.profile);
+  const batchCount = Math.ceil(pending.length / profileBatchSize);
   let cost = 0;
   for (let offset = 0; offset < pending.length; offset += profileBatchSize) {
     const batch = pending.slice(offset, offset + profileBatchSize);
+    const batchNumber = offset / profileBatchSize + 1;
+    await context.onActivity({
+      label: `Writing entity profiles: batch ${batchNumber} of ${batchCount}`,
+      detail: `${batch.length} entities in this batch`,
+      done: batchNumber - 1,
+      total: batchCount,
+      unit: "batches",
+    });
     const payload = {
       entities: batch.map((entity) => ({
         entityId: entity.entityId,
@@ -269,12 +285,24 @@ async function stepChapters(context: ConsolidationContext): Promise<number> {
   const { ledger } = context;
   let cost = 0;
   const done = new Set(ledger.chapterSummaries.map((summary) => summary.chapterId));
-  for (const chapter of context.chapters) {
-    if (done.has(chapter.id)) continue;
-    const annotations = Object.values(ledger.annotations)
-      .filter((annotation) => annotation.chapterId === chapter.id)
-      .sort((left, right) => left.seq - right.seq);
-    if (annotations.length === 0) continue;
+  const pending = context.chapters
+    .filter((chapter) => !done.has(chapter.id))
+    .map((chapter) => ({
+      chapter,
+      annotations: Object.values(ledger.annotations)
+        .filter((annotation) => annotation.chapterId === chapter.id)
+        .sort((left, right) => left.seq - right.seq),
+    }))
+    .filter(({ annotations }) => annotations.length > 0);
+  for (let index = 0; index < pending.length; index += 1) {
+    const { chapter, annotations } = pending[index]!;
+    await context.onActivity({
+      label: `Summarizing chapter ${index + 1} of ${pending.length}`,
+      detail: chapter.title,
+      done: index,
+      total: pending.length,
+      unit: "chapters",
+    });
     const events = ledger.events.filter((event) => event.chapterId === chapter.id);
     const stride = Math.max(1, Math.ceil(annotations.length / 600));
     const { parsed, cost: callCost } = await callModel(
@@ -446,9 +474,27 @@ export async function runConsolidation(context: ConsolidationContext): Promise<v
       },
     },
   ];
-  for (const step of steps) {
+  const labels: Record<string, string> = {
+    prescan: "Scanning entity mentions",
+    merge: "Merging duplicate entities",
+    scan: "Enriching annotations",
+    profiles: "Writing entity profiles",
+    chapters: "Summarizing chapters",
+    chronology: "Ordering story chronology",
+    world: "Building world overview",
+    scenes: "Building scene ranges",
+  };
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index]!;
     if (ledger.consolidationSteps.includes(step.name)) continue;
     context.log(`consolidate: ${step.name}`);
+    await context.onActivity({
+      label: labels[step.name] ?? step.name,
+      detail: `Consolidation step ${index + 1} of ${steps.length}`,
+      done: index,
+      total: steps.length,
+      unit: "steps",
+    });
     const cost = await step.run();
     ledger.consolidationSteps.push(step.name);
     await context.onStep(step.name, cost);

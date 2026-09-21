@@ -52,6 +52,14 @@ export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancell
 /** Extraction annotates paragraphs, repair retries the ones it missed, consolidation runs on the ledger. */
 export type JobPhase = 'extract' | 'repair' | 'consolidate' | 'done';
 
+export type JobActivity = {
+  label: string;
+  detail: string;
+  done: number;
+  total: number;
+  unit: string;
+};
+
 export type PipelineJob = {
   jobId: string;
   type: string;
@@ -60,6 +68,7 @@ export type PipelineJob = {
   phase: JobPhase;
   coverage: ModelCoverage | null;
   progress: { done: number; total: number };
+  activity: JobActivity | null;
   checkpoint: { storagePath: string; windowIndex: number } | null;
   attempts: number;
   error?: string;
@@ -425,6 +434,7 @@ export async function enqueueUnderstandingJob(
     sourceId: source.sourceId,
     canonicalHash: source.canonicalHash,
     progress: { done: 0, total: source.paragraphCount },
+    activity: null,
     checkpoint: null,
     attempts: 0,
     error: null,
@@ -475,6 +485,7 @@ export function subscribePipelineJob(
         phase: (data.phase as JobPhase | undefined) ?? 'extract',
         coverage: (data.coverage as ModelCoverage | undefined) ?? null,
         progress: data.progress ?? { done: 0, total: 0 },
+        activity: (data.activity as JobActivity | undefined) ?? null,
         checkpoint: data.checkpoint ?? null,
         attempts: data.attempts ?? 0,
         error: data.error ?? undefined,
@@ -493,6 +504,7 @@ export async function retryPipelineJob(bookId: string, jobId: string): Promise<v
   await ensureAnonymousAuth();
   await updateDoc(doc(db, 'books', bookId, 'jobs', jobId), {
     status: 'queued_v3',
+    activity: null,
     error: null,
     finishedAt: null,
     updatedAt: serverTimestamp(),
