@@ -124,6 +124,21 @@ export const repairRounds = envNumber("REPAIR_ROUNDS", 2, 0, 5);
 export const maxContextEntities = envNumber("MAX_CONTEXT_ENTITIES", 160, 20);
 export const profileBatchSize = envNumber("PROFILE_BATCH_SIZE", 8, 1, 30);
 
+/**
+ * Episode size follows new.md: about one chapter or 10-20 minutes of reading.
+ * A Moment is one scene unit, long enough for a handful of Reading Beats.
+ */
+export const episodeTargetWords = envNumber("EPISODE_TARGET_WORDS", 3_500, 500);
+export const episodeMinWords = envNumber("EPISODE_MIN_WORDS", 1_500, 100);
+export const episodeMaxWords = envNumber("EPISODE_MAX_WORDS", 6_000, 1_000);
+export const momentTargetWords = envNumber("MOMENT_TARGET_WORDS", 450, 100);
+export const momentMinWords = envNumber("MOMENT_MIN_WORDS", 120, 20);
+export const momentMaxWords = envNumber("MOMENT_MAX_WORDS", 1_100, 300);
+/** Moment calls are independent of each other, so several run at once. */
+export const storyConcurrency = envNumber("STORY_CONCURRENCY", 4, 1, 12);
+/** Forecast only: what one generated image is expected to cost with the configured image model. */
+export const imageCostUsd = envNumber("IMAGE_COST_USD", 0.04, 0);
+
 export const workerVersion = "understand-v10";
 export const workerId = crypto.randomUUID();
 export const staleLeaseMs = 2 * 60 * 1000;

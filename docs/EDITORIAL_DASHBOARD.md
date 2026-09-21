@@ -272,19 +272,19 @@ Subjective visual or writing assessments appear as warnings and never block post
 
 ## Primary domain objects
 
-| Object | Purpose |
-| --- | --- |
-| Book | Root editorial and Reader identity |
-| SourceRevision | Original file, extracted text, structure, and approval state |
-| Paragraph | Permanently identified source unit after approval |
-| BookBibleEntry | Source-supported narrative fact with locked-field metadata |
-| EpisodePlan | Whole-book episode boundary and purpose |
-| StoryMomentPlan | Internal plan for a future or posted Story Moment |
-| ImageCandidate | One generated or reused image option |
-| PostedStoryMoment | Canonical Reader-visible Story Moment and active version |
-| Episode | Ordered collection of posted Story Moments and completion state |
-| Job | Durable unit of local-worker activity |
-| CostRecord | Estimated and actual model usage cost |
+| Object            | Purpose                                                         |
+| ----------------- | --------------------------------------------------------------- |
+| Book              | Root editorial and Reader identity                              |
+| SourceRevision    | Original file, extracted text, structure, and approval state    |
+| Paragraph         | Permanently identified source unit after approval               |
+| BookBibleEntry    | Source-supported narrative fact with locked-field metadata      |
+| EpisodePlan       | Whole-book episode boundary and purpose                         |
+| StoryMomentPlan   | Internal plan for a future or posted Story Moment               |
+| ImageCandidate    | One generated or reused image option                            |
+| PostedStoryMoment | Canonical Reader-visible Story Moment and active version        |
+| Episode           | Ordered collection of posted Story Moments and completion state |
+| Job               | Durable unit of local-worker activity                           |
+| CostRecord        | Estimated and actual model usage cost                           |
 
 ## Success criteria
 

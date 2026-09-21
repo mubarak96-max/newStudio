@@ -11,16 +11,21 @@ import {
   windowOverlapParagraphs,
   workerVersion,
 } from "./config.mts";
-import { isClaimable, processUnderstandingJob } from "./understand-job.mts";
+import { isClaimable } from "./job-lease.mts";
+import { beatsJob } from "./beats/job.mts";
+import { processJob } from "./job-runner.mts";
+import { storyJob } from "./story/job.mts";
+import { processUnderstandingJob } from "./understand-job.mts";
+import { visualsJob } from "./visuals/job.mts";
 
-type JobRef = { bookId: string; jobId: string };
+type JobRef = { bookId: string; jobId: string; type: string };
 
 let stopping = false;
 let collectionGroupJobsUnavailable = false;
 
 function toJobRef(snapshot: QueryDocumentSnapshot): JobRef | null {
   const bookId = snapshot.ref.parent.parent?.id;
-  return bookId ? { bookId, jobId: snapshot.id } : null;
+  return bookId ? { bookId, jobId: snapshot.id, type: String(snapshot.data().type ?? "understand") } : null;
 }
 
 /** gRPC code 9 is FAILED_PRECONDITION, which is how a missing index surfaces. */
@@ -69,7 +74,7 @@ async function findClaimableJob(): Promise<JobRef | null> {
       .where("status", "in", statuses)
       .get();
     const claimable = jobs.docs.find((item) => isClaimable(item.data(), staleLeaseMs));
-    if (claimable) return { bookId: book.id, jobId: claimable.id };
+    if (claimable) return toJobRef(claimable);
   }
   return null;
 }
@@ -89,7 +94,13 @@ async function main(): Promise<void> {
 
   while (!stopping) {
     const job = await findClaimableJob();
-    if (job) {
+    if (job?.type === "story") {
+      await processJob(storyJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job?.type === "beats") {
+      await processJob(beatsJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job?.type === "visuals") {
+      await processJob(visualsJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job) {
       await processUnderstandingJob(job.bookId, job.jobId, staleLeaseMs);
     } else {
       await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));

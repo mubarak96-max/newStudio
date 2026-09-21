@@ -31,6 +31,11 @@ export type JsonCall = {
   models: string[];
   label: string;
   maxTokens?: number;
+  /**
+   * Try the next model after a truncated answer. For callers that cannot split
+   * their input, truncation is usually a model looping, not an input too large.
+   */
+  nextModelOnTruncation?: boolean;
 };
 
 export type JsonCallResult = { parsed: unknown; cost: number; model: string };
@@ -142,7 +147,10 @@ export async function callJsonModel(call: JsonCall): Promise<JsonCallResult> {
           sawContentFilter = true;
           break;
         }
-        if (isLengthTruncation(error)) throw error;
+        if (isLengthTruncation(error)) {
+          if (!call.nextModelOnTruncation) throw error;
+          break;
+        }
         if (attempt < 2)
           await new Promise((resolve) => setTimeout(resolve, attempt * 1_500));
       }

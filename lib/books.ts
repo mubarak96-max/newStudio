@@ -57,6 +57,8 @@ export type Book = {
     lastJobId?: string;
     updatedAt: string;
   };
+  /** Latest job per pipeline stage, so a page can follow its stage after the pipeline moves on. */
+  pipelineJobs?: Record<string, string>;
   createdAt?: Date | null;
 };
 
@@ -91,6 +93,7 @@ function snapToBook(snap: QueryDocumentSnapshot<DocumentData>): Book {
     canonical: data.canonical,
     stats: data.stats,
     pipeline: data.pipeline,
+    pipelineJobs: data.pipelineJobs,
     createdAt,
   };
 }

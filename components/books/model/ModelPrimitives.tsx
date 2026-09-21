@@ -49,7 +49,7 @@ export function EvidenceRow({
       </div>
       {detail && <p className='mt-1 text-xs text-muted-foreground'>{detail}</p>}
       {paragraphIds.length > 0 && (
-        <p className='mt-2 font-mono text-[11px] text-primary'>
+        <p className='mt-2 wrap-anywhere font-mono text-[11px] text-primary'>
           {paragraphIds.slice(0, 8).join(', ')}
           {paragraphIds.length > 8 ? ` +${paragraphIds.length - 8}` : ''}
         </p>
@@ -70,7 +70,7 @@ export function Badge({
       ? 'border-amber-500/50 text-amber-600'
       : 'border-border text-muted-foreground';
   return (
-    <span className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${toneClass}`}>
+    <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] capitalize ${toneClass}`}>
       {children}
     </span>
   );

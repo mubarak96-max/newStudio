@@ -49,8 +49,18 @@ export type CanonicalSource = {
 
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
-/** Extraction annotates paragraphs, repair retries the ones it missed, consolidation runs on the ledger. */
-export type JobPhase = 'extract' | 'repair' | 'consolidate' | 'done';
+/**
+ * Understanding: extraction annotates paragraphs, repair retries the ones it
+ * missed, consolidation runs on the ledger. Story planning: map, episodes, moments.
+ */
+export type JobPhase =
+  | 'extract'
+  | 'repair'
+  | 'consolidate'
+  | 'map'
+  | 'episodes'
+  | 'moments'
+  | 'done';
 
 export type JobActivity = {
   label: string;

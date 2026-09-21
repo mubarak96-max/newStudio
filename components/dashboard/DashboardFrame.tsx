@@ -64,7 +64,7 @@ export function DashboardFrame({
         <main
           className={
             showSidebar
-              ? 'w-full flex-1 px-5 py-8 lg:px-8'
+              ? 'w-full min-w-0 flex-1 px-5 py-8 lg:px-8'
               : 'mx-auto w-full max-w-5xl px-6 py-10'
           }>
           {showSidebar ? (
