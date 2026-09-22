@@ -1,4 +1,5 @@
 import { asNumber, asString, records } from "../coerce.mts";
+import { fetchWithRetry } from "../net.mts";
 import type { ImageReference } from "./images.mts";
 
 /**
@@ -50,7 +51,7 @@ export function batchLine(request: BatchRequest): string {
 }
 
 async function uploadJsonl(body: Buffer, displayName: string): Promise<string> {
-  const start = await fetch(`${base}/upload/v1beta/files`, {
+  const start = await fetchWithRetry(`${base}/upload/v1beta/files`, {
     method: "POST",
     headers: {
       "x-goog-api-key": apiKey(),
@@ -99,7 +100,7 @@ export type BatchStatus = {
 };
 
 export async function getBatch(name: string): Promise<BatchStatus> {
-  const response = await fetch(`${base}/v1beta/${name}`, { headers: { "x-goog-api-key": apiKey() } });
+  const response = await fetchWithRetry(`${base}/v1beta/${name}`, { headers: { "x-goog-api-key": apiKey() } });
   const body = JSON.parse(await checked(response, "batch status")) as Record<string, unknown>;
   const metadata = (body.metadata ?? {}) as Record<string, unknown>;
   const result = (body.response ?? (metadata.output as Record<string, unknown> | undefined) ?? {}) as Record<string, unknown>;
@@ -114,7 +115,7 @@ export async function getBatch(name: string): Promise<BatchStatus> {
 }
 
 export async function downloadResults(fileName: string): Promise<Record<string, unknown>[]> {
-  const response = await fetch(`${base}/download/v1beta/${fileName}:download?alt=media`, {
+  const response = await fetchWithRetry(`${base}/download/v1beta/${fileName}:download?alt=media`, {
     headers: { "x-goog-api-key": apiKey() },
   });
   return (await checked(response, "results download"))

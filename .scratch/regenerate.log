@@ -1,0 +1,42 @@
+(node:18944) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/800sa/Desktop/newproject/lib/story-types.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\800sa\Desktop\newproject\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+cut-outs 18
+[images-v2] completed: layer__comp_0b61b98d7d12b0c5__fg_ch_john version 16bac4a6-f2ab-42e0-a454-1843682e2a74 (768x1376, 2 reference(s)), $0.0343.
+1/18 completed layer__comp_0b61b98d7d12b0c5__fg_ch_john version 16bac4a6-f2ab-42e0-a454-1843682e2a74 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_3e99491cf5450309__fg_ch_john version d2615f9c-7b3f-4292-a0e0-82a8dc03ce71 (768x1376, 2 reference(s)), $0.0343.
+2/18 completed layer__comp_3e99491cf5450309__fg_ch_john version d2615f9c-7b3f-4292-a0e0-82a8dc03ce71 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_5487230642369ec3__fg_ch_john version 3c502e9c-be4b-45d4-b068-f185bcaa78c3 (768x1376, 2 reference(s)), $0.0343.
+3/18 completed layer__comp_5487230642369ec3__fg_ch_john version 3c502e9c-be4b-45d4-b068-f185bcaa78c3 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_5487230642369ec3__fg_ch_jennie version c00a1962-f135-4796-bc27-d7c55b82d2c7 (768x1376, 2 reference(s)), $0.0343.
+4/18 completed layer__comp_5487230642369ec3__fg_ch_jennie version c00a1962-f135-4796-bc27-d7c55b82d2c7 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_5f7c35c3fe159150__fg_ch_john version 2a538ae9-75a2-4563-9a89-fdbb49149daa (768x1376, 2 reference(s)), $0.0343.
+5/18 completed layer__comp_5f7c35c3fe159150__fg_ch_john version 2a538ae9-75a2-4563-9a89-fdbb49149daa (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_6dffbb01e5bba968__fg_ch_jennie version c0fa2a00-6e63-4018-805f-be0a8dd3f8ea (768x1376, 2 reference(s)), $0.0343.
+6/18 completed layer__comp_6dffbb01e5bba968__fg_ch_jennie version c0fa2a00-6e63-4018-805f-be0a8dd3f8ea (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_6dffbb01e5bba968__fg_ch_john version 70151bfd-f6b2-4b34-a80e-de31e572d128 (768x1376, 2 reference(s)), $0.0343.
+7/18 completed layer__comp_6dffbb01e5bba968__fg_ch_john version 70151bfd-f6b2-4b34-a80e-de31e572d128 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_7b7cc7d259167c3e__fg_ch_jennie version 1b5a6a9b-dc37-433e-ad07-ba0eb719965b (768x1376, 2 reference(s)), $0.0343.
+8/18 completed layer__comp_7b7cc7d259167c3e__fg_ch_jennie version 1b5a6a9b-dc37-433e-ad07-ba0eb719965b (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_7b7cc7d259167c3e__fg_ch_john version 912c39c5-05f0-4a6f-992b-af376cbcf9bb (768x1376, 2 reference(s)), $0.0343.
+9/18 completed layer__comp_7b7cc7d259167c3e__fg_ch_john version 912c39c5-05f0-4a6f-992b-af376cbcf9bb (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_836ec68b8e42beb6__fg_ch_john version d532104a-d84d-4115-b3c7-c964dde1c213 (768x1376, 2 reference(s)), $0.0343.
+10/18 completed layer__comp_836ec68b8e42beb6__fg_ch_john version d532104a-d84d-4115-b3c7-c964dde1c213 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_b959fc92255c5750__fg_ch_john version d9cd585a-d0b2-4e1a-92fd-efac080eb6a8 (768x1376, 2 reference(s)), $0.0343.
+11/18 completed layer__comp_b959fc92255c5750__fg_ch_john version d9cd585a-d0b2-4e1a-92fd-efac080eb6a8 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_bbe4a5304b375ff0__fg_ch_john version 67024129-c293-4768-87c8-b018b26dc0f2 (768x1376, 2 reference(s)), $0.0343.
+12/18 completed layer__comp_bbe4a5304b375ff0__fg_ch_john version 67024129-c293-4768-87c8-b018b26dc0f2 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_be03f111a255320e__fg_ch_john version 3b7dc9a6-807c-48a0-a2a4-5a91822827e0 (768x1376, 2 reference(s)), $0.0343.
+13/18 completed layer__comp_be03f111a255320e__fg_ch_john version 3b7dc9a6-807c-48a0-a2a4-5a91822827e0 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_d01a1fdbd156a1ca__fg_ch_jennie version 03914487-9354-44e4-9ff1-5babf5488066 (768x1376, 2 reference(s)), $0.0343.
+14/18 completed layer__comp_d01a1fdbd156a1ca__fg_ch_jennie version 03914487-9354-44e4-9ff1-5babf5488066 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_d3ff7d396c799789__fg_ch_john version 1ef7bc5f-566c-409e-99a2-0e20595fb0c4 (768x1376, 2 reference(s)), $0.0343.
+15/18 completed layer__comp_d3ff7d396c799789__fg_ch_john version 1ef7bc5f-566c-409e-99a2-0e20595fb0c4 (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_dd329ae550ac2814__fg_ch_john version 9ac46ff0-4533-4a5e-8d68-fcd8538ad41d (768x1376, 2 reference(s)), $0.0343.
+16/18 completed layer__comp_dd329ae550ac2814__fg_ch_john version 9ac46ff0-4533-4a5e-8d68-fcd8538ad41d (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_e7af89181c4dbb75__fg_ch_john version 3d3a2f75-1dab-4979-8de0-f3b549903d6a (768x1376, 2 reference(s)), $0.0343.
+17/18 completed layer__comp_e7af89181c4dbb75__fg_ch_john version 3d3a2f75-1dab-4979-8de0-f3b549903d6a (768x1376, 2 reference(s))
+[images-v2] completed: layer__comp_fba3caf8c9d1b795__fg_ch_john version 17884499-7cee-4225-bc86-0772c1a51c57 (768x1376, 2 reference(s)), $0.0343.
+18/18 completed layer__comp_fba3caf8c9d1b795__fg_ch_john version 17884499-7cee-4225-bc86-0772c1a51c57 (768x1376, 2 reference(s))
+done, $0.617

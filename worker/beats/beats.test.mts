@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { EntityVisualPlan, Moment, VisualProfile } from "../../lib/story-types.ts";
-import { buildCompositionPlans, forecastOf } from "../visuals/compositions.mts";
+import { buildCompositionPlans, figureLayers, forecastOf, placeFigure } from "../visuals/compositions.mts";
 import { assignDepth, planStage25d } from "../visuals/stage25d.mts";
 import { cameraMoves, durationFor, posesFor, splitSentences } from "./camera.mts";
 
@@ -89,6 +89,39 @@ test("foreground depth bands stack without overlap and a close shot meshes its n
   assert.equal(layers[1]!.renderMode, "plane");
   const held = planStage25d({ maxPanX: 0, maxPanY: 0, maxZoom: 1, maxTilt: 0 }, layers);
   assert.ok(held.plannedSafeCamera.maxPanX >= 0.05, "a still composition still allows a gentle drift");
+});
+
+test("figures are spread across the frame and the nearest is drawn largest", () => {
+  const solo = placeFigure(0, 1, "medium");
+  assert.equal(solo.centerX, 0.5);
+  const left = placeFigure(0, 3, "wide");
+  const right = placeFigure(2, 3, "wide");
+  assert.ok(left.centerX < 0.5 && right.centerX > 0.5);
+  assert.ok(right.heightFraction > left.heightFraction);
+  assert.ok(placeFigure(0, 1, "close").heightFraction > placeFigure(0, 1, "wide").heightFraction);
+});
+
+test("several figures share one cast layer; one figure keeps its own layer", () => {
+  const plans = new Map<string, EntityVisualPlan>();
+  const entityOf = (id: string) => ({ name: id === "ch_a" ? "Ann" : "Ben", type: "character" });
+  const shot = { description: "Ann talks to Ben", framing: "medium" };
+  const cast = figureLayers(
+    [
+      { entityId: "ch_a", stateId: null },
+      { entityId: "ch_b", stateId: null },
+    ],
+    shot,
+    profile,
+    plans,
+    entityOf,
+  );
+  assert.equal(cast.length, 1);
+  assert.equal(cast[0]!.layerId, "fg_cast");
+  assert.deepEqual(cast[0]!.entityIds, ["ch_a", "ch_b"]);
+  assert.match(cast[0]!.prompt, /each exactly once/);
+  const solo = figureLayers([{ entityId: "ch_a", stateId: null }], shot, profile, plans, entityOf);
+  assert.equal(solo[0]!.layerId, "fg_ch_a");
+  assert.match(solo[0]!.prompt, /Draw only Ann/);
 });
 
 test("Beats sharing a reuseKey share one composition", () => {

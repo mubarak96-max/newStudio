@@ -34,7 +34,13 @@ export function ImagesPage({ bookId }: { bookId: string }) {
     const [visuals, story] = await Promise.all([loadVisualPlan(bookId, lineage), loadStoryPlan(bookId, lineage)]);
     return { visuals, episodes: story.episodes };
   }, [bookId]);
-  const { book, data, loading, error, nameOf } = useBookData(bookId, load);
+  const { book, data, loading, error, nameOf, refresh } = useBookData(bookId, load);
+  // Images arrive live, but the plan is loaded once; reload it on return so a
+  // re-planned composition never shows its old layers.
+  useEffect(() => {
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [refresh]);
   const [assets, setAssets] = useState<Map<string, VisualAsset>>(new Map());
   const [assetError, setAssetError] = useState<string | null>(null);
   const [view, setView] = useState<string>('references');
@@ -119,17 +125,26 @@ export function ImagesPage({ bookId }: { bookId: string }) {
 
   const layerDependencies = (composition: CompositionPlan, layerId: string): AssetDependency[] => {
     const layer = composition.layers.find((item) => item.layerId === layerId);
-    if (!layer?.entityId) return [];
+    if (!layer) return [];
     if (layer.role === 'background') {
-      return [{ label: `${nameOf(layer.entityId)} reference`, approved: isApproved(assetTargetId(referenceTarget(layer.entityId))) }];
+      return layer.entityId
+        ? [{ label: `${nameOf(layer.entityId)} reference`, approved: isApproved(assetTargetId(referenceTarget(layer.entityId))) }]
+        : [];
     }
-    const stateId = composition.entityStatesUsed.find((state) => state.entityId === layer.entityId)?.stateId ?? null;
-    const variantApproved = stateId ? isApproved(assetTargetId(variantTarget(layer.entityId, stateId))) : false;
+    const drawn = layer.entityIds?.length ? layer.entityIds : layer.entityId ? [layer.entityId] : [];
     return [
       {
-        label: variantApproved ? `${nameOf(layer.entityId)} state variant` : `${nameOf(layer.entityId)} reference`,
-        approved: variantApproved || isApproved(assetTargetId(referenceTarget(layer.entityId))),
+        label: 'this scene’s background (for scale and light)',
+        approved: isApproved(assetTargetId(layerTarget(composition.compositionId, 'background'))),
       },
+      ...drawn.map((entityId) => {
+        const stateId = composition.entityStatesUsed.find((state) => state.entityId === entityId)?.stateId ?? null;
+        const variantApproved = stateId ? isApproved(assetTargetId(variantTarget(entityId, stateId))) : false;
+        return {
+          label: variantApproved ? `${nameOf(entityId)} state variant` : `${nameOf(entityId)} reference`,
+          approved: variantApproved || isApproved(assetTargetId(referenceTarget(entityId))),
+        };
+      }),
     ];
   };
 
@@ -139,8 +154,50 @@ export function ImagesPage({ bookId }: { bookId: string }) {
     .filter((composition) => composition.originEpisodeId === view)
     .flatMap((composition) => composition.layers.map((layer) => layerTarget(composition.compositionId, layer.layerId)));
   const episodeLayers = episodeLayerTargets.map(assetTargetId);
+  // Every image of the current plan whose newest version still waits for a
+  // decision, wherever it lives, so nothing new is missed behind a tab.
+  const planTargets = useMemo(() => {
+    const byId = new Map<string, { target: AssetTarget; composition: CompositionPlan | null }>();
+    for (const target of referenceTargets) byId.set(assetTargetId(target), { target, composition: null });
+    for (const composition of compositions) {
+      for (const layer of composition.layers) {
+        const target = layerTarget(composition.compositionId, layer.layerId);
+        byId.set(assetTargetId(target), { target, composition });
+      }
+    }
+    return byId;
+  }, [referenceTargets, compositions]);
+  const toReview = [...assets.values()]
+    .filter((asset) => {
+      const latest = asset.versions.at(-1);
+      return latest && latest.versionId !== asset.approvedVersionId && asset.status !== 'generating' && asset.status !== 'batched';
+    })
+    .flatMap((asset) => {
+      const entry = planTargets.get(asset.targetId);
+      return entry ? [{ asset, ...entry }] : [];
+    });
+  const describe = ({ target, composition }: { target: AssetTarget; composition: CompositionPlan | null }) => {
+    const entity = entities.find((item) => item.entityId === target.entityId);
+    if (target.kind === 'reference') return { title: `${entity?.name ?? target.entityId} — reference sheet`, subtitle: 'reference', prompt: entity?.referenceSheet.prompt ?? '' };
+    if (target.kind === 'variant') {
+      const variant = target.stateId ? entity?.stateVariants?.[target.stateId] : undefined;
+      return { title: `${entity?.name ?? target.entityId} — ${variant?.label ?? target.stateId}`, subtitle: 'state variant', prompt: variant?.spec ?? '' };
+    }
+    const layer = composition?.layers.find((item) => item.layerId === target.layerId);
+    const drawn = layer?.entityIds?.length ? layer.entityIds : layer?.entityId ? [layer.entityId] : [];
+    const episode = episodes.find((item) => item.episodeId === composition?.originEpisodeId);
+    return {
+      title: `${layer?.role ?? 'layer'}: ${drawn.map(nameOf).join(' + ') || 'scene'}`,
+      subtitle: `Episode ${episode?.order ?? '?'} · ${composition?.shotSnapshot.description.slice(0, 90) ?? ''}`,
+      prompt: layer?.prompt ?? '',
+    };
+  };
+  const reviewing = view === 'review';
+
   // What "select all" means on the current tab: the cards on screen.
-  const viewTargets: AssetTarget[] = selectedEpisode
+  const viewTargets: AssetTarget[] = reviewing
+    ? toReview.map((item) => item.target)
+    : selectedEpisode
     ? episodeLayerTargets
     : entities
         .filter((entity) => typeFilter === 'all' || entity.type === typeFilter)
@@ -167,7 +224,11 @@ export function ImagesPage({ bookId }: { bookId: string }) {
       ) : (
         <>
           <div className='flex flex-wrap gap-2'>
-            {[{ id: 'references', label: 'References' }, ...episodes.map((episode) => ({ id: episode.episodeId, label: `Episode ${episode.order}` }))].map((tab) => (
+            {[
+              { id: 'review', label: `To review (${toReview.length})` },
+              { id: 'references', label: 'References' },
+              ...episodes.map((episode) => ({ id: episode.episodeId, label: `Episode ${episode.order}` })),
+            ].map((tab) => (
               <button
                 key={tab.id}
                 type='button'
@@ -190,6 +251,35 @@ export function ImagesPage({ bookId }: { bookId: string }) {
             onSubmit={submitBatch}
             batches={batches}
           />
+
+          {reviewing &&
+            (toReview.length === 0 ? (
+              <div className='rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground'>
+                Nothing waiting: every generated image of the current plan is approved.
+              </div>
+            ) : (
+              <div className='grid gap-4 xl:grid-cols-2'>
+                {toReview.map((item) => {
+                  const described = describe(item);
+                  return (
+                    <AssetCard
+                      key={item.asset.targetId}
+                      bookId={bookId}
+                      title={described.title}
+                      subtitle={described.subtitle}
+                      asset={item.asset}
+                      plannedPrompt={described.prompt}
+                      dependencies={
+                        item.composition && item.target.layerId ? layerDependencies(item.composition, item.target.layerId) : []
+                      }
+                      onGenerate={generate(item.target)}
+                      onApprove={approve(item.target)}
+                      {...batchProps(item.target)}
+                    />
+                  );
+                })}
+              </div>
+            ))}
 
           {view === 'references' && (
             <>
@@ -280,7 +370,7 @@ export function ImagesPage({ bookId }: { bookId: string }) {
                             <AssetCard
                               bookId={bookId}
                               key={layer.layerId}
-                              title={layer.entityId ? `${layer.role}: ${nameOf(layer.entityId)}` : layer.role}
+                              title={`${layer.role}: ${(layer.entityIds?.length ? layer.entityIds : layer.entityId ? [layer.entityId] : []).map(nameOf).join(' + ') || 'scene'}`}
                               subtitle={`depth ${layer.depthRange[0]}–${layer.depthRange[1]} · ${layer.renderMode}${layer.transparent ? ' · cut-out' : ''}`}
                               asset={assets.get(assetTargetId(target))}
                               plannedPrompt={layer.prompt}

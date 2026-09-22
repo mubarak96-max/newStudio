@@ -43,15 +43,17 @@ export function useStageJob(bookId: string, book: Book | null, type: PipelineJob
 
   const running = job?.status === 'queued' || job?.status === 'running';
 
-  const start = async () => {
+  const start = async (extra: Record<string, unknown> = {}) => {
     if (!book?.activeSourceId || !book.canonical?.hash || running) return;
     setError(null);
     try {
       setStartedJobId(
-        await enqueuePipelineJob(bookId, type, {
-          sourceId: book.activeSourceId,
-          canonicalHash: book.canonical.hash,
-        })
+        await enqueuePipelineJob(
+          bookId,
+          type,
+          { sourceId: book.activeSourceId, canonicalHash: book.canonical.hash },
+          extra
+        )
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start the job.');
@@ -135,7 +137,7 @@ export function StageActions({
       {failed && (
         <button
           type='button'
-          onClick={onResume}
+          onClick={() => onResume()}
           className='rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent'
         >
           Resume
@@ -143,7 +145,7 @@ export function StageActions({
       )}
       <button
         type='button'
-        onClick={onStart}
+        onClick={() => onStart()}
         disabled={running || disabled}
         className='rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50'
       >

@@ -85,7 +85,21 @@ export const imageBatchJob: JobDefinition<Record<string, never>> = {
       }
       if (requests.length === 0) continue;
       const batchId = randomUUID();
-      const providerName = await submitBatch(geminiImageModel, requests, `${bookId}-${batchId}`);
+      let providerName: string;
+      try {
+        providerName = await submitBatch(geminiImageModel, requests, `${bookId}-${batchId}`);
+      } catch (error) {
+        // Studio marks images "batched" as soon as they are queued; a rejected
+        // submission must release them, or the cards wait forever.
+        const reason = error instanceof Error ? error.message : String(error);
+        const hint = /FAILED_PRECONDITION/.test(reason)
+          ? " Gemini refused batch mode for this API key's project; batch mode needs billing enabled in Google AI Studio."
+          : "";
+        for (const item of items) {
+          await markAsset(bookId, lineage, item.target, { status: "failed", error: `${reason}${hint}`.slice(0, 1_000), batchId: null });
+        }
+        throw new Error(`${reason}${hint}`);
+      }
       const batch: ImageBatch = {
         ...lineage,
         batchId,

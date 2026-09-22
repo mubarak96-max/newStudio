@@ -62,6 +62,7 @@ export const pipelineStages = {
   story: 'story_plan',
   beats: 'beats',
   visuals: 'visual_plan',
+  compose: 'compose_25d',
 } as const;
 
 export type PipelineJobType = keyof typeof pipelineStages;
@@ -69,12 +70,15 @@ export type PipelineJobType = keyof typeof pipelineStages;
 export async function enqueuePipelineJob(
   bookId: string,
   type: PipelineJobType,
-  lineage: { sourceId: string; canonicalHash: string }
+  lineage: { sourceId: string; canonicalHash: string },
+  /** Job-specific parameters, such as the Episode an assembly job is for. */
+  extra: Record<string, unknown> = {}
 ): Promise<string> {
   const store = database();
   await ensureAnonymousAuth();
   const stage = pipelineStages[type];
   const jobRef = await addDoc(collection(store, 'books', bookId, 'jobs'), {
+    ...extra,
     type,
     stage,
     status: 'queued_v3',

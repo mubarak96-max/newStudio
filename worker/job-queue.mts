@@ -10,6 +10,8 @@ export const jobStages = {
   image: "images",
   /** Owner-triggered Gemini batch submission; results are collected by the batch poller. */
   imageBatch: "images",
+  /** Owner-triggered per Episode: keys cut-outs, measures layers and fits Beat cameras. */
+  compose: "compose_25d",
 } as const;
 
 export type ChainedJobType = keyof typeof jobStages;

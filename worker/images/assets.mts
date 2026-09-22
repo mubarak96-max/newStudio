@@ -13,7 +13,7 @@ import { db } from "../config.mts";
 import { extensionFor, imageSize } from "../providers/image-files.mts";
 import type { ImageReference } from "../providers/images.mts";
 import { getObject, publicUrl, putObject, s3Config } from "../storage/s3.mts";
-import { planImage, type EntityForImage, type PlannedImage } from "./request.mts";
+import { planImage, sceneReference, type EntityForImage, type PlannedImage } from "./request.mts";
 
 export type PreparedImage = {
   target: AssetTarget;
@@ -59,7 +59,11 @@ export async function prepareImage(bookId: string, target: AssetTarget, note: st
       break;
     }
   }
-  return { target, targetId: assetTargetId(target), note, planned, references, pinned };
+  // A cut-out is told the first reference is its scene; without an approved
+  // background that sentence would point at the character sheet instead.
+  const sceneAttached = pinned.some((pin) => pin.targetId.endsWith("__background"));
+  const prompt = sceneAttached ? planned.prompt : planned.prompt.replace(` ${sceneReference}`, "");
+  return { target, targetId: assetTargetId(target), note, planned: { ...planned, prompt }, references, pinned };
 }
 
 export async function markAsset(

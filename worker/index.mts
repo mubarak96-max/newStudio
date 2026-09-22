@@ -14,6 +14,7 @@ import {
 } from "./config.mts";
 import { isClaimable } from "./job-lease.mts";
 import { beatsJob } from "./beats/job.mts";
+import { composeJob } from "./compose/job.mts";
 import { imageBatchJob, pollImageBatches } from "./images/batch.mts";
 import { imageJob } from "./images/job.mts";
 import { processJob } from "./job-runner.mts";
@@ -116,6 +117,8 @@ async function main(): Promise<void> {
       await processJob(imageJob, job.bookId, job.jobId, staleLeaseMs);
     } else if (job?.type === "imageBatch") {
       await processJob(imageBatchJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job?.type === "compose") {
+      await processJob(composeJob, job.bookId, job.jobId, staleLeaseMs);
     } else if (job?.type === "understand") {
       await processUnderstandingJob(job.bookId, job.jobId, staleLeaseMs);
     } else if (job) {

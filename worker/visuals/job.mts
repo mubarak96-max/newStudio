@@ -43,6 +43,20 @@ export const visualsJob: JobDefinition<VisualsState> = {
       throw new Error("No Reading Beats exist for the active source. Run Beat building first.");
     }
 
+    // A compositions-only run rebuilds layer plans from the existing profile
+    // and bible, with no model calls, so approved images keep their targets.
+    const job = (await db.doc(`books/${bookId}/jobs/${context.jobId}`).get()).data();
+    if (job?.onlyCompositions && state.phase === "profile") {
+      const book = (await db.doc(`books/${bookId}`).get()).data();
+      if (!book?.visualProfile) throw new Error("No visual profile exists yet; run full visual planning first.");
+      state.profile = book.visualProfile as VisualProfile;
+      for (const entity of inputs.entities) {
+        const stored = (await db.doc(`books/${bookId}/entities/${entity.entityId}`).get()).data();
+        if (stored?.visual?.spec) state.plans[entity.entityId] = { entityId: entity.entityId, fills: stored.fills ?? [], ...stored.visual };
+      }
+      state.phase = "compositions";
+    }
+
     if (state.phase === "profile") {
       await context.onActivity({ label: "Defining the book's visual profile", detail: "Style, palette, light and lens", done: 0, total: 1, unit: "steps" });
       const book = (await db.doc(`books/${bookId}`).get()).data();

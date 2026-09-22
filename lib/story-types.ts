@@ -85,7 +85,7 @@ export type Episode = Lineage & {
   storyParagraphCount: number;
   wordCount: number;
   storyPlan: EpisodeStoryPlan | null;
-  stageStatus: { planned: StageState; moments: StageState; beats?: StageState };
+  stageStatus: { planned: StageState; moments: StageState; beats?: StageState; composed?: StageState };
   momentCount: number;
   beatCount?: number;
   warnings: string[];
@@ -250,6 +250,19 @@ export type LayerPlan = {
   depthRange: [number, number];
   renderMode: 'plane' | 'depthMesh';
   mesh: { segmentsX: number; segmentsY: number; displacementScale: number } | null;
+  /**
+   * Where a cut-out sits in the 9:16 frame, as fractions of the frame: its
+   * horizontal centre, its height, and how far down its lowest visible point
+   * is. Figures generated separately would otherwise all land centred on top
+   * of each other.
+   */
+  placement?: { centerX: number; heightFraction: number; baseline: number } | null;
+  /**
+   * Everyone drawn in this layer. A shot with several characters gets one
+   * cast layer holding all of them: generated separately, figures came back
+   * duplicated and on top of each other.
+   */
+  entityIds?: string[];
 };
 
 /**
@@ -267,6 +280,41 @@ export type Stage25dPlan = {
   backgroundCanvas: { width: number; height: number };
   /** Relative on-screen movement per layer for a camera pan of 1; the background moves least. */
   parallax: Record<string, number>;
+};
+
+/** A layer as the player uses it: the approved image, keyed to real transparency when it was a cut-out. */
+export type AssembledLayer = {
+  layerId: string;
+  role: LayerPlan['role'];
+  entityId: string | null;
+  /** Everyone drawn in the layer; a cast layer holds several figures. */
+  entityIds?: string[];
+  url: string;
+  s3Key: string;
+  width: number;
+  height: number;
+  zOrder: number;
+  depthRange: [number, number];
+  /** Share of the image that stays visible; a cut-out that is all or nothing is flagged. */
+  opaqueFraction: number;
+  /** Normalized top-left box around the visible pixels, used for tap targets. */
+  bbox: { x: number; y: number; w: number; h: number } | null;
+  /** How far the layer moves for a camera pan of 1; nearer layers move more. */
+  parallax: number;
+  /** Scale applied so the layer covers the frame through the whole camera range. */
+  scale: number;
+  sourceVersionId: string;
+};
+
+/** Measured from the actual images; the Beats' cameras are clamped to `safeCamera`. */
+export type CompositionAssembly = {
+  status: 'composed' | 'issues';
+  layers: AssembledLayer[];
+  safeCamera: { maxPanX: number; maxPanY: number; maxZoom: number; maxTilt: number };
+  issues: string[];
+  /** Approved version per layer at assembly time; a change marks the assembly stale. */
+  fingerprint: string;
+  composedAt: string;
 };
 
 export type CompositionPlan = Lineage & {
@@ -287,6 +335,8 @@ export type CompositionPlan = Lineage & {
   /** Mobile first: every layer is generated on the same 9:16 phone canvas. */
   responsive: { focalPoint: [number, number]; aspect: '9:16' };
   status: 'planned';
+  /** Written by the 2.5D assembly job once every layer has an approved image. */
+  assembly?: CompositionAssembly;
 };
 
 /**

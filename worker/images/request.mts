@@ -31,6 +31,10 @@ export type PlannedImage = {
 export const mobileAspect = "9:16";
 const mobileFraming =
   "Compose for a vertical 9:16 phone screen: tall portrait framing with the subject centred and readable at phone size.";
+/** Cut-outs are placed by the prompt's position and size, never simply centred. */
+const cutOutFraming = "The canvas is a vertical 9:16 phone frame; keep the figures at the stated size.";
+export const sceneReference =
+  "The first reference image is the scene the figures will stand in: match its perspective, scale, eye level and lighting, but do not draw any part of that scene. The other reference images show each figure, in the order named.";
 const greenScreen =
   "Place the subject alone on a completely flat, uniform pure green (#00FF00) background with no shadows, floor, props or gradients, so the background can be keyed out.";
 
@@ -96,18 +100,22 @@ export function planImage(
   if (!layer) throw new Error(`Composition ${target.compositionId} has no layer ${target.layerId}.`);
   const foreground = layer.role !== "background";
   const stateOf = (entityId: string) => composition.entityStatesUsed.find((state) => state.entityId === entityId)?.stateId ?? null;
-  // A background only needs the place; a cut-out only needs its own subject, so
-  // no other character's look bleeds into it.
+  // A background only needs the place. A cut-out needs its own subject and the
+  // approved background it will stand in, so it matches that scene's scale,
+  // perspective and light; no other character's look can bleed into it.
+  const backgroundTarget = assetTargetId({ kind: "layer", entityId: null, stateId: null, compositionId: composition.compositionId, layerId: "background" });
+  // A cast layer is conditioned on every figure it draws, in the order the prompt names them.
+  const drawn = layer.entityIds?.length ? layer.entityIds : layer.entityId ? [layer.entityId] : [];
   const referenceTargets = foreground
-    ? layer.entityId
-      ? [entityReference(layer.entityId, stateOf(layer.entityId))]
-      : []
+    ? [[backgroundTarget], ...drawn.map((entityId) => entityReference(entityId, stateOf(entityId)))]
     : composition.locationId
       ? [entityReference(composition.locationId, null)]
       : [];
-  const prompt = foreground ? layer.prompt.replace(/Isolated on a transparent background[^.]*\./, greenScreen) : layer.prompt;
+  const prompt = foreground
+    ? `${layer.prompt.replace(/Isolated on a transparent background[^.]*\./, greenScreen)} ${sceneReference} ${cutOutFraming}`
+    : `${layer.prompt} ${mobileFraming}`;
   return {
-    prompt: withNote(`${prompt} ${mobileFraming} ${avoid(profile)}`, note),
+    prompt: withNote(`${prompt} ${avoid(profile)}`, note),
     aspectRatio: mobileAspect,
     referenceTargets,
     alpha: foreground ? "chroma-green" : "none",

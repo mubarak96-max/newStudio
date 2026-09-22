@@ -1,4 +1,5 @@
 import { createHash, createHmac } from "node:crypto";
+import { fetchWithRetry } from "../net.mts";
 
 /**
  * Minimal S3 client: signed PUT and GET of single objects with AWS Signature
@@ -88,13 +89,13 @@ export async function putObject(config: S3Config, key: string, body: Buffer, con
     "content-type": contentType,
     "cache-control": "public, max-age=31536000, immutable",
   });
-  const response = await fetch(url, { method: "PUT", headers, body: new Uint8Array(body) });
+  const response = await fetchWithRetry(url, { method: "PUT", headers, body: new Uint8Array(body) });
   if (!response.ok) throw new Error(`S3 PUT ${key} failed: HTTP ${response.status} ${(await response.text()).slice(0, 300)}`);
 }
 
 export async function getObject(config: S3Config, key: string): Promise<Buffer | null> {
   const { url, headers } = signRequest(config, "GET", key, sha256(""), {});
-  const response = await fetch(url, { headers });
+  const response = await fetchWithRetry(url, { headers });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`S3 GET ${key} failed: HTTP ${response.status} ${(await response.text()).slice(0, 300)}`);
   return Buffer.from(await response.arrayBuffer());

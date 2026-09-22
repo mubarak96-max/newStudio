@@ -237,3 +237,33 @@ body {
     opacity: 1;
   }
 }
+
+/* Beat transitions in the 2.5D preview: the outgoing frame leaves over the incoming one. */
+@keyframes preview-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes preview-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes preview-zoom-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}

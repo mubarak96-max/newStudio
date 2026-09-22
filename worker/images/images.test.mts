@@ -72,10 +72,12 @@ test("a state variant is conditioned on the entity's own reference sheet", () =>
 
 test("a foreground layer uses its subject's state variant first and asks for a green screen", () => {
   const planned = planImage(target("layer", { compositionId: "comp_k1", layerId: "fg_ch_boxer" }), { profile, entity: null, composition, note: null });
-  assert.deepEqual(planned.referenceTargets, [["var__ch_boxer__st_injured", "ref__ch_boxer"]]);
+  assert.deepEqual(planned.referenceTargets, [["layer__comp_k1__background"], ["var__ch_boxer__st_injured", "ref__ch_boxer"]]);
+  assert.match(planned.prompt, /scene the figures will stand in/);
   assert.equal(planned.alpha, "chroma-green");
   assert.equal(planned.aspectRatio, "9:16");
-  assert.match(planned.prompt, /vertical 9:16 phone screen/);
+  assert.match(planned.prompt, /9:16 phone frame/);
+  assert.doesNotMatch(planned.prompt, /centred/);
   assert.equal(planned.episodeId, "ep_03");
   assert.match(planned.prompt, /#00FF00/);
   assert.doesNotMatch(planned.prompt, /transparent background/);
