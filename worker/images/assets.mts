@@ -89,6 +89,7 @@ export async function saveVersion(
     alpha: AssetVersion["alpha"];
     episodeId: string | null;
     references: AssetVersion["references"];
+    check?: AssetVersion["check"];
   },
   image: { bytes: Buffer; contentType: string; model: string; costUsd: number; costExact: boolean; provider: AssetVersion["provider"] },
 ): Promise<AssetVersion> {
@@ -114,6 +115,7 @@ export async function saveVersion(
     alpha: item.alpha,
     provider: image.provider,
     costExact: image.costExact,
+    check: item.check ?? null,
     createdAt: new Date().toISOString(),
   };
   await db.doc(`books/${bookId}/visualAssets/${assetTargetId(item.target)}`).set(

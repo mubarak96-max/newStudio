@@ -1,5 +1,6 @@
 import type { Episode, Moment, StoryMap } from "../../lib/story-types.ts";
-import { storyConcurrency } from "../config.mts";
+import { ruleVersions } from "../../lib/rules.ts";
+import { db, storyConcurrency } from "../config.mts";
 import { pool, type JobDefinition } from "../job-runner.mts";
 import { storyWorkerVersion, type StoryContext } from "./context.mts";
 import { planEpisode } from "./episodes.mts";
@@ -104,6 +105,7 @@ export const storyJob: JobDefinition<StoryState> = {
     }
 
     const momentCount = state.episodes.reduce((sum, episode) => sum + episode.momentCount, 0);
+    await db.doc(`books/${bookId}`).update({ "ruleVersions.story": ruleVersions.story });
     return `${state.episodes.length} episodes, ${momentCount} moments`;
   },
 };

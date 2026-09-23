@@ -143,12 +143,18 @@ test("Beats sharing a reuseKey share one composition", () => {
   assert.equal(compositions.length, 2);
   assert.equal(compositions[0]!.usedIn.length, 3);
   assert.equal(compositions[0]!.originEpisodeId, "ep_01");
+  // Master first: the whole scene, the plate derived from it, then the cut-out.
   assert.deepEqual(
-    compositions[0]!.layers.map((layer) => layer.role),
-    ["background", "foreground"],
+    compositions[0]!.layers.map((layer) => layer.kind),
+    ["master", "plate", "figure"],
+  );
+  assert.deepEqual(
+    compositions[0]!.layers.map((layer) => layer.derivedFrom ?? null),
+    [null, "master", "master"],
   );
   assert.ok(compositions[0]!.prompt.includes("A huge cart-horse"));
-  const [background, foreground] = compositions[0]!.layers;
+  const [master, background, foreground] = compositions[0]!.layers;
+  assert.match(master!.prompt, /true relative size/);
   assert.ok(background!.depthRange[1] < foreground!.depthRange[0], "background sits behind the foreground");
   assert.equal(background!.renderMode, "depthMesh", "wide shots give the background relief");
   const stage = compositions[0]!.stage25d;
@@ -161,5 +167,5 @@ test("Beats sharing a reuseKey share one composition", () => {
   const forecast = forecastOf(compositions, [...plans.values()], 0.05);
   assert.equal(forecast.shotsPlanned, 4);
   assert.equal(forecast.reuseRate, 0.5);
-  assert.equal(forecast.imagesToGenerate, 1 + 4);
+  assert.equal(forecast.imagesToGenerate, 1 + 6);
 });

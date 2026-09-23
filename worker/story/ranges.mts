@@ -129,6 +129,39 @@ export function reattachEmpty(spans: Span[], weights: Weights): Span[] {
   return result;
 }
 
+/**
+ * Episode spans that never cross a chapter boundary.
+ *
+ * An episode that starts mid-chapter and ends inside the next one reads as two
+ * halves of different stories, and it is how one Animal Farm episode came to
+ * hold the Battle of the Cowshed, Mollie leaving, the windmill dispute and
+ * Snowball's expulsion at once. So chapters are the unit: short neighbours
+ * merge until they are worth an episode, and a chapter too long for one
+ * episode is cut inside itself at the best seam available.
+ */
+export function chapterAlignedSpans(
+  chapters: Span[],
+  weights: Weights,
+  options: RebalanceOptions,
+): Span[] {
+  if (chapters.length === 0) return [];
+  const ordered = [...chapters].sort((left, right) => left.seqStart - right.seqStart);
+  const merged: Span[] = [];
+  for (const chapter of ordered) {
+    const open = merged.at(-1);
+    // Front matter and other word-less runs join the chapter after them, not before.
+    if (open && (weightOf(weights, open) < options.minWords || weightOf(weights, chapter) === 0)) {
+      const combined = { seqStart: open.seqStart, seqEnd: chapter.seqEnd };
+      if (weightOf(weights, combined) <= options.maxWords || weightOf(weights, open) === 0) {
+        merged[merged.length - 1] = combined;
+        continue;
+      }
+    }
+    merged.push({ ...chapter });
+  }
+  return merged.flatMap((span) => splitLarge(span, weights, options));
+}
+
 export type TilingReport = { ok: boolean; missing: number[]; duplicated: number[] };
 
 export function validateTiling(spans: Span[], rangeStart: number, rangeEnd: number): TilingReport {

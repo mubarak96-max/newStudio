@@ -16,6 +16,8 @@ import { claimJob } from "./job-lease.mts";
 import { enqueueJob } from "./job-queue.mts";
 import { computeCoverage, stubMissingAnnotations } from "./coverage.mts";
 import { unique } from "./evidence.mts";
+import { ruleVersions } from "../lib/rules.ts";
+import { enforceIntegrity } from "./integrity.mts";
 import { advanceProgress, mergeDelta } from "./merge.mts";
 import { callJsonModel, isContentFilterError, isLengthTruncation } from "./openrouter.mts";
 import { ledgerSummary, loadParagraphs, persistBookModel, saveCheckpoint } from "./persist.mts";
@@ -275,6 +277,33 @@ export async function processUnderstandingJob(
     if (currentBook?.activeSourceId !== sourceId || currentBook?.canonical?.hash !== canonicalHash) {
       throw new Error("Canonical source changed before Book Model promotion.");
     }
+
+    // Integrity gate: repair what is mechanical, refuse to promote a model whose
+    // protagonist or places are missing. Everything downstream spends money on this.
+    const integrity = enforceIntegrity(ledger, paragraphs, {
+      title: asString(currentBook?.metaData?.title) || asString(currentBook?.title),
+      author: asString(currentBook?.metaData?.author),
+    });
+    log(
+      `integrity: removed ${integrity.removedEntityIds.length}, merged ${integrity.merges.length}, ` +
+        `retyped ${integrity.retypedLocationIds.length} places, stripped ${integrity.strippedClaims} ungrounded claims` +
+        `${integrity.narratorEntityId ? `, narrator ${integrity.narratorEntityId}` : ""}`,
+    );
+    if (integrity.failures.length > 0) throw new Error(integrity.failures.join(" "));
+    await bookRef.update({
+      "model.narratorEntityId": integrity.narratorEntityId,
+      "model.integrity": {
+        removedEntityIds: integrity.removedEntityIds,
+        retypedLocationIds: integrity.retypedLocationIds,
+        mergedEntityIds: integrity.merges.flatMap((merge) => merge.mergedEntityIds),
+        strippedClaims: integrity.strippedClaims,
+        rulesVersion: ruleVersions.bookModel,
+      },
+      "ruleVersions.bookModel": ruleVersions.bookModel,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    await saveProgress("integrity");
+
     ledger.coverage ??= computeCoverage(ledger, paragraphs);
     await persistBookModel(bookId, ledger, paragraphs);
     const coverage = ledger.coverage;

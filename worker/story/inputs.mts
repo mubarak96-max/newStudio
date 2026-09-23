@@ -25,6 +25,8 @@ export type StoryInputs = {
   chapterSummaries: ChapterSummary[];
   world: World | null;
   synopsis: string;
+  /** The narrator of a first-person book, as the integrity gate identified them. */
+  narratorEntityId: string | null;
 };
 
 export function wordCount(text: string): number {
@@ -88,5 +90,6 @@ export async function loadStoryInputs(
     chapterSummaries: (ledger.chapterSummaries ?? []) as ChapterSummary[],
     world: (ledger.world ?? null) as World | null,
     synopsis: String(ledger.rollingSynopsis ?? ""),
+    narratorEntityId: (bookData?.model?.narratorEntityId as string | undefined) ?? null,
   };
 }

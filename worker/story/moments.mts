@@ -16,6 +16,7 @@ import type { StoryContext } from "./context.mts";
 import { entitiesInRange, entityAsOf, paragraphLines } from "./episodes.mts";
 import { wordCount, type StoryInputs } from "./inputs.mts";
 import { momentSystemPrompt } from "./prompts.mts";
+import { applyShotRules, nameIndex } from "./shots.mts";
 import { locateQuote, quotedSpans } from "./text.mts";
 
 const framings = new Set(["wide", "medium", "close", "over-shoulder", "insert"]);
@@ -189,39 +190,46 @@ export async function buildMoment(
     };
   });
 
-  const shots: Shot[] = records(data?.shots)
+  const drafted: Omit<Shot, "reuseKey">[] = records(data?.shots)
     .slice(0, 4)
     .map((row, index) => {
       const entityStates = unique(strings(row.entityIds).filter((id) => inputs.entityById.has(id))).map((entityId) => ({
         entityId,
         stateId: stateAt(inputs.entityById.get(entityId), span.seqStart),
       }));
-      const framing = framings.has(asString(row.framing)) ? asString(row.framing) : "medium";
-      const timeOfDay = asString(row.timeOfDay).trim() || "unknown";
+      const shotLocation = nullableString(row.locationId);
       return {
         shotId: `${outline.momentId}_s${index + 1}`,
         description: asString(row.description).trim(),
         entityStates,
-        framing,
+        framing: framings.has(asString(row.framing)) ? asString(row.framing) : "medium",
         mood: asString(row.mood).trim(),
-        timeOfDay,
-        reuseKey: reuseKey(locationId, locationStateId, entityStates, timeOfDay, framing),
+        timeOfDay: asString(row.timeOfDay).trim() || "unknown",
+        locationId: shotLocation && inputs.entityById.get(shotLocation)?.type === "location" ? shotLocation : null,
+        locationStateId: null,
       };
     })
     .filter((shot) => shot.description);
-  if (shots.length === 0 && annotations.length > 0) {
+  if (drafted.length === 0 && annotations.length > 0) {
     const cue = annotations.find((annotation) => annotation.visualCue && !annotation.visualCue.startsWith("abstract:"));
-    const entityStates = characters.slice(0, 4);
-    shots.push({
+    drafted.push({
       shotId: `${outline.momentId}_s1`,
       description: cue?.visualCue ?? annotations[0]!.visualCue ?? annotations[0]!.summary,
-      entityStates,
+      entityStates: characters.slice(0, 4),
       framing: "wide",
       mood: annotations[0]!.mood,
       timeOfDay: "unknown",
-      reuseKey: reuseKey(locationId, locationStateId, entityStates, "unknown", "wide"),
+      locationId: null,
+      locationStateId: null,
     });
   }
+  const shots = applyShotRules(drafted, {
+    index: nameIndex(entities),
+    momentLocationId: locationId,
+    narratorEntityId: inputs.narratorEntityId,
+    stateOf: (entityId) => stateAt(inputs.entityById.get(entityId), span.seqStart),
+    reuseKeyOf: (shot) => reuseKey(shot.locationId, shot.locationStateId, shot.entityStates, shot.timeOfDay, shot.framing),
+  });
 
   const annotationSummary = annotations.map((annotation) => annotation.summary).join(" ");
   return {

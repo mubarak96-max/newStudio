@@ -6,6 +6,7 @@ import { ArrowLeft, type LucideIcon } from 'lucide-react';
 import { DashboardFrame } from '@/components/dashboard/DashboardFrame';
 import type { Book } from '@/lib/books';
 import { bookNavItems } from '@/lib/navigation';
+import { staleRuleStages } from '@/lib/rules';
 
 /** Page shell shared by the pipeline stage pages: frame, back link, heading, actions and errors. */
 export function StageFrame({
@@ -40,6 +41,8 @@ export function StageFrame({
     );
   }
 
+  const stale = staleRuleStages(book?.ruleVersions);
+
   return (
     <DashboardFrame
       companyName={book?.title}
@@ -66,6 +69,13 @@ export function StageFrame({
           </div>
           {actions}
         </div>
+
+        {stale.length > 0 && (
+          <div className='rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm'>
+            Built under older rules: {stale.join(', ')}. Nothing is re-run on its own — re-run a stage when you want
+            this book brought up to date.
+          </div>
+        )}
 
         {error && (
           <div className='rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm'>{error}</div>

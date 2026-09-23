@@ -1,5 +1,6 @@
 import type { Moment } from "../../lib/story-types.ts";
-import { storyConcurrency } from "../config.mts";
+import { ruleVersions } from "../../lib/rules.ts";
+import { db, storyConcurrency } from "../config.mts";
 import { pool, type JobDefinition } from "../job-runner.mts";
 import type { StoryContext } from "../story/context.mts";
 import { loadStoryInputs } from "../story/inputs.mts";
@@ -92,6 +93,7 @@ export const beatsJob: JobDefinition<BeatsState> = {
     }
 
     const { totals } = state;
+    await db.doc(`books/${bookId}`).update({ "ruleVersions.story": ruleVersions.story });
     return `${totals.beats} beats over ${totalMoments} moments; ${totals.paragraphs - totals.fallbackParagraphs}/${totals.paragraphs} paragraphs represented by the model, ${totals.wordsShown}/${totals.words} words shown verbatim`;
   },
 };

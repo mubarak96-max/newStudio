@@ -21,6 +21,16 @@ const maxQuoteWords = 60;
 /** Twelve Beats with their representations fit well inside this; a longer answer is a model looping. */
 const beatMaxTokens = 8_000;
 const maxDialogueLines = 4;
+/**
+ * How many Beats in a row may share one composition before the Moment's other
+ * shots are used. Twenty-four Beats once ran on a single Old Major image: two
+ * and a half minutes of the same picture.
+ */
+const maxBeatsPerComposition = 4;
+/** A Moment longer than this stops being one scene and becomes a slideshow. */
+const maxBeatsPerMoment = 12;
+/** Below this share of a Moment's words read verbatim, the Episode is an abridgement. */
+const verbatimShareWarning = 0.5;
 const modalities = new Set(["text", "visual", "camera", "transition"]);
 const beatTypes = new Set(["quote", "dialogue", "commentary", "mixed", "title", "transition"]);
 
@@ -235,14 +245,76 @@ export async function buildMomentBeats(
       ],
       Number.POSITIVE_INFINITY,
     );
-  const ordered = drafts
+  // The same note written onto two Beats reads as a stutter, and a Beat with no
+  // words at all is a blank picture the reader waits through. Neither ships.
+  const seenCommentary = new Set<string>();
+  for (const draft of drafts) {
+    draft.commentary = draft.commentary.filter((note) => {
+      const key = note.text.trim().toLowerCase();
+      if (!key || seenCommentary.has(key)) return false;
+      seenCommentary.add(key);
+      return true;
+    });
+  }
+  // A long passage split into many Beats (a song, a speech) is re-joined until
+  // the Moment is a scene again rather than twenty-nine slides of one image.
+  while (drafts.length > maxBeatsPerMoment) {
+    const at = drafts.findIndex(
+      (draft, index) =>
+        index > 0 &&
+        draft.continuation &&
+        draft.quote &&
+        drafts[index - 1]!.quote?.paragraphId === draft.quote.paragraphId &&
+        drafts[index - 1]!.quote!.end <= draft.quote.start,
+    );
+    if (at < 0) break;
+    const previous = drafts[at - 1]!;
+    const current = drafts[at]!;
+    const text = inputs.paragraphById.get(current.quote!.paragraphId)?.text ?? "";
+    previous.quote = {
+      paragraphId: current.quote!.paragraphId,
+      start: previous.quote!.start,
+      end: current.quote!.end,
+      text: text.slice(previous.quote!.start, current.quote!.end),
+    };
+    previous.commentary = [...previous.commentary, ...current.commentary];
+    drafts.splice(at, 1);
+  }
+
+  const carrying = drafts.filter((draft) => draft.quote || draft.dialogue.length > 0 || draft.commentary.length > 0);
+  const emptyDrafts = drafts.length - carrying.length;
+  if (emptyDrafts > 0) warnings.push(`${emptyDrafts} Beat(s) carried no text and were dropped.`);
+  const kept = carrying.length > 0 ? carrying : drafts.slice(0, 1);
+
+  const ordered = kept
     .map((draft, index) => ({ draft, index, seq: draftSeq(draft) }))
     .map((item, index, all) => ({ ...item, seq: Number.isFinite(item.seq) ? item.seq : (all[index - 1]?.seq ?? moment.seqStart) }))
     .sort((left, right) => left.seq - right.seq || left.index - right.index);
 
-  // Coverage: a paragraph shown as text is represented even if the model forgot
-  // to say so; the model then places what is still missing; anything left after
-  // that is attached to the nearest Beat's illustration and listed.
+  // Rotate through the Moment's own shots so no picture is held too long.
+  if (shots.length > 1) {
+    let runShotId: string | null = null;
+    let run = 0;
+    for (const item of ordered) {
+      if (item.draft.shotId === runShotId) run += 1;
+      else {
+        runShotId = item.draft.shotId;
+        run = 1;
+      }
+      if (run <= maxBeatsPerComposition) continue;
+      const current = shots.findIndex((shot) => shot.shotId === runShotId);
+      const next = shots[(current + 1) % shots.length]!;
+      item.draft.shotId = next.shotId;
+      runShotId = next.shotId;
+      run = 1;
+    }
+  }
+
+  // Coverage has two meanings and only one of them is the book: a paragraph is
+  // *shown as text* when the reader reads its words, and merely *accounted for*
+  // when a picture stands in for it. The second is tracked, never counted as
+  // the first: that conflation let an Episode report full coverage while the
+  // reader saw 38% of the words.
   const represented = new Set(ordered.flatMap(({ draft }) => draft.representations.map((rep) => rep.paragraphId)));
   for (const { draft } of ordered) {
     for (const paragraphId of unique([...(draft.quote ? [draft.quote.paragraphId] : []), ...draft.dialogue.map((line) => line.paragraphId)])) {
@@ -300,20 +372,34 @@ export async function buildMomentBeats(
   }
 
   let previousPose: { compositionId: string | null; to: CameraPose } | null = null;
+  let previousShotPlace: string | null = previousMoment?.locationId ?? null;
   const beats: Beat[] = ordered.map(({ draft, seq }, index) => {
     const shot = draft.shotId ? shotById.get(draft.shotId) : undefined;
     const compositionId = shot ? compositionIdFor(shot.reuseKey) : null;
     const sameComposition = previousPose !== null && previousPose.compositionId === compositionId;
-    const poses = posesFor(draft.move, sameComposition ? previousPose!.to : undefined);
+    const proposed = posesFor(draft.move, sameComposition ? previousPose!.to : undefined);
+    // Continuity: on the same picture the camera starts exactly where it
+    // stopped. A pan that reset x or y made the frame jump between Beats.
+    const poses = sameComposition ? { from: previousPose!.to, to: proposed.to } : proposed;
     previousPose = { compositionId, to: poses.to };
     const words = [draft.quote?.text ?? "", ...draft.dialogue.map((line) => line.text), ...draft.commentary.map((note) => note.text)]
       .map(wordCount)
       .reduce((sum, value) => sum + value, 0);
+    // Transition grammar: nothing at all while the camera keeps moving on one
+    // picture, a short dissolve when the place is the same, a cut when it is
+    // not, and a fade at the seams of a Moment or an Episode.
+    const shotPlace = shot?.locationId ?? moment.locationId;
+    const previousPlace = previousShotPlace;
+    previousShotPlace = shotPlace;
     const transitionIn: Beat["transitionIn"] =
       index > 0
-        ? { type: "cut", durationMs: sameComposition ? 0 : 250 }
+        ? sameComposition
+          ? { type: "cut", durationMs: 0 }
+          : shotPlace && shotPlace === previousPlace
+            ? { type: "fade", durationMs: 450 }
+            : { type: "cut", durationMs: 250 }
         : previousMoment && previousMoment.locationId && previousMoment.locationId === moment.locationId
-          ? { type: "parallaxShift", durationMs: 900 }
+          ? { type: "fade", durationMs: 600 }
           : { type: "fade", durationMs: previousMoment ? 800 : 1200 };
     return {
       id: `${moment.momentId}_b${String(index + 1).padStart(2, "0")}`,
@@ -358,7 +444,22 @@ export async function buildMomentBeats(
     .flatMap((beat) => [beat.text.quote?.text ?? "", ...(beat.text.dialogue ?? []).map((line) => line.text)])
     .map(wordCount)
     .reduce((sum, value) => sum + value, 0);
+  const shownAsText = new Set(
+    beats.flatMap((beat) => [
+      ...(beat.text.quote ? [beat.text.quote.paragraphId] : []),
+      ...(beat.text.dialogue ?? []).map((line) => line.paragraphId),
+    ]),
+  );
+  const visualOnly = moment.sourceParagraphIds.filter((paragraphId) => !shownAsText.has(paragraphId)).length;
   if (fallbackIds.length > 0) warnings.push(`${fallbackIds.length} paragraph(s) were attached to the nearest Beat's illustration.`);
+  if (visualOnly > 0) {
+    warnings.push(`${visualOnly} of ${storyIds.size} paragraph(s) are not read to the reader in the book's own words.`);
+  }
+  if (moment.wordCount > 0 && shownWords / moment.wordCount < verbatimShareWarning) {
+    warnings.push(
+      `Only ${Math.round((shownWords / moment.wordCount) * 100)}% of this Moment's words are read verbatim; the rest is abridged.`,
+    );
+  }
   return {
     beats,
     coverage: {
@@ -367,6 +468,8 @@ export async function buildMomentBeats(
       representedByFallback: fallbackIds,
       words: moment.wordCount,
       wordsShownVerbatim: shownWords,
+      shownAsText: shownAsText.size,
+      visualOnly,
       warnings,
     },
   };

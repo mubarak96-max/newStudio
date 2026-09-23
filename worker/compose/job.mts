@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase-admin/firestore";
+import { ruleVersions } from "../../lib/rules.ts";
 import type { CompositionPlan } from "../../lib/story-types.ts";
 import { nullableString } from "../coerce.mts";
 import { db } from "../config.mts";
@@ -82,6 +83,21 @@ export const composeJob: JobDefinition<Record<string, never>> = {
         composeIssues: missing,
       });
     }
+    await db.doc(`books/${bookId}`).update({ "ruleVersions.composition": ruleVersions.composition });
     return `${compositions.length} compositions (${built} rebuilt, ${withIssues} with issues), ${beats} beats fitted, ${clamped} cameras clamped`;
+  },
+  /**
+   * The book is only composed when every Episode is. A run for one Episode
+   * used to mark the whole book done, which is how an Episode with nothing
+   * assembled sat behind a green tick.
+   */
+  bookStatus: async (context) => {
+    const lineage = { sourceId: context.sourceId, canonicalHash: context.canonicalHash };
+    const episodes = await loadEpisodes(context.bookId, lineage);
+    const outstanding = episodes.filter((episode) => episode.stageStatus?.composed !== "done");
+    if (outstanding.length > 0) {
+      context.log(`${outstanding.length} of ${episodes.length} Episodes are not composed; the book stays incomplete.`);
+    }
+    return outstanding.length === 0 ? "done" : "failed";
   },
 };

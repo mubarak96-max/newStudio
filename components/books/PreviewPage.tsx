@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Smartphone } from 'lucide-react';
 import { Player } from '@/components/books/preview/Player';
 import { StageFrame } from '@/components/books/pipeline/StageFrame';
@@ -8,7 +8,7 @@ import { StageJobPanel, useStageJob } from '@/components/books/pipeline/StageJob
 import { useBookData } from '@/components/books/pipeline/useBookData';
 import { Badge } from '@/components/books/model/ModelPrimitives';
 import type { Book } from '@/lib/books';
-import { loadEpisodePreview, type EpisodePreview } from '@/lib/compose';
+import { loadBookPreview, loadEpisodePreview, type EpisodePreview } from '@/lib/compose';
 import { loadStoryPlan } from '@/lib/story';
 
 export function PreviewPage({ bookId }: { bookId: string }) {
@@ -17,8 +17,9 @@ export function PreviewPage({ bookId }: { bookId: string }) {
     [bookId]
   );
   const { book, data: plan, loading, error, nameOf } = useBookData(bookId, load);
-  const episodes = plan?.episodes ?? [];
+  const episodes = useMemo(() => plan?.episodes ?? [], [plan]);
   const [chosen, setChosen] = useState<string | null>(null);
+  const [wholeBook, setWholeBook] = useState(false);
   const episodeId = chosen ?? episodes[0]?.episodeId ?? null;
   const [preview, setPreview] = useState<EpisodePreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -27,7 +28,11 @@ export function PreviewPage({ bookId }: { bookId: string }) {
   useEffect(() => {
     if (!episodeId) return;
     let cancelled = false;
-    loadEpisodePreview(bookId, episodeId)
+    const episode = episodes.find((item) => item.episodeId === episodeId);
+    const loading = wholeBook
+      ? loadBookPreview(bookId, episodes.map((item) => ({ episodeId: item.episodeId, order: item.order, title: item.title })))
+      : loadEpisodePreview(bookId, episodeId, episode);
+    loading
       .then((loaded) => {
         if (!cancelled) setPreview(loaded);
       })
@@ -37,11 +42,12 @@ export function PreviewPage({ bookId }: { bookId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [bookId, episodeId, version]);
+  }, [bookId, episodeId, version, wholeBook, episodes]);
 
   // Reload the episode as the assembly job reports progress, so fixed compositions appear.
   const reload = useCallback(() => setVersion((value) => value + 1), []);
   const stage = useStageJob(bookId, book, 'compose', reload);
+  const publishing = useStageJob(bookId, book, 'publish', reload);
 
   const compositions = preview ? [...preview.compositions.values()] : [];
   const composed = compositions.filter((composition) => composition.assembly?.status === 'composed').length;
@@ -56,29 +62,52 @@ export function PreviewPage({ bookId }: { bookId: string }) {
       title='Preview'
       icon={Smartphone}
       subtitle='The 2.5D episode as a reader sees it on a phone'
-      error={error ?? stage.error ?? previewError}
+      error={error ?? stage.error ?? publishing.error ?? previewError}
       actions={
-        <button
-          type='button'
-          disabled={!episodeId || stage.running}
-          onClick={() => stage.start({ episodeId })}
-          className='rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50'
-        >
-          {composed > 0 ? 'Re-assemble 2.5D' : 'Assemble 2.5D'}
-        </button>
+        <div className='flex flex-wrap gap-2'>
+          <button
+            type='button'
+            disabled={!episodeId || stage.running}
+            onClick={() => stage.start({ episodeId })}
+            className='rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50'
+          >
+            {composed > 0 ? 'Re-assemble 2.5D' : 'Assemble 2.5D'}
+          </button>
+          <button
+            type='button'
+            disabled={publishing.running}
+            onClick={() => publishing.start(wholeBook ? {} : { episodeId })}
+            className='rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50'
+          >
+            {wholeBook ? 'Publish book' : 'Publish episode'}
+          </button>
+        </div>
       }
     >
       <div className='flex flex-wrap gap-2'>
+        <button
+          type='button'
+          onClick={() => {
+            setWholeBook((value) => !value);
+            setPreview(null);
+          }}
+          className={`rounded-full border px-3 py-1 text-xs font-medium ${
+            wholeBook ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Whole book
+        </button>
         {episodes.map((item) => (
           <button
             key={item.episodeId}
             type='button'
             onClick={() => {
               setChosen(item.episodeId);
+              setWholeBook(false);
               setPreview(null);
             }}
             className={`rounded-full border px-3 py-1 text-xs font-medium ${
-              item.episodeId === episodeId
+              !wholeBook && item.episodeId === episodeId
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border text-muted-foreground hover:text-foreground'
             }`}
@@ -89,6 +118,7 @@ export function PreviewPage({ bookId }: { bookId: string }) {
       </div>
 
       <StageJobPanel job={stage.job} name='2.5D assembly' />
+      <StageJobPanel job={publishing.job} name='Publication' />
 
       {episode && preview && (
         <div className='flex flex-wrap items-center gap-2 text-sm'>
@@ -121,7 +151,7 @@ export function PreviewPage({ bookId }: { bookId: string }) {
       )}
 
       {preview ? (
-        <Player key={episodeId} beats={preview.beats} compositions={preview.compositions} nameOf={nameOf} />
+        <Player key={wholeBook ? 'book' : episodeId} beats={preview.beats} compositions={preview.compositions} nameOf={nameOf} />
       ) : (
         episodeId && <div className='mx-auto h-96 w-56 animate-pulse rounded-2xl bg-muted' />
       )}

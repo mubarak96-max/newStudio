@@ -34,6 +34,10 @@ export function assignDepth(layers: LayerPlan[], framing: string): LayerPlan[] {
   const foregrounds = layers.filter((layer) => layer.role !== "background").length;
   let index = 0;
   return layers.map((layer) => {
+    // The master is the whole scene in one image; it plays alone, flat.
+    if (layer.kind === "master") {
+      return { ...layer, depthRange: [0, 0.35] as [number, number], renderMode: "plane" as const, mesh: null };
+    }
     if (layer.role === "background") {
       const mesh = framing === "wide";
       return {
@@ -64,7 +68,9 @@ export function assignDepth(layers: LayerPlan[], framing: string): LayerPlan[] {
  */
 export function planStage25d(envelope: Envelope, layers: LayerPlan[]): Stage25dPlan {
   const factor = (layer: LayerPlan) => round(0.4 + 0.6 * layer.depthRange[1]);
-  const background = layers.find((layer) => layer.role === "background");
+  // The plate is what the camera travels across in layered mode; the master
+  // is a whole scene and never the thing parallax is measured against.
+  const background = layers.find((layer) => layer.kind === "plate") ?? layers.find((layer) => layer.role === "background" && layer.kind !== "master");
   const backgroundFactor = background ? factor(background) : 1;
   const plannedSafeCamera = {
     maxPanX: round(Math.max(envelope.maxPanX, minimumPan) + safetyMargin),

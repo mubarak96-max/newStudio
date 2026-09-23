@@ -12,6 +12,7 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
+import type { BookRuleVersions } from './rules';
 import {
   deleteObject,
   getDownloadURL,
@@ -59,6 +60,8 @@ export type Book = {
   };
   /** Latest job per pipeline stage, so a page can follow its stage after the pipeline moves on. */
   pipelineJobs?: Record<string, string>;
+  /** The rule set each stage ran under, compared against lib/rules.ts. */
+  ruleVersions?: BookRuleVersions;
   createdAt?: Date | null;
 };
 
@@ -94,6 +97,7 @@ function snapToBook(snap: QueryDocumentSnapshot<DocumentData>): Book {
     stats: data.stats,
     pipeline: data.pipeline,
     pipelineJobs: data.pipelineJobs,
+    ruleVersions: data.ruleVersions,
     createdAt,
   };
 }

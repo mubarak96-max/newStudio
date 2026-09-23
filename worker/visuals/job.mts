@@ -1,10 +1,12 @@
 import { FieldValue, type WriteBatch } from "firebase-admin/firestore";
+import { ruleVersions } from "../../lib/rules.ts";
 import type { EntityVisualPlan, VisualPlanSummary, VisualProfile } from "../../lib/story-types.ts";
 import { db, imageCostUsd, storyConcurrency } from "../config.mts";
 import { pool, type JobDefinition } from "../job-runner.mts";
 import { loadStoryInputs } from "../story/inputs.mts";
 import { loadEpisodes, loadMoments } from "../story/persist.mts";
 import type { Entity } from "../types.mts";
+import { authorCompositionPrompts, promptAuthoringVersion } from "./authoring.mts";
 import { planEntityVisuals, planVisualProfile } from "./bible.mts";
 import { buildCompositionPlans, forecastOf, type PlannedMoment } from "./compositions.mts";
 
@@ -116,6 +118,30 @@ export const visualsJob: JobDefinition<VisualsState> = {
         return entity ? { name: entity.canonicalName, type: entity.type } : undefined;
       };
       const compositions = buildCompositionPlans(planned, plans, entityOf, profile, lineage);
+
+      // Every layer prompt is rewritten as art direction and checked before it
+      // is used; a refused rewrite leaves the mechanical prompt in place.
+      const authoring = { authored: 0, refused: 0 };
+      for (let offset = 0; offset < compositions.length; offset += storyConcurrency) {
+        if (await context.cancelled()) return null;
+        const batch = compositions.slice(offset, offset + storyConcurrency);
+        const results = await pool(batch, storyConcurrency, (composition) =>
+          authorCompositionPrompts(context, composition, profile, (id) => inputs.entityById.get(id)?.canonicalName),
+        );
+        for (const result of results) {
+          authoring.authored += result.authored;
+          authoring.refused += result.refused;
+          for (const reason of result.reasons.slice(0, 2)) context.log(`prompt refused — ${reason}`);
+        }
+        await context.onActivity({
+          label: "Writing image prompts",
+          detail: `${authoring.authored} written, ${authoring.refused} kept mechanical`,
+          done: Math.min(offset + storyConcurrency, compositions.length),
+          total: compositions.length,
+          unit: "compositions",
+        });
+      }
+
       const forecast = forecastOf(compositions, Object.values(state.plans), imageCostUsd);
       const keep = new Set(compositions.map((composition) => composition.compositionId));
       const existing = await db.collection(`books/${bookId}/compositions`).get();
@@ -140,6 +166,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
         notes: [
           `${forecast.compositions} compositions cover ${forecast.shotsPlanned} Beats (${Math.round(forecast.reuseRate * 100)}% reuse).`,
           `${forecast.referenceSheets} reference sheets and ${forecast.stateVariants} state variants precede scene generation.`,
+          `${authoring.authored} layer prompts written as art direction (${promptAuthoringVersion}); ${authoring.refused} kept their mechanical prompt.`,
         ],
       };
       await db.doc(`books/${bookId}/derived/visualPlan`).set({ ...summary, updatedAt: FieldValue.serverTimestamp() });
@@ -147,6 +174,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
       state.phase = "done";
       await checkpoint("done");
     }
+    await db.doc(`books/${bookId}`).update({ "ruleVersions.prompts": ruleVersions.prompts });
     return state.summary;
   },
 };

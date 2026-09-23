@@ -14,7 +14,9 @@ import {
 } from "./config.mts";
 import { isClaimable } from "./job-lease.mts";
 import { beatsJob } from "./beats/job.mts";
+import { cleanJob } from "./clean/job.mts";
 import { composeJob } from "./compose/job.mts";
+import { publishJob } from "./publish/job.mts";
 import { imageBatchJob, pollImageBatches } from "./images/batch.mts";
 import { imageJob } from "./images/job.mts";
 import { processJob } from "./job-runner.mts";
@@ -107,7 +109,9 @@ async function main(): Promise<void> {
       );
     }
     const job = await findClaimableJob();
-    if (job?.type === "story") {
+    if (job?.type === "clean") {
+      await processJob(cleanJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job?.type === "story") {
       await processJob(storyJob, job.bookId, job.jobId, staleLeaseMs);
     } else if (job?.type === "beats") {
       await processJob(beatsJob, job.bookId, job.jobId, staleLeaseMs);
@@ -119,6 +123,8 @@ async function main(): Promise<void> {
       await processJob(imageBatchJob, job.bookId, job.jobId, staleLeaseMs);
     } else if (job?.type === "compose") {
       await processJob(composeJob, job.bookId, job.jobId, staleLeaseMs);
+    } else if (job?.type === "publish") {
+      await processJob(publishJob, job.bookId, job.jobId, staleLeaseMs);
     } else if (job?.type === "understand") {
       await processUnderstandingJob(job.bookId, job.jobId, staleLeaseMs);
     } else if (job) {

@@ -3,6 +3,7 @@ import {
   assetTargetId,
   type AssembledLayer,
   type Beat,
+  type CameraPose,
   type CompositionAssembly,
   type CompositionPlan,
   type VisualAsset,
@@ -57,13 +58,27 @@ export async function assembleComposition(
   const issues: string[] = [];
   const reused = new Map((previous?.layers ?? []).map((layer) => [layer.layerId, layer]));
   const parallaxOf = (layerId: string, depthNear: number) => composition.stage25d?.parallax?.[layerId] ?? parallaxFor(depthNear);
-  const background = composition.layers.find((layer) => layer.role === "background");
+
+  // Master first: layered playback needs the derived plate and every cut-out
+  // approved together. Anything missing and the approved master plays flat,
+  // which is worse 2.5D but never a broken or mis-scaled picture.
+  const master = composition.layers.find((layer) => layer.kind === "master");
+  const derived = composition.layers.filter((layer) => layer.kind !== "master");
+  const derivedReady = derived.length > 0 && derived.every((layer) => approved.has(layer.layerId));
+  const mode: "layered" | "flat" = derivedReady ? "layered" : "flat";
+  const playing = mode === "layered" ? derived : master ? [master] : composition.layers;
+  if (mode === "flat" && master && derived.length > 0) {
+    issues.push(
+      `${derived.filter((layer) => !approved.has(layer.layerId)).length} derived layer(s) are not approved; playing the master flat.`,
+    );
+  }
+  const background = playing.find((layer) => layer.role === "background");
   const backgroundParallax = background ? parallaxOf(background.layerId, background.depthRange[1]) : 0.4;
   const planned = composition.stage25d?.plannedSafeCamera;
   const scale = baseScaleFor(planned?.maxPanX ?? 0.05, planned?.maxPanY ?? 0.05, backgroundParallax);
 
   const layers: AssembledLayer[] = [];
-  for (const layer of composition.layers) {
+  for (const layer of playing) {
     const version = approved.get(layer.layerId);
     if (!version) {
       issues.push(`${layer.layerId}: no approved image yet.`);
@@ -125,9 +140,14 @@ export async function assembleComposition(
     layers.push({ ...assembled, scale, parallax: parallaxOf(layer.layerId, layer.depthRange[1]) });
   }
   if (!layers.some((layer) => layer.role === "background")) issues.push("No approved background: this composition cannot play.");
+  // Playing the master flat is a supported outcome, not a failure: the reader
+  // still sees the right scene with camera movement over it.
+  const playable = layers.some((layer) => layer.role === "background");
+  const blocking = issues.filter((issue) => !issue.includes("playing the master flat"));
 
   return {
-    status: issues.length === 0 ? "composed" : "issues",
+    status: playable && blocking.length === 0 ? "composed" : "issues",
+    mode,
     layers: layers.sort((left, right) => left.zOrder - right.zOrder),
     safeCamera: safeCameraFor(scale, backgroundParallax, planned?.maxZoom ?? 1.2),
     issues,
@@ -137,13 +157,34 @@ export async function assembleComposition(
 }
 
 /**
+ * Stretches a planned move to the margin the images actually allow, keeping
+ * its shape: the ratio between the two poses, and between x and y, is
+ * preserved, so a gentle drift stays gentler than a pan.
+ */
+function scaleToSafeCamera(
+  camera: Beat["camera"],
+  safe: CompositionAssembly["safeCamera"],
+): { from: CameraPose; to: CameraPose } {
+  const intent = Math.max(Math.abs(camera.from.x), Math.abs(camera.to.x), Math.abs(camera.from.y), Math.abs(camera.to.y));
+  if (intent <= 0) return { from: camera.from, to: camera.to };
+  const room = Math.min(safe.maxPanX, safe.maxPanY);
+  const gain = Math.max(1, room / intent);
+  const stretch = (pose: CameraPose): CameraPose => ({ ...pose, x: pose.x * gain, y: pose.y * gain });
+  return { from: stretch(camera.from), to: stretch(camera.to) };
+}
+
+/**
  * Fits a Beat to its assembled composition: the camera is clamped to what the
  * images allow, and each tappable entity gets the box of its own cut-out.
  */
 export function fitBeat(beat: Beat, assembly: CompositionAssembly | undefined): { beat: Beat; clamped: boolean } {
   if (!assembly) return { beat, clamped: false };
-  const from = clampPose(beat.camera.from, assembly.safeCamera);
-  const to = clampPose(beat.camera.to, assembly.safeCamera);
+  // Beats plan a move in intent, not in pixels. The images decide how far the
+  // camera can really travel, so the intended move is stretched to use that
+  // margin: planning at a flat ±0.04 made the depth effect invisible.
+  const scaled = scaleToSafeCamera(beat.camera, assembly.safeCamera);
+  const from = clampPose(scaled.from, assembly.safeCamera);
+  const to = clampPose(scaled.to, assembly.safeCamera);
   const clamped = JSON.stringify(from) !== JSON.stringify(beat.camera.from) || JSON.stringify(to) !== JSON.stringify(beat.camera.to);
   const scale = assembly.layers[0]?.scale ?? 1;
   const inspectables = beat.inspectables.map((item) => {

@@ -166,17 +166,50 @@ export function buildCompositionPlans(
         .filter((line) => !line.endsWith(": "));
       // Depth, render mode and the background's overscan are set once every Beat using the composition is known.
       const unplaced = { depthRange: [0, 1] as [number, number], renderMode: "plane" as const, mesh: null };
+      const drawnFigures = figures.slice(0, 6);
+      const figureNames = drawnFigures.map((state) => entityOf(state.entityId)?.name ?? state.entityId);
+      // Master first: one complete scene, painted in one pass, so scale,
+      // perspective, contact and light agree. The plate and the cut-outs are
+      // then taken from it rather than invented on their own.
       const layers: LayerPlan[] = [
         {
-          layerId: "background",
+          layerId: "master",
+          kind: "master",
+          derivedFrom: null,
           role: "background",
-          entityId: moment.locationId,
-          prompt: `${styleLine(profile)}. ${place} ${scene}${propLines.length > 0 ? ` Include, as part of the scene: ${propLines.join(" ")}` : ""} Empty of people and characters, with the ground and walls behind where they stand fully painted.`,
+          entityId: shot.locationId ?? moment.locationId,
+          prompt:
+            `${styleLine(profile)}. ${place} ${scene}${propLines.length > 0 ? ` Include, as part of the scene: ${propLines.join(" ")}` : ""}` +
+            `${castLines.length > 0 ? ` In the scene: ${castLines.join(" ")}` : " No people are present."} ` +
+            "One single painted scene with everyone at true relative size for this place, each figure's feet or seat in contact with the floor or furniture it rests on, " +
+            "and shadows where they touch it.",
           transparent: false,
           zOrder: 0,
           ...unplaced,
         },
-        ...figureLayers(figures.slice(0, 6), shot, profile, plans, entityOf).map((layer) => ({ ...layer, ...unplaced })),
+        {
+          layerId: "background",
+          kind: "plate",
+          derivedFrom: "master",
+          role: "background",
+          entityId: shot.locationId ?? moment.locationId,
+          prompt:
+            `${styleLine(profile)}. The same scene as the reference image, from the same camera, in the same light: ${place} ${scene} ` +
+            `${figureNames.length > 0 ? `${figureNames.join(" and ")} have left the frame; paint` : "Paint"} the floor, furniture and walls behind where they stood, complete and unbroken. ` +
+            "No people anywhere in the image.",
+          transparent: false,
+          zOrder: 0,
+          ...unplaced,
+        },
+        ...figureLayers(drawnFigures, shot, profile, plans, entityOf).map((layer) => ({
+          ...layer,
+          kind: "figure" as const,
+          derivedFrom: "master",
+          prompt:
+            `${layer.prompt} Copy the figure exactly as it appears in the reference scene: same size in the frame, same pose, same clothing, ` +
+            "same light and shadow, cropped at the same point.",
+          ...unplaced,
+        })),
       ];
       const envelope = emptyEnvelope();
       widenEnvelope(envelope, beat.camera);

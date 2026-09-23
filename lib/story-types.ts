@@ -119,6 +119,12 @@ export type Shot = {
   framing: string;
   mood: string;
   timeOfDay: string;
+  /**
+   * Each shot names its own place. A Moment-wide location put a garden shot
+   * inside a mansion and an interior close-up outside on the lawn.
+   */
+  locationId: string | null;
+  locationStateId: string | null;
   reuseKey: string;
 };
 
@@ -210,6 +216,13 @@ export type BeatCoverage = {
   representedByFallback: string[];
   words: number;
   wordsShownVerbatim: number;
+  /**
+   * Paragraphs the reader actually reads, and those only shown as a picture.
+   * A picture is never coverage of the book's words: `shownAsText` is the only
+   * number that says how much of the book an Episode really carries.
+   */
+  shownAsText: number;
+  visualOnly: number;
   warnings: string[];
 };
 
@@ -241,8 +254,26 @@ export type EntityVisualPlan = {
 export type LayerPlan = {
   layerId: string;
   role: 'background' | 'midground' | 'foreground';
+  /**
+   * How the image is made. 'master' is one complete scene with everyone in it,
+   * at the right scale because it was painted in one go: it is approved first
+   * and it is what plays when layering fails. 'plate' is the same scene with
+   * nobody in it and 'figure' is one cut-out, both derived from the approved
+   * master rather than invented separately.
+   */
+  kind?: 'master' | 'plate' | 'figure';
+  /** The layer this one is derived from, which must be approved first. */
+  derivedFrom?: string | null;
   entityId: string | null;
+  /** The mechanical prompt: style line, place, shot and cast, concatenated. */
   prompt: string;
+  /**
+   * The same shot written as art direction by a model and checked against the
+   * prompt contract (staging, light, lens, scale anchors). Null when authoring
+   * was refused, in which case `prompt` is used as it stands.
+   */
+  authoredPrompt?: string | null;
+  promptVersion?: string;
   transparent: boolean;
   /** Larger is closer. */
   zOrder: number;
@@ -309,6 +340,12 @@ export type AssembledLayer = {
 /** Measured from the actual images; the Beats' cameras are clamped to `safeCamera`. */
 export type CompositionAssembly = {
   status: 'composed' | 'issues';
+  /**
+   * 'layered' plays the derived plate and cut-outs with parallax; 'flat' plays
+   * the approved master alone with camera movement only. A composition that
+   * cannot be layered still plays.
+   */
+  mode?: 'layered' | 'flat';
   layers: AssembledLayer[];
   safeCamera: { maxPanX: number; maxPanY: number; maxZoom: number; maxTilt: number };
   issues: string[];
@@ -375,6 +412,12 @@ export type AssetVersion = {
   provider: 'openrouter' | 'gemini-batch';
   /** False when the cost is estimated from token counts rather than billed by the provider. */
   costExact: boolean;
+  /**
+   * Mechanical checks only: the 9:16 canvas, one scene rather than a sheet or
+   * a strip, and a green screen behind a cut-out. Everything else about an
+   * image is reviewed by hand. Null for images generated before checks existed.
+   */
+  check?: { ok: boolean; issues: string[]; checkedAt: string } | null;
   createdAt: string;
 };
 

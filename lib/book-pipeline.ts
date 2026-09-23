@@ -54,6 +54,7 @@ export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancell
  * missed, consolidation runs on the ledger. Story planning: map, episodes, moments.
  */
 export type JobPhase =
+  | 'clean'
   | 'extract'
   | 'repair'
   | 'consolidate'
@@ -283,6 +284,15 @@ export async function persistCanonicalSource(
   const paragraphs = buildCanonicalParagraphs(result);
   if (paragraphs.length === 0) throw new Error('No paragraphs were extracted.');
 
+  // A source where most pages came back blank is unusable; cleaning cannot
+  // repair text that was never read, so it fails here rather than downstream.
+  if (result.totalPages > 0 && result.emptyPages > result.totalPages / 2) {
+    throw new Error(
+      `${result.emptyPages} of ${result.totalPages} pages came back empty. ` +
+        'The PDF could not be read; try a better scan or a different file.'
+    );
+  }
+
   const coverage = computeCoverage(result, paragraphs);
   if (Math.abs(coverage.missingChars) > coverage.sourceChars * COVERAGE_FAIL_RATIO) {
     throw new Error(
@@ -431,15 +441,20 @@ export async function getParagraphs(
     .sort((left, right) => left.seq - right.seq);
 }
 
-export async function enqueueUnderstandingJob(
+/**
+ * Cleaning runs first and writes its own canonical source; the worker then
+ * chains understanding onto that cleaned source, so this is the only job
+ * Studio queues after extraction.
+ */
+export async function enqueueCleaningJob(
   bookId: string,
   source: CanonicalSource
 ): Promise<string> {
   if (!db) throw new Error('Firebase is not configured.');
   await ensureAnonymousAuth();
   const jobRef = await addDoc(collection(db, 'books', bookId, 'jobs'), {
-    type: 'understand',
-    stage: 'book_model',
+    type: 'clean',
+    stage: 'cleaning',
     status: 'queued_v3',
     sourceId: source.sourceId,
     canonicalHash: source.canonicalHash,
@@ -455,14 +470,23 @@ export async function enqueueUnderstandingJob(
   });
   await updateDoc(doc(db, 'books', bookId), {
     pipeline: {
-      stage: 'book_model',
+      stage: 'cleaning',
       stageStatus: 'pending',
       lastJobId: jobRef.id,
       updatedAt: new Date().toISOString(),
     },
+    'pipelineJobs.cleaning': jobRef.id,
     updatedAt: serverTimestamp(),
   });
   return jobRef.id;
+}
+
+/** The job a finished stage chained onto, so Studio can follow the pipeline forward. */
+export async function getStageJobId(bookId: string, stage: string): Promise<string | null> {
+  if (!db) throw new Error('Firebase is not configured.');
+  await ensureAnonymousAuth();
+  const snapshot = await getDoc(doc(db, 'books', bookId));
+  return (snapshot.data()?.pipelineJobs?.[stage] as string | undefined) ?? null;
 }
 
 export function subscribePipelineJob(

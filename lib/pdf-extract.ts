@@ -25,6 +25,8 @@ export type ExtractedPage = {
   method: PageMethod;
   /** Mean tesseract confidence (0-100) for OCR pages, otherwise null. */
   confidence: number | null;
+  /** True when a weak first read was automatically re-read at a higher resolution. */
+  reread?: boolean;
 };
 
 export type ExtractionProgress = {
@@ -164,6 +166,11 @@ function throwIfAborted(signal?: AbortSignal): void {
 const OCR_MIN_NATIVE_CHARS = 50;
 const OCR_RENDER_SCALE = 2;
 const OCR_LANGUAGE = 'eng';
+/** Below this mean confidence a page is read again at a higher resolution. */
+const OCR_WEAK_CONFIDENCE = 75;
+/** A page this short is also treated as a weak read, whatever its confidence. */
+const OCR_WEAK_CHARS = 200;
+const OCR_RETRY_SCALE = 3.2;
 
 type OcrEngine = {
   recognize: (
@@ -179,6 +186,51 @@ type OcrEngine = {
 async function loadOcrEngine(language: string): Promise<OcrEngine> {
   const { createWorker } = await import('tesseract.js');
   return (await createWorker(language)) as unknown as OcrEngine;
+}
+
+type OcrRead = { text: string; confidence: number | null };
+
+type RenderablePage = {
+  getViewport: (parameters: { scale: number }) => { width: number; height: number };
+  render: (parameters: { canvas: HTMLCanvasElement; viewport: unknown }) => { promise: Promise<unknown> };
+};
+
+/** Renders one page at `scale` and reads it with the OCR engine. */
+async function readPageWithOcr(
+  page: RenderablePage,
+  engine: OcrEngine,
+  scale: number,
+  signal?: AbortSignal
+): Promise<OcrRead> {
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  if (!canvas.getContext('2d')) throw new Error('Canvas 2D is unavailable in this browser.');
+  await page.render({ canvas, viewport }).promise;
+  const { data } = await engine.recognize(canvas);
+  canvas.width = 0;
+  canvas.height = 0;
+  throwIfAborted(signal);
+  return {
+    text: normalizeTextBlock(data.text ?? ''),
+    confidence: typeof data.confidence === 'number' ? Math.round(data.confidence) : null,
+  };
+}
+
+function isWeakRead(read: OcrRead): boolean {
+  return (read.confidence ?? 0) < OCR_WEAK_CONFIDENCE || read.text.length < OCR_WEAK_CHARS;
+}
+
+/**
+ * Picks between a first read and its higher-resolution retry. A clearly longer
+ * read wins on length — the retry usually recovers lines the first pass missed
+ * — and otherwise the more confident read wins.
+ */
+function betterRead(first: OcrRead, retry: OcrRead): OcrRead {
+  if (retry.text.length > first.text.length * 1.2) return retry;
+  if (first.text.length > retry.text.length * 1.2) return first;
+  return (retry.confidence ?? 0) > (first.confidence ?? 0) ? retry : first;
 }
 
 function reportProgress(
@@ -232,6 +284,7 @@ export async function extractPdfFullText(
         let text = joinTextItems(items);
         let method: PageMethod = 'native';
         let confidence: number | null = null;
+        let reread = false;
 
         // Fallback: pages with almost no native text are image-only (scanned)
         // and need OCR. The longer text wins, so a good native layer is never
@@ -253,26 +306,21 @@ export async function extractPdfFullText(
             throwIfAborted(signal);
           }
           reportProgress(onProgress, pageNumber, totalPages, 'ocr');
-          const viewport = page.getViewport({ scale: ocrScale });
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.ceil(viewport.width);
-          canvas.height = Math.ceil(viewport.height);
-          if (!canvas.getContext('2d')) {
-            throw new Error('Canvas 2D is unavailable in this browser.');
+          const renderable = page as unknown as RenderablePage;
+          let read = await readPageWithOcr(renderable, ocrEngine, ocrScale, signal);
+          // A weak read is re-read once at a higher resolution rather than
+          // going to a person; the better of the two is kept.
+          if (isWeakRead(read)) {
+            reportProgress(onProgress, pageNumber, totalPages, 'ocr', 'Re-reading a weak page at higher resolution…');
+            const retry = await readPageWithOcr(renderable, ocrEngine, OCR_RETRY_SCALE, signal);
+            const best = betterRead(read, retry);
+            reread = best === retry;
+            read = best;
           }
-          await page.render({ canvas, viewport }).promise;
-          const { data: ocrData } = await ocrEngine.recognize(canvas);
-          canvas.width = 0;
-          canvas.height = 0;
-          throwIfAborted(signal);
-          const ocrText = normalizeTextBlock(ocrData.text ?? '');
-          if (ocrText.length > text.trim().length) {
-            text = ocrText;
+          if (read.text.length > text.trim().length) {
+            text = read.text;
             method = 'ocr';
-            confidence =
-              typeof ocrData.confidence === 'number'
-                ? Math.round(ocrData.confidence)
-                : null;
+            confidence = read.confidence;
           }
         }
 
@@ -284,6 +332,7 @@ export async function extractPdfFullText(
           isEmpty: text.length === 0,
           method,
           confidence,
+          reread,
         });
         reportProgress(
           onProgress,

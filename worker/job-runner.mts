@@ -34,6 +34,11 @@ export type JobContext = {
   cancelled: () => Promise<boolean>;
   /** Records spend from calls made outside `callModel`, such as image generation. */
   addCost: (usd: number) => void;
+  /**
+   * Points the chained next job at a different source. Cleaning writes a new
+   * canonical source, and everything after it must run on that one.
+   */
+  chainSource: (sourceId: string, canonicalHash: string) => void;
 };
 
 export type JobDefinition<TState> = {
@@ -42,6 +47,13 @@ export type JobDefinition<TState> = {
   initialState: () => TState;
   /** Returns a one-line result for the log, or null when the job was cancelled. */
   run: (context: JobContext, state: TState, checkpoint: (label: string) => Promise<void>) => Promise<string | null>;
+  /**
+   * The stage status to record for the whole book once the job succeeded.
+   * A job that only did part of the work (one Episode) reports "failed" while
+   * the rest is outstanding, so the book never claims a stage it has not
+   * finished. Defaults to "done".
+   */
+  bookStatus?: (context: JobContext) => Promise<"done" | "failed">;
   next?: ChainedJobType;
 };
 
@@ -113,6 +125,7 @@ export async function runLeasedJob<TState>(
     let counter = asNumber(job.checkpointCounter);
     let activity: JobActivity | null = null;
     const warnings: string[] = [];
+    let chained = { sourceId, canonicalHash };
 
     const context: JobContext = {
       bookId,
@@ -133,6 +146,9 @@ export async function runLeasedJob<TState>(
       cancelled: async () => (await jobRef.get()).data()?.status === "cancelled",
       addCost: (usd) => {
         costUsd += usd;
+      },
+      chainSource: (nextSourceId, nextCanonicalHash) => {
+        chained = { sourceId: nextSourceId, canonicalHash: nextCanonicalHash };
       },
       callModel: async (label, system, payload, options = {}) => {
         try {
@@ -184,9 +200,10 @@ export async function runLeasedJob<TState>(
       finishedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    await setPipeline(bookId, stage, "done", jobId);
+    const bookStatus = definition.bookStatus ? await definition.bookStatus(context) : "done";
+    await setPipeline(bookId, stage, bookStatus, jobId);
     if (definition.next && options.chain !== false) {
-      const nextJobId = await enqueueJob(bookId, definition.next, sourceId, canonicalHash);
+      const nextJobId = await enqueueJob(bookId, definition.next, chained.sourceId, chained.canonicalHash);
       log(`queued ${definition.next} job ${nextJobId}`);
     }
   } catch (error) {
