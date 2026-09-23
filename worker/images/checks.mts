@@ -50,10 +50,23 @@ export async function looksLikePanels(bytes: Buffer): Promise<boolean> {
     }
     return max - min < 12;
   };
-  // Gutters sit inside the picture, not at its edges, and run the full side.
-  const insideColumns = Array.from({ length: width - 20 }, (_, index) => index + 10).filter(columnFlat);
-  const insideRows = Array.from({ length: height - 30 }, (_, index) => index + 15).filter(rowFlat);
-  return insideColumns.length >= 3 || insideRows.length >= 4;
+  // A gutter is a band, not a single flat line: bands of flat columns or rows
+  // inside the picture are what separate panels. Counting bands rather than
+  // lines keeps a plain sky or a flat wall from reading as a sheet.
+  const bands = (count: number, from: number, flat: (index: number) => boolean): number => {
+    let bandCount = 0;
+    let run = 0;
+    for (let index = from; index < from + count; index += 1) {
+      if (flat(index)) {
+        run += 1;
+        continue;
+      }
+      if (run >= 3) bandCount += 1;
+      run = 0;
+    }
+    return run >= 3 ? bandCount + 1 : bandCount;
+  };
+  return bands(width - 20, 10, columnFlat) >= 2 || bands(height - 30, 15, rowFlat) >= 2;
 }
 
 export async function checkImage(bytes: Buffer, expectation: ImageExpectation): Promise<ImageCheck> {
@@ -64,7 +77,9 @@ export async function checkImage(bytes: Buffer, expectation: ImageExpectation): 
   if (height > 0 && Math.abs(width / height - canvasAspect) > 0.03) {
     issues.push(`${width}×${height} is not the 9:16 canvas.`);
   }
-  if (await looksLikePanels(bytes)) {
+  // A cut-out is deliberately flat behind the subject, so the panel test only
+  // applies to scenes.
+  if (!expectation.cutOut && (await looksLikePanels(bytes))) {
     issues.push("The image is split into panels or is a reference sheet, not one scene.");
   }
   if (expectation.cutOut) {
