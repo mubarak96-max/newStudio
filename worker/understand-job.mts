@@ -17,7 +17,8 @@ import { enqueueJob } from "./job-queue.mts";
 import { computeCoverage, stubMissingAnnotations } from "./coverage.mts";
 import { unique } from "./evidence.mts";
 import { ruleVersions } from "../lib/rules.ts";
-import { enforceIntegrity } from "./integrity.mts";
+import { applyNarratorResolution, isNarrator, narratorPrompt } from "./narrator.mts";
+import { enforceIntegrity, firstPersonRatio } from "./integrity.mts";
 import { advanceProgress, mergeDelta } from "./merge.mts";
 import { callJsonModel, isContentFilterError, isLengthTruncation } from "./openrouter.mts";
 import { ledgerSummary, loadParagraphs, persistBookModel, saveCheckpoint } from "./persist.mts";
@@ -280,6 +281,16 @@ export async function processUnderstandingJob(
 
     // Integrity gate: repair what is mechanical, refuse to promote a model whose
     // protagonist or places are missing. Everything downstream spends money on this.
+    if (firstPersonRatio(paragraphs) >= 0.15 && !ledger.entities.some(isNarrator)) {
+      const story = paragraphs.filter((paragraph) => paragraph.isStory);
+      const stride = Math.max(1, Math.floor(story.length / 60));
+      const result = await callJsonModel({ system: narratorPrompt, models: openRouterModels, label: "resolve narrator identity", user: JSON.stringify({
+        characters: ledger.entities.filter((entity) => entity.type === "character").map(({ entityId, canonicalName, description }) => ({ entityId, canonicalName, description })),
+        paragraphs: story.filter((_, index) => index % stride === 0).slice(0, 60).map(({ id, text }) => ({ paragraphId: id, text })),
+      }) });
+      costUsd += result.cost;
+      applyNarratorResolution(ledger, paragraphs, result.parsed as Record<string, unknown>);
+    }
     const integrity = enforceIntegrity(ledger, paragraphs, {
       title: asString(currentBook?.metaData?.title) || asString(currentBook?.title),
       author: asString(currentBook?.metaData?.author),

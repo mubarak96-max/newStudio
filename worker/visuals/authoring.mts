@@ -15,7 +15,7 @@ import type { JobContext } from "../job-runner.mts";
 import { styleLine } from "./compositions.mts";
 import { promptAuthoringSystemPrompt } from "./prompts.mts";
 
-export const promptAuthoringVersion = "prompt-author-v1";
+export const promptAuthoringVersion = "prompt-author-v2";
 
 export type PromptContract = {
   /** Names that must appear, because this layer draws them. */
@@ -106,8 +106,9 @@ export async function authorCompositionPrompts(
   profile: VisualProfile,
   nameOf: (entityId: string) => string | undefined,
 ): Promise<AuthoringResult> {
+  const drawnIds = (layer: LayerPlan): string[] => layer.kind === "plate" ? [] : layer.entityIds ?? (layer.kind === "master" ? composition.layers.filter((candidate) => candidate.role !== "background").flatMap((candidate) => candidate.entityIds ?? (candidate.entityId ? [candidate.entityId] : [])) : layer.entityId ? [layer.entityId] : []);
   const castNames = new Set(
-    composition.layers.flatMap((layer) => (layer.entityIds ?? []).map((entityId) => nameOf(entityId)).filter((name): name is string => Boolean(name))),
+    composition.layers.flatMap((layer) => drawnIds(layer).map((entityId) => nameOf(entityId)).filter((name): name is string => Boolean(name))),
   );
   const reply = await context.callModel(`prompt authoring ${composition.compositionId}`, promptAuthoringSystemPrompt, {
     style: styleLine(profile),
@@ -122,7 +123,9 @@ export async function authorCompositionPrompts(
     layers: composition.layers.map((layer) => ({
       layerId: layer.layerId,
       role: layer.role,
-      draws: (layer.entityIds ?? []).map((entityId) => nameOf(entityId) ?? entityId),
+      kind: layer.kind,
+      direction: composition.shotSnapshot.direction,
+      draws: drawnIds(layer).map((entityId) => nameOf(entityId) ?? entityId),
       mechanicalPrompt: layer.prompt,
     })),
   });
@@ -138,9 +141,9 @@ export async function authorCompositionPrompts(
       result.reasons.push(`${layer.layerId}: nothing written`);
       continue;
     }
-    const drawn = (layer.entityIds ?? []).map((entityId) => nameOf(entityId)).filter((name): name is string => Boolean(name));
+    const drawn = drawnIds(layer).map((entityId) => nameOf(entityId)).filter((name): name is string => Boolean(name));
     const verdict = judgeAuthoredPrompt(authored, {
-      requiredNames: layer.role === "background" ? [] : drawn,
+      requiredNames: layer.kind === "plate" ? [] : drawn,
       forbiddenNames: [...castNames].filter((name) => !drawn.includes(name)),
       anchors: anchorsFor(layer, composition, nameOf),
       minChars: 120,

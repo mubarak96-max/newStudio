@@ -9,7 +9,13 @@ const rest: CameraPose = { x: 0, y: 0, zoom: 1, rotate: 0 };
  * overscan, and the 2.5D stage clamps anything beyond the composition's safe
  * camera. A pan starts slightly zoomed so the frame has room to travel.
  */
-export function posesFor(move: CameraMove, start: CameraPose = rest): { from: CameraPose; to: CameraPose } {
+export function posesFor(move: CameraMove, start: CameraPose = rest, focus?: { x: number; y: number; w: number; h: number }): { from: CameraPose; to: CameraPose } {
+  if (move === "hold") return { from: start, to: { ...start } };
+  if (focus) {
+    const zoom = move === "pull-back" ? 1 : Math.min(1.35, Math.max(1.08, start.zoom + (move === "push-in" ? 0.12 : 0)));
+    const limit = (v: number) => round(Math.max(-0.12, Math.min(0.12, v)));
+    return { from: start, to: { x: limit(focus.x + focus.w / 2 - 0.5), y: limit(focus.y + focus.h / 2 - 0.45), zoom: round(zoom), rotate: 0 } };
+  }
   const zoomed = { ...start, zoom: Math.max(start.zoom, 1.08) };
   switch (move) {
     case "push-in":
@@ -26,8 +32,6 @@ export function posesFor(move: CameraMove, start: CameraPose = rest): { from: Ca
       return { from: { ...zoomed, y: -0.04 }, to: { ...zoomed, y: 0.04 } };
     case "drift":
       return { from: start, to: { ...start, x: round(start.x + 0.02), zoom: round(Math.min(start.zoom + 0.04, 1.6)) } };
-    case "hold":
-      return { from: start, to: start };
   }
 }
 

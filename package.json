@@ -7,8 +7,7 @@
     "worker": "node --env-file=.env --experimental-strip-types worker/index.mts",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test:worker": "node --experimental-strip-types --test \"worker/**/*.test.mts\""
+    "lint": "eslint"
   },
   "dependencies": {
     "firebase": "^12.19.0",

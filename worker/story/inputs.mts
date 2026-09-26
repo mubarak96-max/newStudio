@@ -1,3 +1,4 @@
+import { ruleVersions } from "../../lib/rules.ts";
 import { db } from "../config.mts";
 import { loadParagraphs } from "../persist.mts";
 import type {
@@ -29,10 +30,7 @@ export type StoryInputs = {
   narratorEntityId: string | null;
 };
 
-export function wordCount(text: string): number {
-  const trimmed = text.trim();
-  return trimmed ? trimmed.split(/\s+/).length : 0;
-}
+export { wordCount } from "./text.mts";
 
 /**
  * Reads the promoted Book Model rather than the understanding checkpoint: it
@@ -47,6 +45,7 @@ export async function loadStoryInputs(
   if (bookData?.activeSourceId !== sourceId || bookData?.canonical?.hash !== canonicalHash) {
     throw new Error("Story job source is no longer the active canonical source.");
   }
+  if (bookData?.ruleVersions?.bookModel !== ruleVersions.bookModel) throw new Error("Book Model narrator integrity is outdated. Reprocess the model before rebuilding visuals.");
   const sameSource = (data: Record<string, unknown>) =>
     data.sourceId === sourceId && data.canonicalHash === canonicalHash;
   const [paragraphs, ledgerSnapshot, entitySnapshot, eventSnapshot, chunkSnapshot] = await Promise.all([

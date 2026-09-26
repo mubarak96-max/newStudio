@@ -1,23 +1,24 @@
-import { createHash } from "node:crypto";
 import type {
   Commentary,
   Dialogue,
   Episode,
   Moment,
-  MomentEntityState,
   MomentOutlineItem,
   Shot,
   TextSelection,
 } from "../../lib/story-types.ts";
 import { asString, nullableString, records, strings } from "../coerce.mts";
 import { nameRegex, unique } from "../evidence.mts";
+import { isNarrator } from "../narrator.mts";
 import type { Entity } from "../types.mts";
 import type { StoryContext } from "./context.mts";
-import { entitiesInRange, entityAsOf, paragraphLines } from "./episodes.mts";
+import { entitiesInRange, entityAsOf, paragraphLines } from "./evidence.mts";
 import { commentaryIssues } from "./commentary.mts";
-import { wordCount, type StoryInputs } from "./inputs.mts";
+import type { StoryInputs } from "./inputs.mts";
+import { wordCount } from "./text.mts";
 import { momentSystemPrompt } from "./prompts.mts";
 import { applyShotRules, nameIndex } from "./shots.mts";
+import { readDirection, visualIdentity } from "./direction.mts";
 import { locateQuote, quotedSpans } from "./text.mts";
 
 const framings = new Set(["wide", "medium", "close", "over-shoulder", "insert"]);
@@ -35,17 +36,6 @@ function mostFrequent(values: string[]): string | null {
   const counts = new Map<string, number>();
   for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1);
   return Array.from(counts).sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
-}
-
-function reuseKey(locationId: string | null, locationStateId: string | null, states: MomentEntityState[], timeOfDay: string, framing: string): string {
-  const cast = states
-    .map((state) => `${state.entityId}@${state.stateId ?? "-"}`)
-    .sort()
-    .join(",");
-  return createHash("sha1")
-    .update([locationId ?? "-", locationStateId ?? "-", cast, timeOfDay, framing].join("|"))
-    .digest("hex")
-    .slice(0, 16);
 }
 
 /** Names of entities the reader has not met by `seq`, used to catch commentary that spoils. */
@@ -139,6 +129,7 @@ export async function buildMoment(
   const story = inputs.paragraphs.slice(span.seqStart, span.seqEnd + 1).filter((paragraph) => paragraph.isStory);
   const annotations = story.map((paragraph) => inputs.annotations.get(paragraph.id)).filter((annotation) => annotation !== undefined);
   const entities = entitiesInRange(inputs, span, 30);
+  for (const narrator of inputs.entities.filter(isNarrator)) if (!entities.some((entity) => entity.entityId === narrator.entityId)) entities.push(narrator);
   const frame: Frame = {
     inputs,
     outline,
@@ -161,7 +152,9 @@ export async function buildMoment(
           episode: { title: episode.title, summary: episode.summary, openingState: episode.storyPlan?.openingState },
           moment: { momentId: outline.momentId, title: outline.title, purpose: outline.purpose },
           previousMoment: outlineIndex > 0 ? neighbours[outlineIndex - 1] : null,
-          entities: entities.map((entity) => entityAsOf(entity, span.seqStart)),
+          entities: entities.map((entity) => ({ ...entityAsOf(entity, span.seqEnd), availableStates: entity.states.filter((state) => state.validFromSeq <= span.seqEnd).map(({ stateId, label, validFromSeq, validFromStoryTime, validToStoryTime }) => ({ stateId, label, validFromSeq, validFromStoryTime, validToStoryTime })) })),
+          narratorEntityId: inputs.narratorEntityId,
+          annotations: annotations.map(({ paragraphId, presentEntityIds, mentionedEntityIds, speakerEntityIds, mode, locationId }) => ({ paragraphId, presentEntityIds, mentionedEntityIds, speakerEntityIds, mode, locationId })),
           newEntityIds: newEntitiesIn(inputs, outline).map((entity) => entity.entityId),
           quotedLines: quotes.map((quote, index) => ({
             quoteId: quoteIds[index],
@@ -170,7 +163,7 @@ export async function buildMoment(
           })),
           paragraphs: paragraphLines(inputs, span),
         });
-  if (story.length > 0 && !data) warnings.push("The moment call failed; this moment was built from paragraph annotations.");
+  if (story.length > 0 && !data) throw new Error(`Moment direction failed for ${outline.momentId}; visuals were not invented.`);
 
   const characterIds = unique(
     annotations.flatMap((annotation) => [...annotation.presentEntityIds, ...annotation.speakerEntityIds]),
@@ -210,13 +203,20 @@ export async function buildMoment(
   });
 
   const drafted: Omit<Shot, "reuseKey">[] = records(data?.shots)
-    .slice(0, 4)
     .map((row, index) => {
-      const entityStates = unique(strings(row.entityIds).filter((id) => inputs.entityById.has(id))).map((entityId) => ({
-        entityId,
-        stateId: stateAt(inputs.entityById.get(entityId), span.seqStart),
-      }));
+      const sourceIds = strings(row.sourceParagraphIds);
+      const sourceSeq = Math.min(...sourceIds.map((id) => inputs.paragraphById.get(id)?.seq ?? Infinity));
+      if (strings(row.entityIds).some((id) => !inputs.entityById.has(id))) throw new Error("Shot names an unknown visible entity.");
+      const chosenStates = new Map(records(row.entityStates).map((state) => [asString(state.entityId), nullableString(state.stateId)]));
+      const entityStates = unique(strings(row.entityIds)).map((entityId) => {
+        const stateId = chosenStates.has(entityId) ? chosenStates.get(entityId)! : asString(row.presentation) === "physical" ? stateAt(inputs.entityById.get(entityId), sourceSeq) : null;
+        if (stateId && !inputs.entityById.get(entityId)?.states.some((state) => state.stateId === stateId && state.validFromSeq <= sourceSeq)) throw new Error("Shot uses an unknown or unrevealed state.");
+        return { entityId, stateId };
+      });
+      const direction = readDirection(row, new Set(frame.storyIds), new Set(entityStates.map((state) => state.entityId)));
       const shotLocation = nullableString(row.locationId);
+      const locationState = nullableString(row.locationStateId) ?? (direction.presentation === "physical" ? stateAt(inputs.entityById.get(shotLocation ?? ""), sourceSeq) : null);
+      if (locationState && !inputs.entityById.get(shotLocation ?? "")?.states.some((state) => state.stateId === locationState && state.validFromSeq <= sourceSeq)) throw new Error("Shot uses an unknown or unrevealed location state.");
       return {
         shotId: `${outline.momentId}_s${index + 1}`,
         description: asString(row.description).trim(),
@@ -225,31 +225,21 @@ export async function buildMoment(
         mood: asString(row.mood).trim(),
         timeOfDay: asString(row.timeOfDay).trim() || "unknown",
         locationId: shotLocation && inputs.entityById.get(shotLocation)?.type === "location" ? shotLocation : null,
-        locationStateId: null,
+        locationStateId: locationState,
+        direction: { ...direction, sourceSeq, sourceEvidence: sourceIds.map((id) => ({ paragraphId: id, text: inputs.paragraphById.get(id)!.text })) },
       };
     })
     .filter((shot) => shot.description);
-  if (drafted.length === 0 && annotations.length > 0) {
-    const cue = annotations.find((annotation) => annotation.visualCue && !annotation.visualCue.startsWith("abstract:"));
-    drafted.push({
-      shotId: `${outline.momentId}_s1`,
-      description: cue?.visualCue ?? annotations[0]!.visualCue ?? annotations[0]!.summary,
-      entityStates: characters.slice(0, 4),
-      framing: "wide",
-      mood: annotations[0]!.mood,
-      timeOfDay: "unknown",
-      locationId: null,
-      locationStateId: null,
-    });
-  }
+  if (story.length > 0 && drafted.length === 0) throw new Error("Moment direction produced no shots.");
   const shots = applyShotRules(drafted, {
     index: nameIndex(entities),
     momentLocationId: locationId,
     narratorEntityId: inputs.narratorEntityId,
     stateOf: (entityId) => stateAt(inputs.entityById.get(entityId), span.seqStart),
-    reuseKeyOf: (shot) => reuseKey(shot.locationId, shot.locationStateId, shot.entityStates, shot.timeOfDay, shot.framing),
+    reuseKeyOf: visualIdentity,
   });
 
+  if (frame.storyIds.some((id) => !shots.some((shot) => shot.direction?.sourceParagraphIds.includes(id)))) throw new Error("Moment direction leaves source paragraphs without a supported visual.");
   const annotationSummary = annotations.map((annotation) => annotation.summary).join(" ");
   return {
     schemaVersion: 1,

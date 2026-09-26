@@ -1,23 +1,17 @@
 import type { Beat, BeatCoverage, CameraPose, Moment } from "../../lib/story-types.ts";
 import { asString, records } from "../coerce.mts";
 import { unique } from "../evidence.mts";
-import { entitiesInRange, entityAsOf } from "../story/episodes.mts";
-import { wordCount } from "../story/inputs.mts";
+import { entitiesInRange, entityAsOf } from "../story/evidence.mts";
+import { wordCount } from "../story/text.mts";
 import type { StoryContext } from "../story/context.mts";
 import { durationFor, isCameraMove, posesFor } from "./camera.mts";
 import { beatsSystemPrompt } from "./prompts.mts";
-import { placeCommentary, segmentParagraphs, shotInOrder } from "./segments.mts";
+import { placeCommentary, segmentParagraphs } from "./segments.mts";
 
 /** Words on screen at once: about fifteen seconds of reading. */
 const maxSegmentWords = 60;
 /** One short staging entry per segment; far more than this is a model looping. */
-const tokensPerSegment = 80;
-/**
- * How many Beats in a row may share one composition before the Moment's other
- * shots are used. Twenty-four Beats once ran on a single Old Major image: two
- * and a half minutes of the same picture.
- */
-const maxBeatsPerComposition = 4;
+const tokensPerSegment = 140;
 /** Below this share of a Moment's words read verbatim, the Episode is an abridgement. */
 const verbatimShareWarning = 0.5;
 
@@ -74,6 +68,7 @@ export async function buildMomentBeats(
               shotId: shot.shotId,
               description: shot.description,
               framing: shot.framing,
+              direction: shot.direction,
               entityIds: shot.entityStates.map((state) => state.entityId),
             })),
             segments: segments.map((segment, index) => ({
@@ -85,42 +80,23 @@ export async function buildMomentBeats(
           },
           { maxTokens: Math.max(2_000, segments.length * tokensPerSegment) },
         );
-  if (segments.length > 0 && !data) warnings.push("The Beat call failed; shots follow the text in order.");
-
-  const proposed = new Map(records(data?.beats).map((row) => [asString(row.segmentId), row]));
-  const staging: Staging[] = segments.map((_, index) => {
+  if (segments.length > 0 && !data) throw new Error(`Beat direction failed for ${moment.momentId}.`);
+  const rows = records(data?.beats);
+  const proposed = new Map(rows.map((row) => [asString(row.segmentId), row]));
+  if (rows.length !== segments.length || proposed.size !== segments.length) throw new Error("Beat direction must stage every segment exactly once.");
+  const staging: Staging[] = segments.map((segment, index) => {
     const row = proposed.get(segmentIds[index]!);
-    const camera = row?.camera && typeof row.camera === "object" ? (row.camera as Record<string, unknown>) : {};
+    const camera = row?.camera && typeof row.camera === "object" ? row.camera as Record<string, unknown> : {};
     const shotId = asString(row?.shotId);
-    const focus = asString(camera.focusEntityId);
-    return {
-      shotId: shotById.has(shotId) ? shotId : (shotInOrder(index, segments.length, shots)?.shotId ?? null),
-      move: isCameraMove(camera.move) ? camera.move : "drift",
-      focusEntityId: inputs.entityById.has(focus) ? focus : null,
-      rationale: asString(camera.rationale).trim() || (row ? "" : "Slow drift while the passage is read."),
-    };
+    const shot = shotById.get(shotId);
+    const focus = asString(camera.focusEntityId) || null;
+    const rationale = asString(camera.rationale).trim();
+    if (!shot || !isCameraMove(camera.move) || !rationale) throw new Error(`Invalid direction for ${segmentIds[index]}.`);
+    if (!shot.direction?.sourceParagraphIds.includes(segment.paragraphId)) throw new Error(`Shot ${shotId} is not grounded in ${segment.paragraphId}; rebuild moment direction.`);
+    if (focus && !shot.direction.focusRegions.some((region) => region.entityId === focus)) throw new Error(`Focus ${focus} has no planned position in ${shotId}.`);
+    if (camera.move !== "hold" && !focus) throw new Error("Camera movement needs a visible, positioned focus; otherwise hold.");
+    return { shotId, move: camera.move, focusEntityId: focus, rationale };
   });
-  const unstaged = segmentIds.filter((id) => !proposed.has(id)).length;
-  if (data && unstaged > 0) warnings.push(`${unstaged} segment(s) were not staged by the model; their shots follow the text in order.`);
-
-  // Rotate through the Moment's own shots so no picture is held too long.
-  if (shots.length > 1) {
-    let runShotId: string | null = null;
-    let run = 0;
-    for (const item of staging) {
-      if (item.shotId === runShotId) run += 1;
-      else {
-        runShotId = item.shotId;
-        run = 1;
-      }
-      if (run <= maxBeatsPerComposition) continue;
-      const current = shots.findIndex((shot) => shot.shotId === runShotId);
-      const next = shots[(current + 1) % shots.length]!;
-      item.shotId = next.shotId;
-      runShotId = next.shotId;
-      run = 1;
-    }
-  }
 
   // Only notes that passed every check reach the reader, beside the words they explain.
   const notes = placeCommentary(
@@ -139,7 +115,7 @@ export async function buildMomentBeats(
     const shot = draft.shotId ? shotById.get(draft.shotId) : undefined;
     const compositionId = shot ? compositionIdFor(shot.reuseKey) : null;
     const sameComposition = previousPose !== null && previousPose.compositionId === compositionId;
-    const proposedPose = posesFor(draft.move, sameComposition ? previousPose!.to : undefined);
+    const proposedPose = posesFor(draft.move, sameComposition ? previousPose!.to : undefined, shot?.direction?.focusRegions.find((region) => region.entityId === draft.focusEntityId));
     // Continuity: on the same picture the camera starts exactly where it
     // stopped. A pan that reset x or y made the frame jump between Beats.
     const poses = sameComposition ? { from: previousPose!.to, to: proposedPose.to } : proposedPose;

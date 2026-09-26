@@ -7,6 +7,7 @@ import type {
   MomentEntityState,
   VisualForecast,
   VisualProfile,
+  Shot,
 } from "../../lib/story-types.ts";
 import { assignDepth, emptyEnvelope, planStage25d, widenEnvelope } from "./stage25d.mts";
 
@@ -60,18 +61,16 @@ export function placeFigure(index: number, count: number, framing: string): NonN
  */
 export function figureLayers(
   figures: MomentEntityState[],
-  shot: { description: string; framing: string },
+  shot: Pick<Shot, "description" | "framing" | "direction">,
   profile: VisualProfile,
   plans: Map<string, EntityVisualPlan>,
   entityOf: EntityLookup,
 ): Omit<LayerPlan, "depthRange" | "renderMode" | "mesh">[] {
   if (figures.length === 0) return [];
   const nameOf = (state: MomentEntityState) => entityOf(state.entityId)?.name ?? state.entityId;
-  const lookLine = (state: MomentEntityState) => `${nameOf(state)}: ${lookOf(plans.get(state.entityId), state.stateId)}`;
-  const placement = placeFigure(0, 1, shot.framing);
-  const size =
-    `about ${Math.round(placement.heightFraction * 100)}% of the frame height tall, with the lowest visible point ` +
-    `${Math.round(placement.baseline * 100)}% of the way down the frame.`;
+  const lookLine = (state: MomentEntityState) => `${nameOf(state)}: ${lookOf(plans.get(state.entityId), state.stateId, shot.direction?.sourceSeq)}`;
+  const region = figures.length === 1 ? shot.direction?.focusRegions.find((region) => region.entityId === figures[0]!.entityId) : undefined;
+  const placement = region ? { centerX: region.x + region.w / 2, heightFraction: region.h, baseline: region.y + region.h } : placeFigure(0, 1, shot.framing);
   if (figures.length === 1) {
     const state = figures[0]!;
     return [
@@ -82,7 +81,7 @@ export function figureLayers(
         entityIds: [state.entityId],
         prompt:
           `${styleLine(profile)}. ${lookLine(state)} Pose and action as in: ${shot.description} ` +
-          `Draw only ${nameOf(state)}, no other people or objects, ${size} Isolated on a transparent background, lit to match the scene.`,
+          `Draw only the visible portion of ${nameOf(state)} exactly as it appears in the approved master, at the same position, size and crop. Do not expand a hand or face insert into a whole body. Isolated on a transparent background, lit to match the scene.`,
         transparent: true,
         zOrder: 1,
         placement,
@@ -97,8 +96,8 @@ export function figureLayers(
       entityId: null,
       entityIds: figures.map((state) => state.entityId),
       prompt:
-        `${styleLine(profile)}. Draw exactly these ${figures.length} people together in one image, each exactly once, and no one else: ${figures.map(lookLine).join(" ")} ` +
-        `Arrange and pose them as in: ${shot.description} Keep ${names.join(" and ")} clearly separate, the group ${size} ` +
+        `${styleLine(profile)}. Draw exactly these ${figures.length} subjects together in one image, each exactly once, and no one else: ${figures.map(lookLine).join(" ")} ` +
+        `Arrange and pose them as in: ${shot.description} Preserve the exact positions, visible portions and crop of ${names.join(" and ")} in the approved master. ` +
         `Isolated on a transparent background, lit to match the scene.`,
       transparent: true,
       zOrder: 1,
@@ -108,8 +107,9 @@ export function figureLayers(
 }
 
 /** The look for an entity in a given state: the state variant when one exists, else the canonical spec. */
-function lookOf(plan: EntityVisualPlan | undefined, stateId: string | null): string {
+function lookOf(plan: EntityVisualPlan | undefined, stateId: string | null, seq = Infinity): string {
   if (!plan) return "";
+  if (plan.preRevealSpec && plan.hiddenUntilSeq != null && seq < plan.hiddenUntilSeq) return plan.preRevealSpec;
   const variant = stateId ? plan.stateVariants[stateId] : undefined;
   return variant ? `${plan.spec} Now: ${variant.spec}` : plan.spec;
 }
@@ -146,27 +146,29 @@ export function buildCompositionPlans(
         return type !== "location" && type !== "concept";
       });
       // Only figures move independently of the scene. Objects (furniture,
-      // walls, wallpaper, props) are painted into the background: as separate
+      // walls, wallpaper, props) are integrated into the background: as separate
       // cut-outs they came back filling the frame and hid the characters.
       const figures = cast.filter((state) => {
         const type = entityOf(state.entityId)?.type;
         return type === "character" || type === "group";
       });
-      const locationPlan = moment.locationId ? plans.get(moment.locationId) : undefined;
-      const place = moment.locationId
-        ? `${entityOf(moment.locationId)?.name ?? ""}: ${lookOf(locationPlan, moment.locationStateId)}${locationPlan?.layout ? ` Layout: ${locationPlan.layout}` : ""}`
+      const locationId = shot.locationId ?? moment.locationId;
+      const locationStateId = shot.locationId ? shot.locationStateId : moment.locationStateId;
+      const locationPlan = locationId ? plans.get(locationId) : undefined;
+      const place = locationId
+        ? `${entityOf(locationId)?.name ?? ""}: ${lookOf(locationPlan, locationStateId, shot.direction?.sourceSeq)}${locationPlan?.layout ? ` Layout: ${locationPlan.layout}` : ""}`
         : "";
       const castLines = cast
-        .map((state) => `${entityOf(state.entityId)?.name ?? state.entityId}: ${lookOf(plans.get(state.entityId), state.stateId)}`)
+        .map((state) => `${entityOf(state.entityId)?.name ?? state.entityId}: ${lookOf(plans.get(state.entityId), state.stateId, shot.direction?.sourceSeq)}`)
         .filter((line) => !line.endsWith(": "));
-      const scene = `${shot.framing} shot, ${shot.timeOfDay}, mood ${shot.mood}. ${shot.description}`;
+      const scene = `${shot.framing} shot, ${shot.timeOfDay}, mood ${shot.mood}. ${shot.description} Presentation: ${shot.direction?.presentation ?? "physical"}. Preserve ambiguity when uncertain. Planned focus boxes (normalized x,y,w,h): ${JSON.stringify(shot.direction?.focusRegions ?? [])}.`;
       const propLines = cast
         .filter((state) => !figures.includes(state))
-        .map((state) => `${entityOf(state.entityId)?.name ?? state.entityId}: ${lookOf(plans.get(state.entityId), state.stateId)}`)
+        .map((state) => `${entityOf(state.entityId)?.name ?? state.entityId}: ${lookOf(plans.get(state.entityId), state.stateId, shot.direction?.sourceSeq)}`)
         .filter((line) => !line.endsWith(": "));
       // Depth, render mode and the background's overscan are set once every Beat using the composition is known.
       const unplaced = { depthRange: [0, 1] as [number, number], renderMode: "plane" as const, mesh: null };
-      const drawnFigures = figures.slice(0, 6);
+      const drawnFigures = figures;
       const figureNames = drawnFigures.map((state) => entityOf(state.entityId)?.name ?? state.entityId);
       // Master first: one complete scene, painted in one pass, so scale,
       // perspective, contact and light agree. The plate and the cut-outs are
@@ -177,11 +179,12 @@ export function buildCompositionPlans(
           kind: "master",
           derivedFrom: null,
           role: "background",
-          entityId: shot.locationId ?? moment.locationId,
+          entityId: locationId,
+          entityIds: drawnFigures.map((state) => state.entityId),
           prompt:
             `${styleLine(profile)}. ${place} ${scene}${propLines.length > 0 ? ` Include, as part of the scene: ${propLines.join(" ")}` : ""}` +
             `${castLines.length > 0 ? ` In the scene: ${castLines.join(" ")}` : " No people are present."} ` +
-            "One single painted scene with everyone at true relative size for this place, each figure's feet or seat in contact with the floor or furniture it rests on, " +
+            "One single photorealistic scene with everyone at true relative size for this place, each figure's feet or seat in contact with the floor or furniture it rests on, " +
             "and shadows where they touch it.",
           transparent: false,
           zOrder: 0,
@@ -195,8 +198,8 @@ export function buildCompositionPlans(
           entityId: shot.locationId ?? moment.locationId,
           prompt:
             `${styleLine(profile)}. The same scene as the reference image, from the same camera, in the same light: ${place} ${scene} ` +
-            `${figureNames.length > 0 ? `${figureNames.join(" and ")} have left the frame; paint` : "Paint"} the floor, furniture and walls behind where they stood, complete and unbroken. ` +
-            "No people anywhere in the image.",
+            `${figureNames.length > 0 ? `${figureNames.join(" and ")} have left the frame; reconstruct` : "Reconstruct"} the floor, furniture and walls behind where they stood, complete and unbroken. ` +
+            "Remove every listed moving subject, including animals and groups; retain fixed architecture, furniture and props.",
           transparent: false,
           zOrder: 0,
           ...unplaced,
@@ -222,9 +225,9 @@ export function buildCompositionPlans(
         originEpisodeId: episodeId,
         usedIn: [{ episodeId, momentId: moment.momentId, beatId: beat.id }],
         shotSnapshot: shot,
-        locationId: moment.locationId,
+        locationId,
         entityStatesUsed: cast,
-        referenceEntityIds: [...(moment.locationId ? [moment.locationId] : []), ...cast.map((state) => state.entityId)].filter((id) =>
+        referenceEntityIds: [...(locationId ? [locationId] : []), ...cast.map((state) => state.entityId)].filter((id) =>
           plans.has(id),
         ),
         visualProfileVersion: profile.version,
@@ -247,7 +250,7 @@ export function buildCompositionPlans(
         layer.role === "background"
           ? {
               ...layer,
-              prompt: `${layer.prompt} Paint the scene ${Math.round(x * 100)}% beyond the left and right edges and ${Math.round(y * 100)}% beyond the top and bottom so the camera can move without revealing an edge.`,
+              prompt: `${layer.prompt} Extend the scene ${Math.round(x * 100)}% beyond the left and right edges and ${Math.round(y * 100)}% beyond the top and bottom so the camera can move without revealing an edge.`,
             }
           : layer,
       ),

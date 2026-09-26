@@ -126,6 +126,16 @@ export type Shot = {
   locationId: string | null;
   locationStateId: string | null;
   reuseKey: string;
+  /** Absent only on legacy plans, which must be rebuilt before generation. */
+  direction?: {
+    sourceParagraphIds: string[];
+    sourceEvidence?: { paragraphId: string; text: string }[];
+    sourceSeq?: number;
+    presentation: 'physical' | 'memory' | 'dream' | 'imagined' | 'perception' | 'descriptive';
+    purpose: string;
+    changeReason: string;
+    focusRegions: { entityId: string; x: number; y: number; w: number; h: number }[];
+  };
 };
 
 export type MomentEntityState = { entityId: string; stateId: string | null };
@@ -247,6 +257,7 @@ export type EntityVisualPlan = {
   referenceSheet: { views: string[]; prompt: string; approved: boolean };
   stateVariants: Record<string, { label: string; spec: string; validFromSeq: number; approved: boolean }>;
   preRevealSpec: string | null;
+  hiddenUntilSeq?: number | null;
   /** Location-only layout notes: zones, entrances and anchors. */
   layout: string | null;
 };
@@ -346,6 +357,8 @@ export type CompositionAssembly = {
    * cannot be layered still plays.
    */
   mode?: 'layered' | 'flat';
+  masterUrl?: string;
+  degradationReason?: string | null;
   layers: AssembledLayer[];
   safeCamera: { maxPanX: number; maxPanY: number; maxZoom: number; maxTilt: number };
   issues: string[];
@@ -412,12 +425,14 @@ export type AssetVersion = {
   provider: 'openrouter' | 'gemini-batch';
   /** False when the cost is estimated from token counts rather than billed by the provider. */
   costExact: boolean;
+  planKey?: string;
+  visualProfileVersion?: number;
   /**
    * Mechanical checks only: the 9:16 canvas, one scene rather than a sheet or
    * a strip, and a green screen behind a cut-out. Everything else about an
    * image is reviewed by hand. Null for images generated before checks existed.
    */
-  check?: { ok: boolean; issues: string[]; checkedAt: string } | null;
+  check?: { ok: boolean; issues: string[]; checkedAt: string; version?: string; semantic?: boolean } | null;
   createdAt: string;
 };
 
@@ -431,6 +446,9 @@ export type ImageBatchItem = {
   alpha: AssetVersion['alpha'];
   episodeId: string | null;
   references: AssetVersion['references'];
+  planKey?: string;
+  visualProfileVersion?: number;
+  expectation?: { cutOut: boolean } | null;
 };
 
 export type ImageBatch = Lineage & {

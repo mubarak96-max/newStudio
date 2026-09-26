@@ -1,3 +1,4 @@
+import { isNarrator } from "./narrator.mts";
 /**
  * Book model integrity: the gate between understanding and everything that
  * spends money on it.
@@ -91,7 +92,7 @@ function removeBookMetadataEntities(ledger: Ledger, title: string, author: strin
   if (banned.size === 0) return [];
   const removed: string[] = [];
   for (const entity of [...ledger.entities]) {
-    if (entity.type === "location") continue;
+    if (entity.type === "location" || isNarrator(entity)) continue;
     const names = [entity.canonicalName, ...entity.aliases.map((alias) => alias.name)].map(normalizeName);
     if (!names.some((name) => banned.has(name))) continue;
     removed.push(entity.entityId);
@@ -189,7 +190,7 @@ const FIRST_PERSON = /(^|[^\p{L}])(I|I'm|I've|I'd|I'll|my|me|mine)([^\p{L}]|$)/u
 export function firstPersonRatio(paragraphs: Paragraph[]): number {
   const story = paragraphs.filter((paragraph) => paragraph.isStory);
   if (story.length === 0) return 0;
-  const hits = story.filter((paragraph) => FIRST_PERSON.test(paragraph.text)).length;
+  const hits = story.filter((paragraph) => FIRST_PERSON.test(paragraph.text.replace(/[?"][^?"]*[?"]/g, ""))).length;
   return hits / story.length;
 }
 
@@ -198,28 +199,9 @@ export function firstPersonRatio(paragraphs: Paragraph[]): number {
  * narrator, or the character who is present in most of the first-person
  * paragraphs when the narrator is named in the text instead.
  */
-function findNarrator(ledger: Ledger, paragraphs: Paragraph[]): string | null {
-  const named = ledger.entities.find(
-    (entity) =>
-      entity.type === "character" &&
-      (entity.entityId === "ch_narrator" ||
-        /narrator/i.test(entity.canonicalName) ||
-        entity.aliases.some((alias) => /narrator/i.test(alias.name))),
-  );
-  if (named) return named.entityId;
-  const firstPerson = paragraphs.filter((paragraph) => paragraph.isStory && FIRST_PERSON.test(paragraph.text));
-  if (firstPerson.length === 0) return null;
-  const presence = new Map<string, number>();
-  for (const paragraph of firstPerson) {
-    for (const entityId of ledger.annotations[paragraph.id]?.presentEntityIds ?? []) {
-      presence.set(entityId, (presence.get(entityId) ?? 0) + 1);
-    }
-  }
-  for (const [entityId, count] of presence) {
-    const entity = ledger.entities.find((candidate) => candidate.entityId === entityId);
-    if (entity?.type === "character" && count >= firstPerson.length * 0.5) return entityId;
-  }
-  return null;
+function findNarrator(ledger: Ledger): string | null {
+  const narrators = ledger.entities.filter(isNarrator);
+  return narrators.length === 1 ? narrators[0]!.entityId : null;
 }
 
 /**
@@ -239,8 +221,8 @@ export function enforceIntegrity(
 
   const failures: string[] = [];
   const firstPerson = firstPersonRatio(paragraphs);
-  const narratorEntityId = firstPerson >= 0.15 ? findNarrator(ledger, paragraphs) : null;
-  if (firstPerson >= 0.15 && !narratorEntityId) {
+  const narratorEntityId = firstPerson >= 0.15 ? findNarrator(ledger) : null;
+  if (firstPerson >= 0.15 && !ledger.entities.some(isNarrator)) {
     failures.push(
       `This book is narrated in the first person (${Math.round(firstPerson * 100)}% of story paragraphs) but no narrator ` +
         "character exists in the model. Every shot of the narrator would be bound to another character.",

@@ -24,14 +24,6 @@ export function nameIndex(entities: Entity[]): NamedEntity[] {
   }));
 }
 
-function namedIn(description: string, index: NamedEntity[], types: Entity["type"][]): string[] {
-  return index
-    .filter((entity) => types.includes(entity.type) && entity.patterns.some((pattern) => pattern.test(description)))
-    .map((entity) => entity.entityId);
-}
-
-const NARRATOR = /\bnarrators?\b/i;
-
 export type ShotRuleOptions = {
   index: NamedEntity[];
   /** The Moment's place, used when a shot's description names none. */
@@ -47,26 +39,11 @@ export type ShotRuleOptions = {
  * last, when the model gave them all the same framing.
  */
 export function applyShotRules(shots: Omit<Shot, "reuseKey">[], options: ShotRuleOptions): Shot[] {
-  const { index, momentLocationId, narratorEntityId, stateOf, reuseKeyOf } = options;
-  const placed = shots.map((shot) => {
-    const describedPlace = namedIn(shot.description, index, ["location"])[0] ?? null;
-    const cast = new Set(shot.entityStates.map((state) => state.entityId));
-    for (const entityId of namedIn(shot.description, index, ["character", "group", "object"])) cast.add(entityId);
-    // "The narrator" is a person in the picture even though the book never names them.
-    if (narratorEntityId && NARRATOR.test(shot.description)) cast.add(narratorEntityId);
-    const locationId = describedPlace ?? shot.locationId ?? momentLocationId;
-    return {
-      ...shot,
-      locationId,
-      locationStateId: locationId ? stateOf(locationId) : null,
-      entityStates: [...cast].map((entityId) => ({ entityId, stateId: stateOf(entityId) })),
-    };
+  const { momentLocationId, stateOf, reuseKeyOf } = options;
+  return shots.map((shot) => {
+    // Presence is an explicit source-grounded decision, never a name match.
+    const locationId = shot.locationId ?? momentLocationId;
+    const placed = { ...shot, locationId, locationStateId: shot.direction ? shot.locationStateId : shot.locationStateId ?? (locationId ? stateOf(locationId) : null) };
+    return { ...placed, reuseKey: reuseKeyOf(placed) };
   });
-
-  const framings = new Set(placed.map((shot) => shot.framing));
-  if (placed.length > 1 && framings.size === 1) {
-    placed[0]!.framing = "wide";
-    placed.at(-1)!.framing = "close";
-  }
-  return placed.map((shot) => ({ ...shot, reuseKey: reuseKeyOf(shot) }));
 }

@@ -14,7 +14,7 @@ import { approvedLayers, assembleComposition, fingerprintOf, fitBeat } from "./a
  */
 export const composeJob: JobDefinition<Record<string, never>> = {
   type: "compose",
-  version: "compose-v1",
+  version: "compose-v2",
   initialState: () => ({}),
   run: async (context) => {
     const { bookId, jobId } = context;
@@ -47,7 +47,7 @@ export const composeJob: JobDefinition<Record<string, never>> = {
         unit: "compositions",
       });
       const approved = await approvedLayers(bookId, composition);
-      if (composition.assembly && composition.assembly.fingerprint === fingerprintOf(approved)) {
+      if (composition.assembly && composition.assembly.fingerprint === fingerprintOf(approved, composition)) {
         assemblies.set(composition.compositionId, composition.assembly);
         if (composition.assembly.status === "issues") withIssues += 1;
         continue;
@@ -83,7 +83,7 @@ export const composeJob: JobDefinition<Record<string, never>> = {
         composeIssues: missing,
       });
     }
-    await db.doc(`books/${bookId}`).update({ "ruleVersions.composition": ruleVersions.composition });
+    await db.doc(`books/${bookId}`).update({ "ruleVersions.composition": ruleVersions.composition, "ruleVersions.imageChecks": ruleVersions.imageChecks });
     return `${compositions.length} compositions (${built} rebuilt, ${withIssues} with issues), ${beats} beats fitted, ${clamped} cameras clamped`;
   },
   /**

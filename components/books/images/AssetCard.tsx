@@ -1,5 +1,6 @@
 'use client';
 
+import { ruleVersions } from '@/lib/rules';
 import { useEffect, useState } from 'react';
 import { subscribePipelineJob, type PipelineJob } from '@/lib/book-pipeline';
 import Image from 'next/image';
@@ -137,7 +138,7 @@ export function AssetCard({
           {dependencies.map((dependency, index) => (
             <span key={dependency.label} className={dependency.approved ? '' : 'text-amber-600'}>
               {index > 0 ? ', ' : ''}
-              {dependency.label} {dependency.approved ? '✓' : '(not approved yet, text only)'}
+              {dependency.label} {dependency.approved ? '✓' : '(generated and checked first)'}
             </span>
           ))}
         </p>
@@ -151,7 +152,7 @@ export function AssetCard({
               <Picture version={selected} label={selected === latest ? 'Latest candidate' : 'Earlier version'} />
               <button
                 type='button'
-                disabled={busy}
+                disabled={busy || !selected.check?.ok || !selected.check.semantic || selected.check.version !== ruleVersions.imageChecks}
                 onClick={() => run(() => onApprove(selected.versionId))}
                 className='inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50'
               >
@@ -187,6 +188,7 @@ export function AssetCard({
           You can still generate it now with OpenRouter.
         </p>
       )}
+      {selected?.check && !selected.check.ok && <p className='text-xs text-destructive'>{selected.check.issues.join(' ')}</p>}
       {asset?.status === 'failed' && asset.error && <p className='text-xs text-destructive'>{asset.error}</p>}
       {error && <p className='text-xs text-destructive'>{error}</p>}
 

@@ -10,7 +10,7 @@
 
 import type { Beat, CompositionAssembly, CompositionPlan, Episode, Moment } from "../../lib/story-types.ts";
 
-export const manifestSchemaVersion = 2;
+export const manifestSchemaVersion = 3;
 
 export type PublishedLayer = {
   layerId: string;
@@ -42,7 +42,7 @@ export type PublishedBeat = {
   momentTitle: string;
   sceneId: string | null;
   text: Beat["text"];
-  camera: { from: Beat["camera"]["from"]; to: Beat["camera"]["to"]; durationMs: number; easing: string };
+  camera: { move: Beat["camera"]["move"]; from: Beat["camera"]["from"]; to: Beat["camera"]["to"]; durationMs: number; easing: string };
   transitionIn: Beat["transitionIn"];
   /** How long to hold before advancing on its own, from the reading length. */
   dwellMs: number;
@@ -85,9 +85,9 @@ export type PublishIssue = { episodeId: string; beatId: string | null; reason: s
  * would meet an empty frame.
  */
 function sceneFrom(composition: CompositionPlan, assembly: CompositionAssembly): PublishedScene | null {
+  if (assembly.status !== "composed" || !assembly.masterUrl) return null;
   const layers = assembly.layers.filter((layer) => layer.url);
   if (layers.length === 0) return null;
-  const flat = layers.find((layer) => layer.role === "background") ?? layers[0]!;
   return {
     sceneId: composition.compositionId,
     mode: assembly.mode ?? (layers.length > 1 ? "layered" : "flat"),
@@ -100,7 +100,7 @@ function sceneFrom(composition: CompositionPlan, assembly: CompositionAssembly):
       scale: layer.scale,
       parallax: layer.parallax,
     })),
-    flatImageUrl: flat.url,
+    flatImageUrl: assembly.masterUrl,
     safeCamera: assembly.safeCamera,
     focalPoint: composition.responsive?.focalPoint ?? [0.5, 0.45],
     aspect: composition.responsive?.aspect ?? "9:16",
@@ -141,7 +141,7 @@ export function buildEpisodeManifest(
         momentTitle: moment.title,
         sceneId: scene?.sceneId ?? null,
         text: beat.text,
-        camera: { from: beat.camera.from, to: beat.camera.to, durationMs: beat.camera.durationMs, easing: beat.camera.easing },
+        camera: { move: beat.camera.move, from: beat.camera.from, to: beat.camera.to, durationMs: beat.camera.durationMs, easing: beat.camera.easing },
         transitionIn: beat.transitionIn,
         dwellMs: dwellFor(beat),
         hotspots: beat.inspectables

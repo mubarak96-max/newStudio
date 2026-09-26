@@ -1,8 +1,9 @@
-import type { Moment } from "../../lib/story-types.ts";
+import { linkCamera } from "../../lib/camera-timeline.ts";
+import type { Beat, Moment } from "../../lib/story-types.ts";
 import { ruleVersions } from "../../lib/rules.ts";
 import { db, storyConcurrency } from "../config.mts";
 import { pool, type JobDefinition } from "../job-runner.mts";
-import type { StoryContext } from "../story/context.mts";
+import { repairDirection, type StoryContext } from "../story/context.mts";
 import { loadStoryInputs } from "../story/inputs.mts";
 import { loadEpisodes, loadMoments, updateEpisode, writeMoments } from "../story/persist.mts";
 import { buildMomentBeats } from "./build.mts";
@@ -16,7 +17,7 @@ type BeatsState = {
 
 export const beatsJob: JobDefinition<BeatsState> = {
   type: "beats",
-  version: "beats-v2",
+  version: "beats-v3",
   next: "visuals",
   initialState: () => ({
     phase: "beats",
@@ -39,7 +40,7 @@ export const beatsJob: JobDefinition<BeatsState> = {
         if (await context.cancelled()) return null;
         const moments = await loadMoments(bookId, episode.episodeId);
         const built: Moment[] = await pool(moments, storyConcurrency, async (moment, index) => {
-          const { beats, coverage } = await buildMomentBeats(context, moment, moments[index - 1] ?? null);
+          const { beats, coverage } = await repairDirection(context, (retry) => buildMomentBeats(retry, moment, moments[index - 1] ?? null));
           done += 1;
           await context.onActivity({
             label: `Building Beats: ${episode.title}`,
@@ -57,7 +58,7 @@ export const beatsJob: JobDefinition<BeatsState> = {
         });
         await writeMoments(bookId, episode.episodeId, built);
         const beatCount = built.reduce((sum, moment) => sum + moment.readingBeats.length, 0);
-        await updateEpisode(bookId, episode.episodeId, { "stageStatus.beats": "done", beatCount });
+        await updateEpisode(bookId, episode.episodeId, { "stageStatus.beats": "done", "stageStatus.composed": "pending", beatCount });
         state.beatIds[episode.episodeId] = built.flatMap((moment) => moment.readingBeats.map((beat) => beat.id));
         for (const moment of built) {
           state.totals.beats += moment.readingBeats.length;
@@ -76,11 +77,14 @@ export const beatsJob: JobDefinition<BeatsState> = {
       // Next and Previous run through Moment and Episode boundaries in reading order.
       const order = episodes.flatMap((episode) => state.beatIds[episode.episodeId] ?? []);
       const position = new Map(order.map((id, index) => [id, index]));
+      let previous: Beat | null = null;
       for (const [index, episode] of episodes.entries()) {
         await context.onActivity({ label: "Linking Beats in reading order", detail: episode.title, done: index, total: episodes.length, unit: "episodes" });
         const moments = await loadMoments(bookId, episode.episodeId);
         for (const moment of moments) {
           for (const beat of moment.readingBeats) {
+            linkCamera(previous, beat);
+            previous = beat;
             const at = position.get(beat.id) ?? -1;
             beat.previousBeatId = at > 0 ? order[at - 1]! : null;
             beat.nextBeatId = at >= 0 && at + 1 < order.length ? order[at + 1]! : null;

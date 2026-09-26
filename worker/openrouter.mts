@@ -31,6 +31,7 @@ export type JsonCall = {
   models: string[];
   label: string;
   maxTokens?: number;
+  images?: string[];
   /**
    * Try the next model after a truncated answer. For callers that cannot split
    * their input, truncation is usually a model looping, not an input too large.
@@ -66,7 +67,7 @@ async function callOnce(call: JsonCall, model: string): Promise<JsonCallResult> 
       provider: { allow_fallbacks: true },
       messages: [
         { role: "system", content: call.system },
-        { role: "user", content: call.user },
+        { role: "user", content: call.images?.length ? [{ type: "text", text: call.user }, ...call.images.map((url) => ({ type: "image_url", image_url: { url } }))] : call.user },
       ],
     }),
   });

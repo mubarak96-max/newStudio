@@ -3,6 +3,7 @@ import { ruleVersions } from "../../lib/rules.ts";
 import type { EntityVisualPlan, VisualPlanSummary, VisualProfile } from "../../lib/story-types.ts";
 import { db, imageCostUsd, storyConcurrency } from "../config.mts";
 import { pool, type JobDefinition } from "../job-runner.mts";
+import { repairDirection } from "../story/context.mts";
 import { loadStoryInputs } from "../story/inputs.mts";
 import { loadEpisodes, loadMoments } from "../story/persist.mts";
 import type { Entity } from "../types.mts";
@@ -30,7 +31,7 @@ async function writeInBatches(writes: ((batch: WriteBatch) => void)[]): Promise<
 
 export const visualsJob: JobDefinition<VisualsState> = {
   type: "visuals",
-  version: "visuals-v1",
+  version: "visuals-v2",
   initialState: () => ({ phase: "profile", profile: null, plans: {}, summary: "" }),
   run: async (context, state, checkpoint) => {
     const { bookId } = context;
@@ -50,6 +51,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
     const job = (await db.doc(`books/${bookId}/jobs/${context.jobId}`).get()).data();
     if (job?.onlyCompositions && state.phase === "profile") {
       const book = (await db.doc(`books/${bookId}`).get()).data();
+      if (book?.ruleVersions?.prompts !== ruleVersions.prompts) throw new Error("Full visual planning is required to replace the previous style and bible.");
       if (!book?.visualProfile) throw new Error("No visual profile exists yet; run full visual planning first.");
       state.profile = book.visualProfile as VisualProfile;
       for (const entity of inputs.entities) {
@@ -76,7 +78,11 @@ export const visualsJob: JobDefinition<VisualsState> = {
       for (const { moment } of planned) {
         if (moment.locationId) shown.add(moment.locationId);
         for (const character of moment.characters) shown.add(character.entityId);
-        for (const shot of moment.visualPlan.shots) for (const entityState of shot.entityStates) shown.add(entityState.entityId);
+        for (const shot of moment.visualPlan.shots) {
+          if (!shot.direction) throw new Error("Rebuild source-grounded moment direction before visual planning.");
+          if (shot.locationId) shown.add(shot.locationId);
+          for (const entityState of shot.entityStates) shown.add(entityState.entityId);
+        }
       }
       const pending = Array.from(shown)
         .map((id) => inputs.entityById.get(id))
@@ -88,7 +94,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
       for (let offset = 0; offset < batches.length; offset += storyConcurrency) {
         if (await context.cancelled()) return null;
         const results = await pool(batches.slice(offset, offset + storyConcurrency), storyConcurrency, (batch, index) =>
-          planEntityVisuals(context, batch, profile, `entity visuals ${offset + index + 1}`),
+          repairDirection({ ...context, inputs }, (retry) => planEntityVisuals(retry, batch, profile, `entity visuals ${offset + index + 1}`)),
         );
         for (const plan of results.flat()) state.plans[plan.entityId] = plan;
         await context.onActivity({

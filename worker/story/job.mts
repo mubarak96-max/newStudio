@@ -2,7 +2,7 @@ import type { Episode, Moment, StoryMap } from "../../lib/story-types.ts";
 import { ruleVersions } from "../../lib/rules.ts";
 import { db, storyConcurrency } from "../config.mts";
 import { pool, type JobDefinition } from "../job-runner.mts";
-import { storyWorkerVersion, type StoryContext } from "./context.mts";
+import { storyWorkerVersion, repairDirection, type StoryContext } from "./context.mts";
 import { planEpisode } from "./episodes.mts";
 import { loadStoryInputs } from "./inputs.mts";
 import { planStoryMap, type PlannedEpisodeSpan } from "./map.mts";
@@ -76,7 +76,7 @@ export const storyJob: JobDefinition<StoryState> = {
         if (await context.cancelled()) return null;
         const outline = episode.storyPlan?.momentOutline ?? [];
         const moments: Moment[] = await pool(outline, storyConcurrency, async (item, index) => {
-          const moment = await buildMoment(context, episode, item, index + 1);
+          const moment = await repairDirection(context, (retry) => buildMoment(retry, episode, item, index + 1));
           doneMoments += 1;
           await context.onActivity({
             label: `Building moments: ${episode.title}`,
@@ -105,7 +105,7 @@ export const storyJob: JobDefinition<StoryState> = {
     }
 
     const momentCount = state.episodes.reduce((sum, episode) => sum + episode.momentCount, 0);
-    await db.doc(`books/${bookId}`).update({ "ruleVersions.story": ruleVersions.story });
+    await db.doc(`books/${bookId}`).update({ "ruleVersions.story": ruleVersions.story, "ruleVersions.shots": ruleVersions.shots });
     return `${state.episodes.length} episodes, ${momentCount} moments`;
   },
 };

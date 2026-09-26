@@ -83,8 +83,7 @@ export function BatchPanel({
       </div>
       <p className='text-xs text-muted-foreground'>
         Tick images on the cards (a card&apos;s correction note goes with it), then submit. Use “Generate now” on a card for
-        an instant single image through OpenRouter. Batch results are saved as new versions to review, approve or
-        regenerate either way.
+        an instant single image through OpenRouter. The pipeline generates required references first, validates each result, retries rejected images once, and assembles the scenes automatically. Each dependency wave has its own batch turnaround.
       </p>
       {error && <p className='text-xs text-destructive'>{error}</p>}
       {batches.length > 0 && (

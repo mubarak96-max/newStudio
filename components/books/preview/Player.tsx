@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
-import type { CompositionPlan } from '@/lib/story-types';
+import { continuesVisual } from '@/lib/camera-timeline';
+import type { CameraPose, CompositionPlan } from '@/lib/story-types';
 import type { PreviewBeat } from '@/lib/compose';
 import { Layers, Subtitles } from './Stage';
 
@@ -26,21 +27,29 @@ function Frame({
   composition,
   reducedMotion,
   nameOf,
+  frozenPose,
+  paused,
+  progress,
+  onPose,
 }: {
   beat: PreviewBeat;
   composition: CompositionPlan | undefined;
   reducedMotion: boolean;
   nameOf: (entityId: string) => string;
+  frozenPose?: CameraPose;
+  paused?: boolean;
+  progress?: number;
+  onPose?: (pose: CameraPose) => void;
 }) {
   const [tapped, setTapped] = useState<string | null>(null);
   const assembly = composition?.assembly;
   return (
     <div className='absolute inset-0'>
-      {assembly && assembly.layers.some((layer) => layer.role === 'background') ? (
-        <Layers assembly={assembly} beat={beat} reducedMotion={reducedMotion} />
+      {assembly?.status === 'composed' && assembly.masterUrl && composition?.shotSnapshot.direction && assembly.layers.some((layer) => layer.role === 'background') ? (
+        <Layers assembly={assembly} beat={beat} reducedMotion={reducedMotion} frozenPose={frozenPose} paused={paused} progress={progress} onPose={onPose} />
       ) : (
         <div className='absolute inset-0 flex items-center justify-center bg-zinc-900 p-6 text-center text-xs text-zinc-400'>
-          {composition ? `Not assembled yet: ${composition.shotSnapshot.description}` : 'No composition for this Beat.'}
+          {composition ? `Awaiting validated scene: ${composition.shotSnapshot.description}` : 'No composition for this Beat.'}
         </div>
       )}
       {beat.inspectables.map((item) =>
@@ -86,7 +95,12 @@ export function Player({
   nameOf: (entityId: string) => string;
 }) {
   const [index, setIndex] = useState(0);
-  const [previous, setPrevious] = useState<number | null>(null);
+  const [previous, setPrevious] = useState<{ index: number; pose: CameraPose } | null>(null);
+  const actualPose = useRef<CameraPose | null>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const touchY = useRef<number | null>(null);
+  const [scrub, setScrub] = useState<number | undefined>(undefined);
+  const [paused, setPaused] = useState(false);
   const [playing, setPlaying] = useState(false);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -98,11 +112,45 @@ export function Player({
   const go = useCallback(
     (next: number) => {
       if (next < 0 || next >= beats.length || next === index) return;
-      setPrevious(index);
+      const changed = !continuesVisual(beats[index], beats[next]!);
+      setPrevious(changed ? { index, pose: actualPose.current ?? beats[index]!.camera.from } : null);
+      if (changed) actualPose.current = null;
+      setScrub(undefined);
+      setPaused(false);
       setIndex(next);
     },
-    [beats.length, index]
+    [beats, index]
   );
+
+  const seek = useCallback((value: number) => {
+    const bounded = Math.max(0, Math.min(beats.length - 0.001, value));
+    const next = Math.floor(bounded);
+    if (!beats[next]) return;
+    go(next);
+    setScrub(bounded - next);
+    setPaused(true);
+    setPlaying(false);
+  }, [beats, go]);
+
+  useEffect(() => {
+    const element = viewport.current;
+    if (!element) return;
+    const wheel = (event: WheelEvent) => {
+      event.preventDefault();
+      seek(index + (scrub ?? 0) + event.deltaY * (event.deltaMode === 1 ? 0.025 : 0.002));
+    };
+    element.addEventListener('wheel', wheel, { passive: false });
+    return () => element.removeEventListener('wheel', wheel);
+  }, [index, scrub, seek]);
+
+  useEffect(() => {
+    const upcoming = new Set(beats.slice(index, index + 4).map((beat) => beat.compositionId));
+    for (const id of upcoming) for (const layer of (id ? compositions.get(id)?.assembly?.layers : []) ?? []) {
+      const image = new window.Image();
+      image.src = layer.url;
+      void image.decode().catch(() => undefined);
+    }
+  }, [index, beats, compositions]);
 
   useEffect(() => {
     if (previous === null || !beat) return;
@@ -127,11 +175,13 @@ export function Player({
       if (event.key === ' ') {
         event.preventDefault();
         setPlaying((value) => !value);
+        setPaused(playing);
+        setScrub(undefined);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go, index]);
+  }, [go, index, playing]);
 
   const moments = useMemo(() => {
     const seen = new Map<string, { title: string; order: number; first: number }>();
@@ -142,28 +192,36 @@ export function Player({
   }, [beats]);
 
   if (!beat) return <p className='text-sm text-muted-foreground'>This Episode has no Beats yet.</p>;
-  const outgoing = previous !== null ? beats[previous] : null;
+  const outgoing = previous !== null ? beats[previous.index] : null;
   const transition = beat.transitionIn;
-  const animated = !reducedMotion && transition.type !== 'cut' && outgoing;
+  const animated = !reducedMotion && transition.type !== 'cut' && outgoing && !continuesVisual(outgoing, beat);
 
   return (
     <div className='flex flex-col items-center gap-3'>
       <div
         className='relative w-full max-w-[min(420px,calc(80vh*9/16))] overflow-hidden rounded-2xl bg-black shadow-xl'
-        style={{ aspectRatio: '9 / 16' }}
+        ref={viewport}
+        style={{ aspectRatio: '9 / 16', touchAction: 'none' }}
+        onTouchStart={(event) => { touchY.current = event.touches[0]?.clientY ?? null; }}
+        onTouchMove={(event) => {
+          const y = event.touches[0]?.clientY;
+          if (y !== undefined && touchY.current !== null) seek(index + (scrub ?? 0) + (touchY.current - y) * 0.006);
+          touchY.current = y ?? null;
+        }}
+        onTouchEnd={() => { touchY.current = null; }}
       >
-        <div key={beat.id} className='absolute inset-0'>
-          <Frame beat={beat} composition={beat.compositionId ? compositions.get(beat.compositionId) : undefined} reducedMotion={reducedMotion} nameOf={nameOf} />
+        <div key={beat.compositionId ?? beat.id} className='absolute inset-0'>
+          <Frame beat={beat} composition={beat.compositionId ? compositions.get(beat.compositionId) : undefined} reducedMotion={reducedMotion} nameOf={nameOf} paused={paused} progress={scrub} onPose={(pose) => { actualPose.current = pose; }} />
         </div>
         {animated && outgoing && (
           <div
             key={`out-${outgoing.id}`}
             className='pointer-events-none absolute inset-0'
             style={{
-              animation: `${transition.type === 'slide' ? 'preview-slide-out' : transition.type === 'zoomThrough' ? 'preview-zoom-out' : 'preview-fade-out'} ${transition.durationMs}ms ease-in-out forwards`,
+              animation: `preview-fade-out ${transition.durationMs}ms ease-in-out forwards`,
             }}
           >
-            <Frame beat={outgoing} composition={outgoing.compositionId ? compositions.get(outgoing.compositionId) : undefined} reducedMotion nameOf={nameOf} />
+            <Frame beat={outgoing} composition={outgoing.compositionId ? compositions.get(outgoing.compositionId) : undefined} reducedMotion nameOf={nameOf} frozenPose={previous!.pose} />
           </div>
         )}
         <button
@@ -180,11 +238,12 @@ export function Player({
         />
       </div>
 
+      <input type='range' min={0} max={Math.max(0, beats.length - 0.001)} step={0.001} value={index + (scrub ?? 0)} aria-label='Explore the story' className='w-full max-w-[420px]' onChange={(event) => seek(Number(event.target.value))} />
       <div className='flex items-center gap-2'>
         <button type='button' onClick={() => go(index - 1)} disabled={index === 0} className='rounded-full border border-border p-2 disabled:opacity-40' aria-label='Previous'>
           <ChevronLeft className='h-4 w-4' aria-hidden='true' />
         </button>
-        <button type='button' onClick={() => setPlaying((value) => !value)} className='rounded-full bg-primary p-2 text-primary-foreground' aria-label={playing ? 'Pause' : 'Play'}>
+        <button type='button' onClick={() => { setPlaying((value) => !value); setPaused(playing); setScrub(undefined); }} className='rounded-full bg-primary p-2 text-primary-foreground' aria-label={playing ? 'Pause' : 'Play'}>
           {playing ? <Pause className='h-4 w-4' aria-hidden='true' /> : <Play className='h-4 w-4' aria-hidden='true' />}
         </button>
         <button type='button' onClick={() => go(index + 1)} disabled={index === beats.length - 1} className='rounded-full border border-border p-2 disabled:opacity-40' aria-label='Next'>

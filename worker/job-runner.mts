@@ -53,7 +53,7 @@ export type JobDefinition<TState> = {
    * the rest is outstanding, so the book never claims a stage it has not
    * finished. Defaults to "done".
    */
-  bookStatus?: (context: JobContext) => Promise<"done" | "failed">;
+  bookStatus?: (context: JobContext) => Promise<"done" | "failed" | "pending">;
   next?: ChainedJobType;
 };
 
@@ -119,7 +119,7 @@ export async function runLeasedJob<TState>(
     const canonicalHash = asString(job.canonicalHash);
     await setPipeline(bookId, stage, "running", jobId);
 
-    const prefix = `books/${bookId}/sources/${sourceId}/${stage}/${jobId}/`;
+    const prefix = `books/${bookId}/sources/${sourceId}/${stage}/${jobId}/${definition.version}/`;
     const saved = await loadLatestValidCheckpoint<TState>(bucket, prefix);
     const state = saved?.value ?? definition.initialState();
     let counter = asNumber(job.checkpointCounter);
@@ -165,7 +165,7 @@ export async function runLeasedJob<TState>(
           return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          log(`${label} failed, using the deterministic fallback: ${message}`);
+          log(`${label} failed: ${message}`);
           warnings.push(`${label}: ${message.slice(0, 200)}`);
           return null;
         }

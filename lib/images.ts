@@ -2,6 +2,8 @@
 
 import {
   addDoc,
+  getDoc,
+  getDocs,
   collection,
   doc,
   onSnapshot,
@@ -9,6 +11,7 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
+import { versionIssues } from './asset-validation';
 import { db, ensureAnonymousAuth } from './firebase';
 import { assetTargetId, type AssetTarget, type ImageBatch, type VisualAsset } from './story-types';
 
@@ -146,6 +149,13 @@ export function subscribeImageBatches(
 export async function approveVersion(bookId: string, targetId: string, versionId: string): Promise<void> {
   const store = database();
   await ensureAnonymousAuth();
+  const [book, snapshot] = await Promise.all([getDoc(doc(store, 'books', bookId)), getDocs(collection(store, 'books', bookId, 'visualAssets'))]);
+  const assets = new Map(snapshot.docs.map((item) => [item.id, item.data() as VisualAsset]));
+  const asset = assets.get(targetId);
+  const version = asset?.versions.find((item) => item.versionId === versionId);
+  if (!asset || !version) throw new Error('Image version does not exist.');
+  const issues = versionIssues(asset, version, { sourceId: book.data()?.activeSourceId, canonicalHash: book.data()?.canonical?.hash }, assets);
+  if (issues.length) throw new Error(issues.join(' '));
   await updateDoc(doc(store, 'books', bookId, 'visualAssets', targetId), {
     approvedVersionId: versionId,
     status: 'approved',

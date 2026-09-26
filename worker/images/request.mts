@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { ruleVersions } from "../../lib/rules.ts";
 import {
   assetTargetId,
   type AssetTarget,
@@ -41,7 +43,7 @@ const figureFromMaster =
   "The first reference image is the finished scene this figure already stands in. Copy that figure exactly as it appears there — same size within the frame, same position, same pose, same clothing, same light and shadow — and draw nothing else from it. Later reference images show the same character for likeness only.";
 /** The same scene with nobody in it, so the cut-outs can move across it. */
 const plateFromMaster =
-  "The first reference image is the finished scene. Redraw it exactly — same camera, same perspective, same light, same furniture in the same places — with every person removed and the floor, furniture and walls behind them painted in completely.";
+  "The first reference image is the finished scene. Redraw it exactly — same camera, same perspective, same light, same furniture in the same places — with every listed moving subject (including animals and groups) removed and the floor, furniture and walls behind them reconstructed completely.";
 const greenScreen =
   "Place the subject alone on a completely flat, uniform pure green (#00FF00) background with no shadows, floor, props or gradients, so the background can be keyed out.";
 
@@ -139,7 +141,7 @@ export function planImage(
     ? `${written.replace(/Isolated on a transparent background[^.]*\./, greenScreen)} ${derived ? figureFromMaster : sceneReference} ${cutOutFraming}`
     : `${written} ${derived ? plateFromMaster : ""} ${mobileFraming}`;
   return {
-    prompt: withNote(`${prompt} ${avoid(profile)}`, note),
+    prompt: withNote(`${prompt} ${avoid(profile)} ${composition.shotSnapshot.direction ? `Non-negotiable contract: ${JSON.stringify({ layerKind: layer.kind, originalCompleteScene: composition.shotSnapshot.description, framing: composition.shotSnapshot.framing, visibleSubjects: drawn, direction: composition.shotSnapshot.direction })}. A plate removes the moving subjects from that complete scene; a figure extracts only its assigned subjects; a master retains the complete scene. This contract takes priority over any conflicting rewrite. These are staging instructions, never text to render.` : ""}`, note),
     aspectRatio: mobileAspect,
     referenceTargets,
     alpha: foreground ? "chroma-green" : "none",
@@ -147,3 +149,8 @@ export function planImage(
     episodeId: composition.originEpisodeId,
   };
 }
+
+export function imagePlanKey(planned: PlannedImage, profileVersion: number): string {
+  return createHash("sha256").update(JSON.stringify([planned.prompt, planned.referenceTargets, profileVersion, ruleVersions.prompts, ruleVersions.composition])).digest("hex");
+}
+

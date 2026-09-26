@@ -1,5 +1,7 @@
 'use client';
 
+import { versionIssues } from '@/lib/asset-validation';
+import { ruleVersions } from '@/lib/rules';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { AssetCard, type AssetDependency } from '@/components/books/images/AssetCard';
@@ -45,6 +47,7 @@ export function ImagesPage({ bookId }: { bookId: string }) {
   const [assetError, setAssetError] = useState<string | null>(null);
   const [view, setView] = useState<string>('references');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [building, setBuilding] = useState(false);
 
   const sourceId = book?.activeSourceId;
   const canonicalHash = book?.canonical?.hash;
@@ -88,7 +91,11 @@ export function ImagesPage({ bookId }: { bookId: string }) {
     setSelection(new Map());
   };
 
-  const isApproved = useCallback((targetId: string) => Boolean(assets.get(targetId)?.approvedVersionId), [assets]);
+  const isApproved = useCallback((targetId: string) => {
+    const asset = assets.get(targetId);
+    const version = asset?.versions.find((item) => item.versionId === asset.approvedVersionId);
+    return Boolean(asset && version && sourceId && canonicalHash && !versionIssues(asset, version, { sourceId, canonicalHash }, assets).length);
+  }, [assets, sourceId, canonicalHash]);
   const generate = (target: AssetTarget) => async (note: string | null) => {
     if (!sourceId || !canonicalHash) throw new Error('The book has no active source.');
     await requestImage(bookId, target, { sourceId, canonicalHash }, note);
@@ -126,17 +133,9 @@ export function ImagesPage({ bookId }: { bookId: string }) {
   const layerDependencies = (composition: CompositionPlan, layerId: string): AssetDependency[] => {
     const layer = composition.layers.find((item) => item.layerId === layerId);
     if (!layer) return [];
-    if (layer.role === 'background') {
-      return layer.entityId
-        ? [{ label: `${nameOf(layer.entityId)} reference`, approved: isApproved(assetTargetId(referenceTarget(layer.entityId))) }]
-        : [];
-    }
     const drawn = layer.entityIds?.length ? layer.entityIds : layer.entityId ? [layer.entityId] : [];
     return [
-      {
-        label: 'this scene’s background (for scale and light)',
-        approved: isApproved(assetTargetId(layerTarget(composition.compositionId, 'background'))),
-      },
+      ...(layer.derivedFrom ? [{ label: 'this scene?s complete master', approved: isApproved(assetTargetId(layerTarget(composition.compositionId, layer.derivedFrom))) }] : []),
       ...drawn.map((entityId) => {
         const stateId = composition.entityStatesUsed.find((state) => state.entityId === entityId)?.stateId ?? null;
         const variantApproved = stateId ? isApproved(assetTargetId(variantTarget(entityId, stateId))) : false;
@@ -215,8 +214,18 @@ export function ImagesPage({ bookId }: { bookId: string }) {
       icon={ImageIcon}
       subtitle={`${approvedReferences} of ${referenceTargets.length} references approved · Gemini 3.1 Flash Lite Image, now through OpenRouter or in half-price Gemini batches`}
       error={error ?? assetError}
-      actions={null}
+      actions={<button type='button' disabled={building || !compositions.length || book?.ruleVersions?.prompts !== ruleVersions.prompts} className='rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50' onClick={async () => {
+        if (!sourceId || !canonicalHash) return;
+        setBuilding(true);
+        setAssetError(null);
+        try {
+          const targets = compositions.flatMap((composition) => composition.layers.map((layer) => ({ target: layerTarget(composition.compositionId, layer.layerId), note: null })));
+          await requestImageBatch(bookId, targets, { sourceId, canonicalHash });
+        } catch (error) { setAssetError(error instanceof Error ? error.message : 'Could not start generation.'); }
+        finally { setBuilding(false); }
+      }}>{building ? 'Starting?' : 'Generate book experience'}</button>}
     >
+      {book?.ruleVersions?.prompts !== ruleVersions.prompts && <p className='text-sm text-amber-600'>These visual plans use older rules. Rebuild the book model, story and visual plans before generating the new experience.</p>}
       {entities.length === 0 ? (
         <div className='rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground'>
           No visual plan yet. Images become available once Visual planning finishes.
@@ -284,7 +293,7 @@ export function ImagesPage({ bookId }: { bookId: string }) {
           {view === 'references' && (
             <>
               <p className='text-sm text-muted-foreground'>
-                Approve reference sheets first: every scene layer is conditioned on the approved reference of what it shows.
+                References, complete scenes and derived layers are generated in order, checked automatically, and assembled into the preview. Failed checks trigger one targeted retry.
               </p>
               <div className='flex flex-wrap gap-2'>
                 {['all', 'character', 'location', 'object', 'group'].map((type) => (

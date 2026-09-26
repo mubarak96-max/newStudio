@@ -1,10 +1,15 @@
-import type { AssetTarget, CompositionPlan } from "../../lib/story-types.ts";
+import { versionIssues } from "../../lib/asset-validation.ts";
+import { dependencyWave, type ImageWork } from "./dependencies.mts";
+import { imagePlanKey } from "./request.mts";
+import type { VisualAsset, AssetTarget, CompositionPlan } from "../../lib/story-types.ts";
 import { asString, nullableString } from "../coerce.mts";
 import { db, imageModel } from "../config.mts";
-import type { JobDefinition } from "../job-runner.mts";
+import type { JobContext, JobDefinition } from "../job-runner.mts";
 import { generateImage } from "../providers/images.mts";
-import { markAsset, prepareImage, saveVersion } from "./assets.mts";
-import { checkImage, type ImageExpectation } from "./checks.mts";
+import { markAsset, prepareImage, saveVersion, loadImagePlan } from "./assets.mts";
+import { type ImageExpectation } from "./checks.mts";
+import { reviewImage } from "./review.mts";
+import { enqueueJob } from "../job-queue.mts";
 import { imageStageReport } from "./status.mts";
 
 export function readTarget(value: unknown): AssetTarget {
@@ -22,7 +27,9 @@ export function readTarget(value: unknown): AssetTarget {
 
 /** Which mechanical checks this image is subject to. Everything else is reviewed by hand. */
 export async function expectationFor(bookId: string, target: AssetTarget): Promise<ImageExpectation | null> {
-  if (target.kind !== "layer" || !target.compositionId) return null;
+  if (target.kind === "reference") return null;
+  if (target.kind === "variant") return { cutOut: false };
+  if (!target.compositionId) return null;
   const composition = (await db.doc(`books/${bookId}/compositions/${target.compositionId}`).get()).data() as CompositionPlan | undefined;
   const layer = composition?.layers.find((candidate) => candidate.layerId === target.layerId);
   if (!composition || !layer) return null;
@@ -32,7 +39,7 @@ export async function expectationFor(bookId: string, target: AssetTarget): Promi
 /** One image, returned at once through OpenRouter. */
 export const imageJob: JobDefinition<Record<string, never>> = {
   type: "image",
-  version: "images-v3",
+  version: "images-v4",
   initialState: () => ({}),
   run: async (context) => {
     const { bookId, jobId } = context;
@@ -41,6 +48,37 @@ export const imageJob: JobDefinition<Record<string, never>> = {
     const note = nullableString(job.note);
     const lineage = { sourceId: context.sourceId, canonicalHash: context.canonicalHash };
 
+    let pending: ImageWork[] = [{ target, note }];
+    const summaries: string[] = [];
+    while (pending.length) {
+      if (await context.cancelled()) return null;
+      const assets = new Map((await db.collection(`books/${bookId}/visualAssets`).get()).docs.map((doc) => [doc.id, doc.data() as VisualAsset]));
+      const wave = await dependencyWave(pending, async (target) => (await loadImagePlan(bookId, target, null)).planned, async (id) => {
+        const asset = assets.get(id);
+        const version = asset?.versions?.find((item) => item.versionId === asset.approvedVersionId);
+        if (!asset || !version) return false;
+        const { planned, profile } = await loadImagePlan(bookId, asset, null);
+        return versionIssues(asset, version, lineage, assets, imagePlanKey(planned, profile.version)).length === 0;
+      });
+      for (const item of wave.ready) summaries.push(await generateCheckedImage(context, item.target, item.note));
+      pending = wave.pending;
+    }
+    if (target.kind === "layer") await enqueueJob(bookId, "compose", context.sourceId, context.canonicalHash);
+    return summaries.join("; ");
+  },
+  // The stage is done when every composition has its scene approved, not when
+  // reference sheets exist.
+  bookStatus: async (context) => {
+    const report = await imageStageReport(context.bookId, { sourceId: context.sourceId, canonicalHash: context.canonicalHash });
+    if (report.compositions === 0) return "done";
+    context.log(`images: ${report.compositionsReady}/${report.compositions} compositions ready, ${report.failedChecks} approved images failed checks`);
+    return report.compositionsReady === report.compositions ? "done" : "failed";
+  },
+};
+
+async function generateCheckedImage(context: JobContext, target: AssetTarget, note: string | null): Promise<string> {
+  const { bookId, jobId } = context;
+  const lineage = { sourceId: context.sourceId, canonicalHash: context.canonicalHash };
     try {
       const expectation = await expectationFor(bookId, target);
       let correction = note;
@@ -49,7 +87,7 @@ export const imageJob: JobDefinition<Record<string, never>> = {
       // the model is told what was wrong rather than asked again blindly.
       for (;;) {
         attempt += 1;
-        const prepared = await prepareImage(bookId, target, correction);
+        const prepared = await prepareImage(bookId, target, correction, lineage);
         await context.onActivity({
           label: `Generating ${prepared.targetId}`,
           detail: attempt > 1 ? `retry after failed checks: ${imageModel}` : imageModel,
@@ -70,18 +108,17 @@ export const imageJob: JobDefinition<Record<string, never>> = {
         });
         context.addCost(image.costUsd);
 
-        const check = expectation ? await checkImage(image.bytes, expectation) : null;
+        const check = await reviewImage(image, prepared.planned.prompt, expectation, prepared.references, context.addCost);
         const version = await saveVersion(
           bookId,
           lineage,
-          { ...prepared.planned, target, note: correction, references: prepared.pinned, check },
+          { ...prepared.planned, target, note: correction, references: prepared.pinned, check, planKey: prepared.planKey, visualProfileVersion: prepared.visualProfileVersion, expectedJobId: jobId },
           { ...image, costExact: true, provider: "openrouter" },
         );
-        const issues = check?.issues ?? [];
+        const issues = version.check?.issues ?? ["Image was not validated."];
+        if (issues.some((issue) => issue.startsWith("Visual review unavailable"))) throw new Error(issues.join(" "));
         if (issues.length === 0 || attempt > 1) {
-          if (issues.length > 0) {
-            await markAsset(bookId, lineage, target, { status: "generated", error: `Checks failed: ${issues.join(" ")}`.slice(0, 1_000), lastJobId: jobId });
-          }
+          if (issues.length > 0) throw new Error(`Image validation failed after repair: ${issues.join(" ")}`);
           return (
             `${prepared.targetId} version ${version.versionId} (${version.width ?? "?"}x${version.height ?? "?"}, ` +
             `${prepared.pinned.length} reference(s))${issues.length > 0 ? `, ${issues.length} issue(s) for review` : ""}`
@@ -98,13 +135,4 @@ export const imageJob: JobDefinition<Record<string, never>> = {
       });
       throw error;
     }
-  },
-  // The stage is done when every composition has its scene approved, not when
-  // reference sheets exist.
-  bookStatus: async (context) => {
-    const report = await imageStageReport(context.bookId, { sourceId: context.sourceId, canonicalHash: context.canonicalHash });
-    if (report.compositions === 0) return "done";
-    context.log(`images: ${report.compositionsReady}/${report.compositions} compositions ready, ${report.failedChecks} approved images failed checks`);
-    return report.compositionsReady === report.compositions ? "done" : "failed";
-  },
-};
+}

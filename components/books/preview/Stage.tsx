@@ -1,16 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import { cameraAt, cameraLeg } from '@/lib/camera-timeline';
 import type { CompositionAssembly } from '@/lib/story-types';
 import type { PreviewBeat } from '@/lib/compose';
 import { layerTransform, type CameraPose } from '@/lib/stage25d';
-
-const easings: Record<PreviewBeat['camera']['easing'], string> = {
-  linear: 'linear',
-  easeInOut: 'cubic-bezier(0.45, 0, 0.55, 1)',
-  spring: 'cubic-bezier(0.34, 1.3, 0.64, 1)',
-};
 
 /**
  * One composition moving through one Beat's camera. Each layer gets the same
@@ -21,25 +16,43 @@ export function Layers({
   assembly,
   beat,
   reducedMotion,
+  frozenPose,
+  paused = false,
+  progress,
+  onPose,
 }: {
   assembly: CompositionAssembly;
   beat: PreviewBeat;
   reducedMotion: boolean;
+  frozenPose?: CameraPose;
+  paused?: boolean;
+  progress?: number;
+  onPose?: (pose: CameraPose) => void;
 }) {
-  const [pose, setPose] = useState<CameraPose>(reducedMotion ? beat.camera.to : beat.camera.from);
-  const [moving, setMoving] = useState(false);
-
+  const [pose, setPose] = useState<CameraPose>(frozenPose ?? beat.camera.from);
+  const current = useRef<CameraPose | null>(null);
+  const report = useRef(onPose);
+  useEffect(() => { report.current = onPose; }, [onPose]);
   useEffect(() => {
-    if (reducedMotion) return;
-    // Start at `from` without a transition, then glide to `to` on the next frame.
-    const frame = requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        setMoving(true);
-        setPose(beat.camera.to);
-      })
-    );
+    let frame = 0;
+    const publish = (next: CameraPose) => {
+      current.current = next;
+      setPose(next);
+      report.current?.(next);
+    };
+    const leg = cameraLeg(beat.camera, current.current);
+    const started = performance.now();
+    const tick = (now: number) => {
+      if (frozenPose) { publish(frozenPose); return; }
+      if (progress !== undefined) { publish(cameraAt(beat.camera.from, beat.camera.to, progress, beat.camera.easing)); return; }
+      if (paused || reducedMotion) { publish(leg.from); return; }
+      const t = Math.min(1, (now - started) / Math.max(1, beat.camera.durationMs));
+      publish(cameraAt(leg.from, leg.to, t, beat.camera.easing));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [beat, reducedMotion]);
+  }, [beat.id, beat.camera, reducedMotion, paused, frozenPose, progress]);
 
   return (
     <>
@@ -58,7 +71,7 @@ export function Layers({
             className='pointer-events-none absolute inset-0 h-full w-full select-none object-cover'
             style={{
               transform: `translate(${t.x * 100}%, ${t.y * 100}%) scale(${t.scale}) rotate(${t.rotate}rad)`,
-              transition: moving ? `transform ${beat.camera.durationMs}ms ${easings[beat.camera.easing]}` : 'none',
+
               willChange: 'transform',
             }}
           />

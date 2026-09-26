@@ -12,19 +12,19 @@ export const ruleVersions = {
   /** Line rejoining, per-change scan repair, page furniture, section breaks. */
   cleaning: 'clean-v2',
   /** Narrator, author, place types, duplicates, grounding. */
-  bookModel: 'integrity-v1',
+  bookModel: 'integrity-v2',
   /** Chapter-aligned episodes, every word read as Beat text, commentary that only explains. */
-  story: 'story-rules-v2',
+  story: 'story-rules-v3',
   /** Shot location, cast agreement, shot grammar. */
-  shots: 'shot-rules-v1',
+  shots: 'shot-rules-v2',
   /** Written image prompts and the contract they must satisfy. */
-  prompts: 'prompt-author-v1',
+  prompts: 'prompt-author-v2',
   /** Master-first compositions and the layers derived from them. */
-  composition: 'master-first-v1',
+  composition: 'master-first-v2',
   /** Automatic checks on generated images. */
-  imageChecks: 'image-checks-v1',
+  imageChecks: 'image-checks-v2',
   /** The public package contract. */
-  publication: 'manifest-v2',
+  publication: 'manifest-v3',
 } as const;
 
 export type RuleStage = keyof typeof ruleVersions;

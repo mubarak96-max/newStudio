@@ -1,3 +1,4 @@
+import { approvedLayers, fingerprintOf } from "../compose/assemble.mts";
 import { createHash } from "node:crypto";
 import { ruleVersions } from "../../lib/rules.ts";
 import { FieldValue } from "firebase-admin/firestore";
@@ -16,7 +17,7 @@ import { buildEpisodeManifest, manifestSchemaVersion, type PublishIssue } from "
  */
 export const publishJob: JobDefinition<Record<string, never>> = {
   type: "publish",
-  version: "publish-v1",
+  version: "publish-v2",
   initialState: () => ({}),
   run: async (context) => {
     const { bookId, jobId } = context;
@@ -44,6 +45,9 @@ export const publishJob: JobDefinition<Record<string, never>> = {
         .filter((composition) => composition.sourceId === lineage.sourceId && composition.canonicalHash === lineage.canonicalHash)
         .map((composition) => [composition.compositionId, composition]),
     );
+    for (const composition of compositions.values()) {
+      if (composition.assembly && composition.assembly.fingerprint !== fingerprintOf(await approvedLayers(bookId, composition), composition)) delete composition.assembly;
+    }
     const names = new Map(
       (await db.collection(`books/${bookId}/entities`).get()).docs.map((doc) => [doc.id, String(doc.data().canonicalName ?? doc.id)]),
     );
@@ -62,6 +66,7 @@ export const publishJob: JobDefinition<Record<string, never>> = {
       });
       const moments = await loadMoments(bookId, episode.episodeId);
       const draft = buildEpisodeManifest(bookId, episode, moments, compositions, (id) => names.get(id) ?? id, "pending");
+      if (!force && draft.issues.length) throw new Error(`Episode ${episode.episodeId} has invalid scenes: ${draft.issues.map((issue) => issue.reason).join(" ")}`);
       const version = createHash("sha256")
         .update(JSON.stringify({ ...draft.manifest, version: "", publishedAt: "" }))
         .digest("hex")

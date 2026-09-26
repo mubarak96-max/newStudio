@@ -5,7 +5,7 @@ import type { Entity } from "../types.mts";
 import type { StoryInputs } from "../story/inputs.mts";
 import { entityVisualSystemPrompt, visualProfileSystemPrompt } from "./prompts.mts";
 
-const alwaysNegative = ["text", "letters", "captions", "watermarks", "signatures"];
+const alwaysNegative = ["text", "letters", "captions", "watermarks", "signatures", "painting", "brushwork", "cartoon", "illustration", "plastic CGI skin"];
 
 export async function planVisualProfile(
   context: JobContext,
@@ -22,12 +22,12 @@ export async function planVisualProfile(
   const negativeRules = Array.from(new Set([...strings(data?.negativeRules).map((rule) => rule.trim()), ...alwaysNegative]));
   return {
     version: previousVersion + 1,
-    artStyle: asString(data?.artStyle).trim() || "Painterly storybook illustration with consistent characters",
-    medium: asString(data?.medium).trim() || "digital painting",
+    artStyle: "Photorealistic cinematic imagery, consistent identity and physically plausible materials",
+    medium: "live-action photographic realism",
     palette: strings(data?.palette).slice(0, 8),
     lens: asString(data?.lens).trim() || "Natural 35-50mm framing, eye-level unless the scene calls otherwise",
     lighting: asString(data?.lighting).trim() || "Motivated natural light matching time of day",
-    texture: asString(data?.texture).trim(),
+    texture: "Natural skin, fabric, wood and stone detail; realistic surface response, no painted brushwork",
     eraDetails: asString(data?.eraDetails).trim() || inputs.world?.era || "",
     negativeRules,
   };
@@ -51,24 +51,6 @@ function referencePrompt(entity: Entity, views: string[], spec: string, profile:
   return `Reference sheet of ${entity.canonicalName}: ${views.join(", ")} views on a neutral background. ${spec} Style: ${profile.artStyle}, ${profile.medium}.`;
 }
 
-/** The deterministic plan used when the model gives nothing back: source facts only, no fills. */
-function factsOnlyPlan(entity: Entity, profile: VisualProfile): EntityVisualPlan {
-  const facts = entity.facts.slice(0, 8);
-  const appearance = entity.profile?.appearance && entity.profile.appearance !== "unknown" ? entity.profile.appearance : entity.description;
-  const spec = [entity.canonicalName, appearance, ...facts.map((fact) => `${fact.key}: ${fact.value}`)].filter(Boolean).join("; ");
-  const views = entity.type === "location" ? ["establishing wide"] : ["front", "three-quarter", "profile"];
-  return {
-    entityId: entity.entityId,
-    spec,
-    sourceFacts: facts.map((fact) => ({ key: fact.key, value: fact.value, paragraphIds: fact.paragraphIds })),
-    fills: [],
-    referenceSheet: { views, prompt: referencePrompt(entity, views, spec, profile), approved: false },
-    stateVariants: {},
-    preRevealSpec: null,
-    layout: null,
-  };
-}
-
 export async function planEntityVisuals(context: JobContext, entities: Entity[], profile: VisualProfile, label: string): Promise<EntityVisualPlan[]> {
   const data = await context.callModel(label, entityVisualSystemPrompt, {
     visualProfile: { artStyle: profile.artStyle, eraDetails: profile.eraDetails },
@@ -78,7 +60,8 @@ export async function planEntityVisuals(context: JobContext, entities: Entity[],
   return entities.map((entity) => {
     const row = rows.get(entity.entityId);
     const spec = asString(row?.spec).trim();
-    if (!row || !spec) return factsOnlyPlan(entity, profile);
+    if (!row || !spec) throw new Error(`Visual bible is incomplete for ${entity.entityId}.`);
+    if (entity.type === "location" && !asString(row.layout).trim()) throw new Error(`Location ${entity.entityId} needs a stable layout before scene generation.`);
     const facts = strings(row.sourceFactIds)
       .map((id) => entity.facts[Number(id.replace(/\D/g, "")) - 1])
       .filter((fact) => fact !== undefined);
@@ -101,11 +84,12 @@ export async function planEntityVisuals(context: JobContext, entities: Entity[],
         .filter((fill) => fill.key && fill.value),
       referenceSheet: {
         views,
-        prompt: referencePrompt(entity, views, spec, profile),
+        prompt: referencePrompt(entity, views, spec, profile) + (entity.type === "location" ? ` Fixed layout: ${asString(row.layout)}.` : ""),
         approved: false,
       },
       stateVariants,
       preRevealSpec: nullableString(row.preRevealSpec),
+      hiddenUntilSeq: nullableString(row.preRevealSpec) && entity.reveals.length ? Math.min(...entity.reveals.map((reveal) => reveal.seq)) : null,
       layout: entity.type === "location" ? nullableString(row.layout) : null,
     };
   });
