@@ -30,7 +30,16 @@ export async function persistCleanSource(
   bookId: string,
   rawSourceId: string,
   paragraphs: CleanParagraph[],
-  provenance: { rawCanonicalHash: string; cleanVersion: string; repairs: number; rejected: number; dropped: number },
+  provenance: {
+    rawCanonicalHash: string;
+    cleanVersion: string;
+    repairs: number;
+    rejected: number;
+    dropped: number;
+    joined: number;
+    refusals: string[];
+    damagedParagraphIds: string[];
+  },
 ): Promise<CleanSource> {
   const textHash = sha256Hex(canonicalTextOf(paragraphs));
   const payload = { schemaVersion: 3, bookId, cleanedFrom: rawSourceId, paragraphs };
@@ -78,6 +87,10 @@ export async function persistCleanSource(
     repairs: provenance.repairs,
     rejectedRepairs: provenance.rejected,
     droppedParagraphs: provenance.dropped,
+    joinedParagraphs: provenance.joined,
+    refusedChanges: provenance.refusals,
+    damagedParagraphCount: provenance.damagedParagraphIds.length,
+    damagedParagraphIds: provenance.damagedParagraphIds.slice(0, 200),
     canonicalPath,
     canonicalHash,
     textHash,

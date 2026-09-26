@@ -14,6 +14,7 @@ import { nameRegex, unique } from "../evidence.mts";
 import type { Entity } from "../types.mts";
 import type { StoryContext } from "./context.mts";
 import { entitiesInRange, entityAsOf, paragraphLines } from "./episodes.mts";
+import { commentaryIssues } from "./commentary.mts";
 import { wordCount, type StoryInputs } from "./inputs.mts";
 import { momentSystemPrompt } from "./prompts.mts";
 import { applyShotRules, nameIndex } from "./shots.mts";
@@ -63,22 +64,39 @@ type Frame = {
   entityIds: Set<string>;
 };
 
+/** Entities the reader meets for the first time inside this Moment. */
+function newEntitiesIn(inputs: StoryInputs, outline: MomentOutlineItem): Entity[] {
+  return inputs.entities.filter((entity) => entity.firstSeq >= outline.seqStart && entity.firstSeq <= outline.seqEnd);
+}
+
 function checkCommentary(frame: Frame, rows: Record<string, unknown>[], momentId: string): Commentary[] {
   const allowed = new Set(frame.storyIds);
   const future = futureNamePatterns(frame.inputs, frame.outline.seqEnd);
+  const newEntityNames = newEntitiesIn(frame.inputs, frame.outline)
+    .flatMap((entity) => [entity.canonicalName, ...entity.aliases.map((alias) => alias.name)])
+    .map(nameRegex)
+    .filter((pattern): pattern is RegExp => pattern !== null);
   return rows
     .map((row, index) => {
       const text = asString(row.text).trim();
       const cited = strings(row.groundedIn).filter((id) => allowed.has(id));
+      const kind = (commentaryKinds.has(asString(row.kind)) ? asString(row.kind) : "scene") as Commentary["kind"];
       const issues: string[] = [];
       if (cited.length === 0) issues.push("No citation inside this moment.");
       const leaked = future.find((pattern) => pattern.test(text));
       if (leaked) issues.push("Names an entity the reader has not met yet.");
-      const kind = asString(row.kind);
+      issues.push(
+        ...commentaryIssues({
+          text,
+          kind,
+          citedText: cited.map((id) => frame.inputs.paragraphById.get(id)?.text ?? "").join(" "),
+          newEntityNames,
+        }),
+      );
       return {
         id: `${momentId}_c${index + 1}`,
         text,
-        kind: (commentaryKinds.has(kind) ? kind : "scene") as Commentary["kind"],
+        kind,
         groundedIn: cited,
         verified: issues.length === 0,
         issues,
@@ -144,6 +162,7 @@ export async function buildMoment(
           moment: { momentId: outline.momentId, title: outline.title, purpose: outline.purpose },
           previousMoment: outlineIndex > 0 ? neighbours[outlineIndex - 1] : null,
           entities: entities.map((entity) => entityAsOf(entity, span.seqStart)),
+          newEntityIds: newEntitiesIn(inputs, outline).map((entity) => entity.entityId),
           quotedLines: quotes.map((quote, index) => ({
             quoteId: quoteIds[index],
             paragraphId: quote.paragraphId,
@@ -256,7 +275,7 @@ export async function buildMoment(
     eventIds: eventsInside.map((event) => event.eventId),
     exactTextSelections: selectionsFrom(frame, records(data?.exactTextSelections), warnings),
     dialogue,
-    commentary: checkCommentary(frame, records(data?.commentary).slice(0, 4), outline.momentId),
+    commentary: checkCommentary(frame, records(data?.commentary).slice(0, 3), outline.momentId),
     visualPlan: { shots },
     inspectableEntities: records(data?.inspectables)
       .map((row) => ({ entityId: asString(row.entityId), reason: asString(row.reason).trim() }))

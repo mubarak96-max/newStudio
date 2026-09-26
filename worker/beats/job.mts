@@ -16,7 +16,7 @@ type BeatsState = {
 
 export const beatsJob: JobDefinition<BeatsState> = {
   type: "beats",
-  version: "beats-v1",
+  version: "beats-v2",
   next: "visuals",
   initialState: () => ({
     phase: "beats",
@@ -94,6 +94,6 @@ export const beatsJob: JobDefinition<BeatsState> = {
 
     const { totals } = state;
     await db.doc(`books/${bookId}`).update({ "ruleVersions.story": ruleVersions.story });
-    return `${totals.beats} beats over ${totalMoments} moments; ${totals.paragraphs - totals.fallbackParagraphs}/${totals.paragraphs} paragraphs represented by the model, ${totals.wordsShown}/${totals.words} words shown verbatim`;
+    return `${totals.beats} beats over ${totalMoments} moments; ${totals.paragraphs - totals.fallbackParagraphs}/${totals.paragraphs} paragraphs read as text, ${totals.wordsShown}/${totals.words} words shown verbatim`;
   },
 };

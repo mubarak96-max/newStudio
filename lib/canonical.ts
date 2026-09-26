@@ -19,7 +19,8 @@ export type ParagraphKind =
   | 'frontmatter'
   | 'backmatter'
   | 'note'
-  | 'caption';
+  | 'caption'
+  | 'break';
 
 export type Paragraph = {
   id: string;
@@ -309,7 +310,7 @@ export function continuesAcrossPage(previous: string, next: string): boolean {
   return /^[\p{Ll}\p{Pd},;'"“‘(]/u.test(head);
 }
 
-function joinAcrossPage(previous: string, next: string): string {
+export function joinAcrossPage(previous: string, next: string): string {
   const tail = previous.trimEnd();
   const head = next.trimStart();
   if (HYPHENATED.test(tail)) return `${tail.slice(0, -1)}${head}`;

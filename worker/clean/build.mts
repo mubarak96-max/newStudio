@@ -13,7 +13,7 @@ import {
   type Paragraph as CanonicalParagraph,
   type ParagraphKind,
 } from "../../lib/canonical.ts";
-import type { Paragraph } from "../types.mts";
+import type { JoinedParagraph } from "./rejoin.mts";
 
 export type CleanedParagraph = {
   text: string;
@@ -24,12 +24,24 @@ export type CleanedParagraph = {
   cleanliness: number;
 };
 
-/** A cleaned paragraph keeps a pointer to the raw one it came from. */
-export type CleanParagraph = CanonicalParagraph & { cleanliness: number; rawParagraphId: string };
+/** A cleaned paragraph keeps a pointer to the raw ones it came from; `rawParagraphId` is the first. */
+export type CleanParagraph = CanonicalParagraph & { cleanliness: number; rawParagraphId: string; rawParagraphIds?: string[] };
 
 export type Chapter = { id: string; title: string; seqStart: number; seqEnd: number };
 
-export function buildCleanParagraphs(raw: Paragraph[], cleaned: Map<string, CleanedParagraph>): CleanParagraph[] {
+/**
+ * What the labels miss on a scanned page: a line with no letters ("* * *") is
+ * a section break, and a lone letter or two with no sentence around it is
+ * debris from a drop cap or an illustration, never a paragraph of the story.
+ */
+export function structuralKind(text: string, kind: ParagraphKind, chapterStart: boolean): ParagraphKind {
+  if (!/[\p{L}\p{N}]/u.test(text)) return "break";
+  const letterCount = text.replace(/[^\p{L}]/gu, "").length;
+  if (kind === "body" && !chapterStart && letterCount <= 2 && !/[.!?…]/.test(text)) return "note";
+  return kind;
+}
+
+export function buildCleanParagraphs(raw: JoinedParagraph[], cleaned: Map<string, CleanedParagraph>): CleanParagraph[] {
   const paragraphs: CleanParagraph[] = [];
   let chapterNumber = 0;
   let chapterId = "chapter_0001";
@@ -42,6 +54,7 @@ export function buildCleanParagraphs(raw: Paragraph[], cleaned: Map<string, Clea
       chapterId = `chapter_${String(chapterNumber).padStart(4, "0")}`;
     }
     const seq = paragraphs.length;
+    const kind = structuralKind(result.text, result.kind, startsChapter);
     paragraphs.push({
       id: `p${String(seq).padStart(6, "0")}`,
       seq,
@@ -49,10 +62,11 @@ export function buildCleanParagraphs(raw: Paragraph[], cleaned: Map<string, Clea
       chapterId,
       text: result.text,
       hash: stableTextHash(result.text),
-      kind: result.kind,
-      isStory: result.isStory && result.kind === "body",
+      kind,
+      isStory: result.isStory && kind === "body",
       cleanliness: result.cleanliness,
       rawParagraphId: source.id,
+      ...(source.joinedIds.length > 1 ? { rawParagraphIds: source.joinedIds } : {}),
     });
   }
   return paragraphs;

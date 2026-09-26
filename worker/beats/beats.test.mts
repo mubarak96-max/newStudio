@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { EntityVisualPlan, Moment, VisualProfile } from "../../lib/story-types.ts";
+import type { Commentary, EntityVisualPlan, Moment, Shot, VisualProfile } from "../../lib/story-types.ts";
 import { buildCompositionPlans, figureLayers, forecastOf, placeFigure } from "../visuals/compositions.mts";
 import { assignDepth, planStage25d } from "../visuals/stage25d.mts";
 import { cameraMoves, durationFor, posesFor, splitSentences } from "./camera.mts";
+import { placeCommentary, segmentParagraphs, shotInOrder } from "./segments.mts";
 
 test("every camera move keeps zoom at or above the fitted view", () => {
   for (const move of cameraMoves) {
@@ -168,4 +169,51 @@ test("Beats sharing a reuseKey share one composition", () => {
   assert.equal(forecast.shotsPlanned, 4);
   assert.equal(forecast.reuseRate, 0.5);
   assert.equal(forecast.imagesToGenerate, 1 + 6);
+});
+
+test("every word of every paragraph becomes Beat text, in order, as exact substrings", () => {
+  const paragraphs = [
+    { id: "p1", text: "It is very seldom that mere ordinary people like John and myself secure ancestral halls for the summer." },
+    { id: "p2", text: "But what is one to do?" },
+    {
+      id: "p3",
+      text:
+        "Looked at in one way each breadth stands alone, the bloated curves and flourishes, a kind of debased Romanesque with delirium tremens, go waddling up and down in isolated columns of fatuity, and on the other hand they connect diagonally, and the sprawling outlines run off in great slanting waves of optic horror, like a lot of wallowing seaweeds in full chase.",
+    },
+  ];
+  const segments = segmentParagraphs(paragraphs, 20);
+  for (const segment of segments) {
+    const source = paragraphs.find((paragraph) => paragraph.id === segment.paragraphId)!.text;
+    assert.equal(source.slice(segment.start, segment.end), segment.text);
+    assert.ok(segment.text.split(/\s+/).length <= 20, segment.text);
+  }
+  for (const paragraph of paragraphs) {
+    const own = segments.filter((segment) => segment.paragraphId === paragraph.id);
+    assert.equal(own.map((segment) => segment.text).join(" "), paragraph.text);
+  }
+});
+
+test("without staging, shots follow the text in order", () => {
+  const shots = ["s1", "s2", "s3"].map((shotId) => ({ shotId }) as Shot);
+  assert.deepEqual(
+    Array.from({ length: 6 }, (_, index) => shotInOrder(index, 6, shots)!.shotId),
+    ["s1", "s1", "s2", "s2", "s3", "s3"],
+  );
+  assert.equal(shotInOrder(0, 3, []), null);
+});
+
+test("commentary stands beside the words it explains and never without a citation", () => {
+  const segments = [
+    { paragraphId: "p1", start: 0, end: 5, text: "one" },
+    { paragraphId: "p2", start: 0, end: 5, text: "two" },
+    { paragraphId: "p2", start: 6, end: 9, text: "three" },
+  ];
+  const note = (id: string, groundedIn: string[]) =>
+    ({ id, text: `note ${id}`, kind: "clarify", groundedIn, verified: true, issues: [] }) as Commentary;
+  const seq = (paragraphId: string) => Number(paragraphId.slice(1));
+  const placed = placeCommentary(segments, [note("a", ["p2"]), note("b", []), note("c", ["p2", "p1"]), note("d", ["p2"]), note("e", ["p2"])], seq, 1);
+  assert.deepEqual(
+    placed.map((list) => list.map((item) => item.id)),
+    [["c"], ["a"], ["d"]],
+  );
 });

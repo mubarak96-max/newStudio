@@ -1,4 +1,4 @@
-import { consolidationModels, profileBatchSize } from "./config.mts";
+import { openRouterModels, profileBatchSize } from "./config.mts";
 import { asBoolean, asNumber, asString, nullableString, records, strings } from "./coerce.mts";
 import { unique } from "./evidence.mts";
 import {
@@ -51,7 +51,7 @@ async function callModel(
     const result = await callJsonModel({
       system,
       user: JSON.stringify(payload),
-      models: consolidationModels,
+      models: openRouterModels,
       label,
     });
     context.ledger.diagnostics.modelCalls += 1;

@@ -9,15 +9,20 @@ import type { Paragraph } from "../types.mts";
 import { buildCleanParagraphs, type CleanedParagraph } from "./build.mts";
 import { persistCleanSource } from "./persist.mts";
 import { cleanSystemPrompt } from "./prompts.mts";
-import { cleanlinessOf, furniturePhrases, isFurniture, judgeCleaned } from "./rules.mts";
+import { rejoinParagraphs } from "./rejoin.mts";
+import { cleanlinessOf, damagedWords, furniturePhrases, isFurniture, judgeCleaned, singleLetterWords } from "./rules.mts";
 
-const kinds = new Set<ParagraphKind>(["body", "heading", "frontmatter", "backmatter", "note", "caption"]);
+const kinds = new Set<ParagraphKind>(["body", "heading", "frontmatter", "backmatter", "note", "caption", "break"]);
 const maxParagraphsPerCall = 12;
+/** Enough refused changes to see a pattern on the source document without bloating it. */
+const keptRefusals = 100;
 
 type CleanState = {
   cleaned: Record<string, CleanedParagraph>;
   repairs: number;
   rejected: number;
+  /** Individual changes refused inside otherwise accepted paragraphs, as "paragraphId: reason". */
+  refusals: string[];
 };
 
 function windowsOf(paragraphs: Paragraph[]): Paragraph[][] {
@@ -70,21 +75,30 @@ function readLabels(item: Record<string, unknown>, fallback: CleanedParagraph): 
  */
 export const cleanJob: JobDefinition<CleanState> = {
   type: "clean",
-  version: "clean-v1",
-  initialState: () => ({ cleaned: {}, repairs: 0, rejected: 0 }),
+  version: "clean-v2",
+  initialState: () => ({ cleaned: {}, repairs: 0, rejected: 0, refusals: [] }),
   run: async (context, state, checkpoint) => {
     const { bookId, sourceId, canonicalHash } = context;
-    const book = (await db.doc(`books/${bookId}`).get()).data() ?? {};
-    const raw = await loadParagraphs(
+    const [bookSnapshot, sourceSnapshot] = await Promise.all([
+      db.doc(`books/${bookId}`).get(),
+      db.doc(`books/${bookId}/sources/${sourceId}`).get(),
+    ]);
+    const book = bookSnapshot.data() ?? {};
+    // Read the job's own source, not the book's active one: after a first clean
+    // the book points at the cleaned source, and a rebuild still cleans the raw text.
+    const jobSource = sourceSnapshot.data() ?? {};
+    const scanned = await loadParagraphs(
       bookId,
       sourceId,
       canonicalHash,
-      String(book.canonical?.storagePath ?? ""),
-      String(book.canonical?.textHash ?? ""),
+      String(jobSource.canonicalPath ?? ""),
+      String(jobSource.textHash ?? ""),
     );
     const title = nullableString(book.metaData?.title) ?? nullableString(book.title) ?? "";
     const author = nullableString(book.metaData?.author) ?? "";
-    const furniture = furniturePhrases(raw, title, author);
+    const furniture = furniturePhrases(scanned, title, author);
+    const singleLetters = singleLetterWords(scanned);
+    const raw = rejoinParagraphs(scanned, (paragraph) => paragraph.kind === "note" || isFurniture(paragraph, furniture));
 
     const pending = windowsOf(raw).filter((window) => window.some((paragraph) => !state.cleaned[paragraph.id]));
     let done = raw.length - pending.reduce((total, window) => total + window.length, 0);
@@ -111,12 +125,17 @@ export const cleanJob: JobDefinition<CleanState> = {
           // A deletion is honoured only for text this worker also recognises as
           // furniture; the model may not delete the book.
           const drop = labels.drop && isFurniture(paragraph, furniture);
-          const verdict = judgeCleaned(paragraph.text, asString(item.text) || paragraph.text, furniture);
+          const verdict = judgeCleaned(paragraph.text, asString(item.text) || paragraph.text, furniture, singleLetters);
           if (!verdict.accepted) {
             state.rejected += 1;
             context.log(`kept raw ${paragraph.id}: ${verdict.reason}`);
+            if (state.refusals.length < keptRefusals) state.refusals.push(`${paragraph.id}: ${verdict.reason}`);
             state.cleaned[paragraph.id] = { ...fallback, ...labels, drop };
             continue;
+          }
+          for (const reason of verdict.refused) {
+            context.log(`kept raw words in ${paragraph.id}: ${reason}`);
+            if (state.refusals.length < keptRefusals) state.refusals.push(`${paragraph.id}: ${reason}`);
           }
           if (verdict.changedWords > 0 || verdict.removedWords > 0) state.repairs += 1;
           state.cleaned[paragraph.id] = {
@@ -145,19 +164,27 @@ export const cleanJob: JobDefinition<CleanState> = {
     const paragraphs = buildCleanParagraphs(raw, cleaned);
     if (paragraphs.length === 0) throw new Error("Cleaning removed every paragraph; the raw source is unchanged.");
     const dropped = raw.length - paragraphs.length;
+    const joined = scanned.length - raw.length;
+    // Damage the repairs could not reach is reported, not hidden: every later
+    // stage reads these words to the reader.
+    const damaged = paragraphs.filter((paragraph) => paragraph.isStory && damagedWords(paragraph.text) > 0);
     const source = await persistCleanSource(bookId, sourceId, paragraphs, {
       rawCanonicalHash: canonicalHash,
       cleanVersion: cleanJob.version,
       repairs: state.repairs,
       rejected: state.rejected,
       dropped,
+      joined,
+      refusals: state.refusals,
+      damagedParagraphIds: damaged.map((paragraph) => paragraph.id),
     });
     await db.doc(`books/${bookId}`).update({ "ruleVersions.cleaning": ruleVersions.cleaning });
     // Understanding must run on the cleaned text, not the source this job read.
     context.chainSource(source.sourceId, source.canonicalHash);
     return (
-      `${paragraphs.length} paragraphs (${dropped} furniture removed), ${state.repairs} repaired, ` +
-      `${state.rejected} refused, ${source.chapters.length} chapters`
+      `${paragraphs.length} paragraphs (${dropped} furniture removed, ${joined} broken lines rejoined), ` +
+      `${state.repairs} repaired, ${state.rejected} refused, ${source.chapters.length} chapters` +
+      (damaged.length > 0 ? `; ${damaged.length} story paragraph(s) still show scan damage` : "")
     );
   },
   next: "understand",

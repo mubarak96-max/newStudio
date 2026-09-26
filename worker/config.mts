@@ -62,32 +62,11 @@ function envNumber(
   );
 }
 
-function modelList(primary: string, fallbacks: string | undefined): string[] {
-  return Array.from(
-    new Set([
-      primary,
-      ...(fallbacks ?? "")
-        .split(",")
-        .map((model) => model.trim())
-        .filter(Boolean),
-    ]),
-  );
-}
-
-const defaultFallbacks = "deepseek/deepseek-chat,deepseek/deepseek-v4-flash";
-
 export const openRouterApiKey = env.OPENROUTER_API_KEY;
 export const pollIntervalMs = envNumber("POLL_INTERVAL_MS", 10_000, 2_000);
-export const openRouterModel = env.OPENROUTER_MODEL ?? "openai/gpt-4.1-mini";
-export const openRouterModels = modelList(
-  openRouterModel,
-  env.OPENROUTER_FALLBACK_MODELS ?? defaultFallbacks,
-);
-/** Consolidation reasons over the whole ledger at once; it may use a stronger model. */
-export const consolidationModels = modelList(
-  env.OPENROUTER_CONSOLIDATION_MODEL ?? openRouterModel,
-  env.OPENROUTER_FALLBACK_MODELS ?? defaultFallbacks,
-);
+/** Fixed in code on purpose: the same text models everywhere, not overridable from env. */
+export const openRouterModel = "openai/gpt-6-luna";
+export const openRouterModels = [openRouterModel, "openai/gpt-5-mini"];
 export const openRouterMaxTokens = envNumber(
   "OPENROUTER_MAX_TOKENS",
   16_000,

@@ -9,12 +9,12 @@
  */
 
 export const ruleVersions = {
-  /** Scan repair, page furniture, chapter and section labelling. */
-  cleaning: 'clean-v1',
+  /** Line rejoining, per-change scan repair, page furniture, section breaks. */
+  cleaning: 'clean-v2',
   /** Narrator, author, place types, duplicates, grounding. */
   bookModel: 'integrity-v1',
-  /** Chapter-aligned episodes, moment and beat limits, honest coverage. */
-  story: 'story-rules-v1',
+  /** Chapter-aligned episodes, every word read as Beat text, commentary that only explains. */
+  story: 'story-rules-v2',
   /** Shot location, cast agreement, shot grammar. */
   shots: 'shot-rules-v1',
   /** Written image prompts and the contract they must satisfy. */
