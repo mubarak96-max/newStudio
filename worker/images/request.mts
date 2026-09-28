@@ -8,7 +8,7 @@ import {
   type VisualProfile,
 } from "../../lib/story-types.ts";
 import { unique } from "../evidence.mts";
-import { styleLine } from "../visuals/compositions.mts";
+import { sceneStyle, styleLine } from "../visuals/compositions.mts";
 
 export type EntityForImage = {
   entityId: string;
@@ -134,7 +134,7 @@ export function planImage(
   // The authored prompt is art direction that already passed the prompt
   // contract; the mechanical one is the fallback when authoring was refused.
   const written = layer.authoredPrompt?.trim()
-    ? `${styleLine(profile)}. ${layer.authoredPrompt.trim()}${foreground ? ` ${greenScreen}` : ""}`
+    ? `${sceneStyle(profile)} ${layer.authoredPrompt.trim()}${foreground ? ` ${greenScreen}` : ""}`
     : layer.prompt;
   const derived = Boolean(layer.derivedFrom);
   const prompt = foreground

@@ -68,12 +68,31 @@ function joined(list: string[], start: number, count: number): string {
   return value;
 }
 
-/** How many words from `start` are covered by a furniture phrase, or 0. */
-function furnitureRun(list: string[], start: number, furniture: Set<string>): number {
-  for (let count = Math.min(12, list.length - start); count >= 1; count -= 1) {
+/**
+ * How many words from `start` are covered by a furniture phrase, or 0.
+ *
+ * The scanner damages running heads like any other line ("THE YELLO\N
+ * \\TALL-PAPER."), so a visibly damaged run may match a phrase with the same
+ * tolerance a word repair gets. It must also let the text line up again after
+ * it (`realigns`), so a clean phrase of the book is never taken for furniture.
+ */
+function furnitureRun(
+  list: string[],
+  start: number,
+  furniture: Set<string>,
+  damaged: (token: string) => boolean,
+  realigns: (count: number) => boolean,
+): number {
+  const longest = Math.min(12, list.length - start);
+  for (let count = longest; count >= 1; count -= 1) {
     const key = joined(list, start, count);
     // Heads carrying the folio ("Animal Farm 12") are keyed without their digits.
     if (furniture.has(key) || furniture.has(key.replace(/[0-9]/g, ""))) return count;
+  }
+  for (let count = longest; count >= 1; count -= 1) {
+    if (!list.slice(start, start + count).some(damaged) || !realigns(count)) continue;
+    const key = joined(list, start, count).replace(/[0-9]/g, "");
+    for (const phrase of furniture) if (isRepair(key, phrase)) return count;
   }
   return 0;
 }
@@ -203,7 +222,9 @@ export function judgeCleaned(
       j += split;
       continue;
     }
-    const run = furnitureRun(from, i, furniture);
+    const run = furnitureRun(from, i, furniture, damagedAt, (count) =>
+      i + count < from.length && letters(from[i + count]!) === letters(to[j]!),
+    );
     if (run > 0) {
       removedWords += run;
       i += run;
@@ -246,7 +267,7 @@ export function judgeCleaned(
   }
 
   while (i < from.length) {
-    const run = furnitureRun(from, i, furniture);
+    const run = furnitureRun(from, i, furniture, damagedAt, (count) => i + count === from.length);
     if (run > 0) {
       removedWords += run;
       i += run;

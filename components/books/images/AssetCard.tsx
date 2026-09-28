@@ -1,6 +1,5 @@
 'use client';
 
-import { ruleVersions } from '@/lib/rules';
 import { useEffect, useState } from 'react';
 import { subscribePipelineJob, type PipelineJob } from '@/lib/book-pipeline';
 import Image from 'next/image';
@@ -138,7 +137,7 @@ export function AssetCard({
           {dependencies.map((dependency, index) => (
             <span key={dependency.label} className={dependency.approved ? '' : 'text-amber-600'}>
               {index > 0 ? ', ' : ''}
-              {dependency.label} {dependency.approved ? '✓' : '(generated and checked first)'}
+              {dependency.label} {dependency.approved ? '✓' : '(generated first)'}
             </span>
           ))}
         </p>
@@ -152,7 +151,7 @@ export function AssetCard({
               <Picture version={selected} label={selected === latest ? 'Latest candidate' : 'Earlier version'} />
               <button
                 type='button'
-                disabled={busy || !selected.check?.ok || !selected.check.semantic || selected.check.version !== ruleVersions.imageChecks}
+                disabled={busy}
                 onClick={() => run(() => onApprove(selected.versionId))}
                 className='inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50'
               >

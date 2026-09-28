@@ -13,6 +13,7 @@ import {
 } from "./config.mts";
 import { runConsolidation } from "./consolidate.mts";
 import { claimJob } from "./job-lease.mts";
+import { createJobLog } from "./job-log.mts";
 import { enqueueJob } from "./job-queue.mts";
 import { computeCoverage, stubMissingAnnotations } from "./coverage.mts";
 import { unique } from "./evidence.mts";
@@ -25,14 +26,6 @@ import { ledgerSummary, loadParagraphs, persistBookModel, saveCheckpoint } from 
 import { extractionSystemPrompt, extractionUserPayload } from "./prompts.mts";
 import { emptyLedger, upgradeLedger, type Chapter, type Ledger, type Paragraph, type Window } from "./types.mts";
 import { buildProcessingUnits, buildRepairWindows, buildWindows, splitWindow } from "./windows.mts";
-
-function log(message: string): void {
-  console.log(`[${workerVersion}] ${message}`);
-}
-
-function warn(message: string): void {
-  console.warn(`[${workerVersion}] ${message}`);
-}
 
 function ownedChars(window: Window): number {
   return window.owned.reduce((total, paragraph) => total + paragraph.text.length, 0);
@@ -76,6 +69,8 @@ export async function processUnderstandingJob(
 ): Promise<void> {
   const jobRef = db.doc(`books/${bookId}/jobs/${jobId}`);
   if (!(await claimJob(jobRef, staleLeaseMs))) return;
+  const jobLog = createJobLog(workerVersion);
+  const { log, warn } = jobLog;
   log(`claimed books/${bookId}/jobs/${jobId}`);
 
   try {
@@ -122,6 +117,7 @@ export async function processUnderstandingJob(
     const reportActivity = async (nextActivity: JobActivity) => {
       activity = nextActivity;
       await jobRef.update({
+        ...jobLog.patch(),
         activity,
         heartbeatAt: FieldValue.serverTimestamp(),
         leaseOwner: workerId,
@@ -135,6 +131,7 @@ export async function processUnderstandingJob(
       const done =
         ledger.phase === "extract" ? ledger.coveredParagraphIds.length : paragraphs.length;
       await jobRef.update({
+        ...jobLog.patch(),
         progress: { done, total: paragraphs.length },
         phase: ledger.phase,
         checkpoint: { storagePath, windowIndex: ledger.processedWindow },
@@ -331,11 +328,12 @@ export async function processUnderstandingJob(
     }
     const warning = warnings.length > 0 ? warnings.join(" ") : null;
     if (warning) warn(warning);
-    log(
-      `completed: ${ledger.entities.length} entities, ${ledger.events.length} events, ${coverage.annotatedByModel}/${coverage.storyParagraphs} paragraphs annotated by model, ${ledger.sceneRanges.length} scenes, ${ledger.diagnostics.modelCalls} model calls, $${costUsd.toFixed(4)}.`,
-    );
+    const result = `${ledger.entities.length} entities, ${ledger.events.length} events, ${coverage.annotatedByModel}/${coverage.storyParagraphs} paragraphs annotated by model, ${ledger.sceneRanges.length} scenes, ${ledger.diagnostics.modelCalls} model calls`;
+    log(`completed: ${result}, $${costUsd.toFixed(4)}.`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "completed",
+      result,
       phase: "done",
       progress: { done: paragraphs.length, total: paragraphs.length },
       costUsd,
@@ -360,10 +358,12 @@ export async function processUnderstandingJob(
     });
     const storyJobId = await enqueueJob(bookId, "story", sourceId, canonicalHash);
     log(`queued story planning job ${storyJobId}`);
+    await jobRef.update({ ...jobLog.patch(), updatedAt: FieldValue.serverTimestamp() });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown worker failure.";
     warn(`job ${jobId} failed: ${message}`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "failed",
       error: message.slice(0, 4_000),
       finishedAt: FieldValue.serverTimestamp(),

@@ -1,7 +1,6 @@
 import { versionIssues } from "../../lib/asset-validation.ts";
 import { FieldValue } from "firebase-admin/firestore";
-import { getObject, s3Config } from "../storage/s3.mts";
-import { reviewImage } from "./review.mts";
+import { recordChecks } from "./checks.mts";
 import { dependencyWave, type ImageWork } from "./dependencies.mts";
 import { randomUUID } from "node:crypto";
 import { assetTargetId, type ImageBatch, type ImageBatchItem, type Lineage, type VisualAsset } from "../../lib/story-types.ts";
@@ -192,7 +191,6 @@ async function collectBatch(bookId: string, batch: ImageBatch, log: (message: st
   const lines = status.responsesFile ? await downloadResults(status.responsesFile) : status.inlined;
   const results = new Map(lines.map(readBatchResult).map((result) => [result.key, result]));
   let saved = 0;
-  const retries: ImageWork[] = [];
   let failed = 0;
   let costUsd = 0;
   for (const item of batch.items) {
@@ -204,25 +202,13 @@ async function collectBatch(bookId: string, batch: ImageBatch, log: (message: st
       if (stored) {
         saved += 1;
         costUsd += stored.costUsd;
-        if (stored.check && !stored.check.ok) retries.push({ target: item.target, note: `Correct the rejected image: ${stored.check.issues.join(" ")}` });
       } else failed += 1;
       continue;
     }
     if (result?.ok) {
       const cost = (result.promptTokens * geminiInputUsdPerToken + result.outputTokens * geminiOutputUsdPerToken) * batchDiscount;
       costUsd += cost;
-      const references = [];
-      for (const pin of item.references) {
-        const asset = (await db.doc(`books/${bookId}/visualAssets/${pin.targetId}`).get()).data() as VisualAsset | undefined;
-        const version = asset?.versions?.find((version) => version.versionId === pin.versionId);
-        if (!version) throw new Error(`Pinned reference missing: ${pin.targetId}`);
-        const bytes = await getObject(s3Config(), version.s3Key);
-        if (!bytes) throw new Error(`Pinned reference file missing: ${pin.targetId}`);
-        references.push({ bytes, contentType: version.contentType });
-      }
-      const check = await reviewImage(result, item.prompt, item.expectation ?? (item.target.kind === "layer" ? { cutOut: item.alpha === "chroma-green" } : null), references, (cost) => { costUsd += cost; });
-      if (!check.ok && check.issues.some((issue) => issue.startsWith("Visual review unavailable"))) throw new Error(check.issues.join(" "));
-      if (!check.ok) retries.push({ target: item.target, note: `Correct the rejected image: ${check.issues.join(" ")}` });
+      const check = await recordChecks(result.bytes, item.expectation ?? (item.target.kind === "layer" ? { cutOut: item.alpha === "chroma-green" } : null));
       await saveVersion(bookId, lineage, { ...item, check, expectedBatchId: batch.batchId, versionId: `${batch.batchId}-${item.key}` }, {
         bytes: result.bytes,
         contentType: result.contentType,
@@ -248,7 +234,6 @@ async function collectBatch(bookId: string, batch: ImageBatch, log: (message: st
     providerState: status.state,
     counts: { total: batch.items.length, saved, failed },
     costUsd,
-    retries,
     completedAt: new Date().toISOString(),
     pollLeaseUntil: 0,
   });
@@ -263,18 +248,10 @@ async function advanceBatchJob(bookId: string, jobId: string): Promise<void> {
     if (!job?.submissionsComplete || job.continuationQueued || job.status === "cancelled") return;
     const batches = await Promise.all((job.submittedBatchIds as string[]).map((id) => transaction.get(db.doc(`books/${bookId}/imageBatches/${id}`))));
     if (!batches.length || batches.some((batch) => !["completed", "failed"].includes(batch.data()?.status))) return;
-    const retries = batches.flatMap((batch) => (batch.data()?.retries ?? []) as ImageWork[]);
-    const attempts = { ...(job.imageAttempts ?? {}) } as Record<string, number>;
-    const retryable = retries.filter((item) => {
-      const id = JSON.stringify(item.target);
-      attempts[id] = (attempts[id] ?? 0) + 1;
-      return attempts[id] < 2;
-    });
-    const blocked = retries.length !== retryable.length || job.preparationFailed > 0 || batches.some((batch) => batch.data()?.status === "failed" || batch.data()?.counts?.failed > 0);
+    const blocked = job.preparationFailed > 0 || batches.some((batch) => batch.data()?.status === "failed" || batch.data()?.counts?.failed > 0);
     const pendingItems = (job.pendingItems ?? []) as ImageWork[];
     const pendingDocs = await Promise.all(pendingItems.map((item) => transaction.get(db.doc(`books/${bookId}/visualAssets/${assetTargetId(item.target)}`))));
-    const pending = pendingItems.filter((_, index) => { const owner = pendingDocs[index]!.data()?.lastJobId; return !owner || owner === (job.rootJobId ?? jobId); });
-    const items = [...pending, ...retryable];
+    const items = pendingItems.filter((_, index) => { const owner = pendingDocs[index]!.data()?.lastJobId; return !owner || owner === (job.rootJobId ?? jobId); });
     const book = (await transaction.get(db.doc(`books/${bookId}`))).data();
     if (book?.activeSourceId !== job.sourceId || book?.canonical?.hash !== job.canonicalHash) return;
     if (!items.length && !blocked) {
@@ -282,15 +259,15 @@ async function advanceBatchJob(bookId: string, jobId: string): Promise<void> {
     }
     if (items.length && !blocked) {
       transaction.set(db.doc(`books/${bookId}/jobs/${jobId}_next`), {
-        type: "imageBatch", stage: "images", status: "queued_v3", items, imageAttempts: attempts, rootJobId: job.rootJobId ?? jobId,
+        type: "imageBatch", stage: "images", status: "queued_v3", items, rootJobId: job.rootJobId ?? jobId,
         sourceId: job.sourceId, canonicalHash: job.canonicalHash, attempts: 0, costUsd: 0,
         createdAt: FieldValue.serverTimestamp(), progress: { done: 0, total: items.length },
       });
     }
     if (blocked) {
-      for (const item of pending) transaction.set(db.doc(`books/${bookId}/visualAssets/${assetTargetId(item.target)}`), { status: "failed", error: "A required image failed validation; dependent generation was withheld.", batchId: null }, { merge: true });
+      for (const item of items) transaction.set(db.doc(`books/${bookId}/visualAssets/${assetTargetId(item.target)}`), { status: "failed", error: "A required image failed to generate; dependent generation was withheld.", batchId: null }, { merge: true });
     }
-    transaction.update(jobRef, { continuationQueued: true, ...(blocked ? { status: "failed", error: "Image validation exhausted retries; dependent images were withheld." } : {}) });
+    transaction.update(jobRef, { continuationQueued: true, ...(blocked ? { status: "failed", error: "An image failed to generate; dependent images were withheld." } : {}) });
   });
 }
 

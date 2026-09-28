@@ -293,7 +293,7 @@ export function ImagesPage({ bookId }: { bookId: string }) {
           {view === 'references' && (
             <>
               <p className='text-sm text-muted-foreground'>
-                References, complete scenes and derived layers are generated in order, checked automatically, and assembled into the preview. Failed checks trigger one targeted retry.
+                References, complete scenes and derived layers are generated in order, each becomes the current version as it lands, and they are assembled into the preview. Review them yourself: approve an earlier version or regenerate any you don&apos;t like.
               </p>
               <div className='flex flex-wrap gap-2'>
                 {['all', 'character', 'location', 'object', 'group'].map((type) => (

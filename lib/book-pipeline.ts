@@ -84,6 +84,10 @@ export type PipelineJob = {
   attempts: number;
   error?: string;
   warning?: string;
+  /** One-line outcome the worker recorded when the job completed. */
+  result?: string;
+  /** Recent worker log lines, oldest first; the same lines the terminal shows. */
+  log: string[];
   costUsd: number;
   workerVersion?: string;
   model?: string;
@@ -524,6 +528,8 @@ export function subscribePipelineJob(
         attempts: data.attempts ?? 0,
         error: data.error ?? undefined,
         warning: data.warning ?? undefined,
+        result: typeof data.result === 'string' ? data.result : undefined,
+        log: Array.isArray(data.log) ? (data.log as string[]) : [],
         costUsd: data.costUsd ?? 0,
         workerVersion: data.workerVersion ?? undefined,
         model: data.model ?? undefined,

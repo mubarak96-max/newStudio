@@ -75,7 +75,7 @@ function readLabels(item: Record<string, unknown>, fallback: CleanedParagraph): 
  */
 export const cleanJob: JobDefinition<CleanState> = {
   type: "clean",
-  version: "clean-v2",
+  version: "clean-v3",
   initialState: () => ({ cleaned: {}, repairs: 0, rejected: 0, refusals: [] }),
   run: async (context, state, checkpoint) => {
     const { bookId, sourceId, canonicalHash } = context;

@@ -12,7 +12,7 @@ import { nameRegex, unique } from "../evidence.mts";
 import { isNarrator } from "../narrator.mts";
 import type { Entity } from "../types.mts";
 import type { StoryContext } from "./context.mts";
-import { entitiesInRange, entityAsOf, paragraphLines } from "./evidence.mts";
+import { entitiesInRange, entityAsOf, momentParagraphLines } from "./evidence.mts";
 import { commentaryIssues } from "./commentary.mts";
 import type { StoryInputs } from "./inputs.mts";
 import { wordCount } from "./text.mts";
@@ -161,7 +161,7 @@ export async function buildMoment(
             paragraphId: quote.paragraphId,
             text: quote.text.length > 240 ? `${quote.text.slice(0, 240)}…` : quote.text,
           })),
-          paragraphs: paragraphLines(inputs, span),
+          paragraphs: momentParagraphLines(inputs, span),
         });
   if (story.length > 0 && !data) throw new Error(`Moment direction failed for ${outline.momentId}; visuals were not invented.`);
 

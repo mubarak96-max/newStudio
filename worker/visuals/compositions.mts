@@ -28,6 +28,17 @@ export function styleLine(profile: VisualProfile): string {
     .join(". ");
 }
 
+/**
+ * Scene layers only. Reference sheets and variants stay clean and evenly lit
+ * because they carry identity; a scene has to read as a frame from a film.
+ */
+export const cinematicGrammar =
+  "Cinematic film still: shot on a digital cinema camera with cinema prime lenses, shallow depth of field holding focus on the subject, composed in depth with foreground, midground and background, motivated directional light with real contrast between lit and shadowed sides, atmosphere only where the scene motivates it, one cohesive colour grade and fine film grain. Never flat, evenly lit or stock-photo-like.";
+
+export function sceneStyle(profile: VisualProfile): string {
+  return `${styleLine(profile)}. ${cinematicGrammar}`;
+}
+
 /** How tall a figure is in the frame, and where its lowest visible point falls, for each framing. */
 const framingSize: Record<string, { height: number; baseline: number }> = {
   wide: { height: 0.4, baseline: 0.88 },
@@ -80,7 +91,7 @@ export function figureLayers(
         entityId: state.entityId,
         entityIds: [state.entityId],
         prompt:
-          `${styleLine(profile)}. ${lookLine(state)} Pose and action as in: ${shot.description} ` +
+          `${sceneStyle(profile)} ${lookLine(state)} Pose and action as in: ${shot.description} ` +
           `Draw only the visible portion of ${nameOf(state)} exactly as it appears in the approved master, at the same position, size and crop. Do not expand a hand or face insert into a whole body. Isolated on a transparent background, lit to match the scene.`,
         transparent: true,
         zOrder: 1,
@@ -96,7 +107,7 @@ export function figureLayers(
       entityId: null,
       entityIds: figures.map((state) => state.entityId),
       prompt:
-        `${styleLine(profile)}. Draw exactly these ${figures.length} subjects together in one image, each exactly once, and no one else: ${figures.map(lookLine).join(" ")} ` +
+        `${sceneStyle(profile)} Draw exactly these ${figures.length} subjects together in one image, each exactly once, and no one else: ${figures.map(lookLine).join(" ")} ` +
         `Arrange and pose them as in: ${shot.description} Preserve the exact positions, visible portions and crop of ${names.join(" and ")} in the approved master. ` +
         `Isolated on a transparent background, lit to match the scene.`,
       transparent: true,
@@ -182,7 +193,7 @@ export function buildCompositionPlans(
           entityId: locationId,
           entityIds: drawnFigures.map((state) => state.entityId),
           prompt:
-            `${styleLine(profile)}. ${place} ${scene}${propLines.length > 0 ? ` Include, as part of the scene: ${propLines.join(" ")}` : ""}` +
+            `${sceneStyle(profile)} ${place} ${scene}${propLines.length > 0 ? ` Include, as part of the scene: ${propLines.join(" ")}` : ""}` +
             `${castLines.length > 0 ? ` In the scene: ${castLines.join(" ")}` : " No people are present."} ` +
             "One single photorealistic scene with everyone at true relative size for this place, each figure's feet or seat in contact with the floor or furniture it rests on, " +
             "and shadows where they touch it.",
@@ -197,7 +208,7 @@ export function buildCompositionPlans(
           role: "background",
           entityId: shot.locationId ?? moment.locationId,
           prompt:
-            `${styleLine(profile)}. The same scene as the reference image, from the same camera, in the same light: ${place} ${scene} ` +
+            `${sceneStyle(profile)} The same scene as the reference image, from the same camera, in the same light: ${place} ${scene} ` +
             `${figureNames.length > 0 ? `${figureNames.join(" and ")} have left the frame; reconstruct` : "Reconstruct"} the floor, furniture and walls behind where they stood, complete and unbroken. ` +
             "Remove every listed moving subject, including animals and groups; retain fixed architecture, furniture and props.",
           transparent: false,
@@ -231,7 +242,7 @@ export function buildCompositionPlans(
           plans.has(id),
         ),
         visualProfileVersion: profile.version,
-        prompt: [styleLine(profile), place, scene, ...castLines].filter(Boolean).join("\n"),
+        prompt: [sceneStyle(profile), place, scene, ...castLines].filter(Boolean).join("\n"),
         negativePrompt,
         layers,
         stage25d: planStage25d(envelope, layers),

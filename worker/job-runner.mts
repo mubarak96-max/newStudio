@@ -3,6 +3,7 @@ import { loadLatestValidCheckpoint, saveJsonCheckpoint } from "./checkpoint-stor
 import { asNumber, asString } from "./coerce.mts";
 import { bucket, db, openRouterModels, workerId } from "./config.mts";
 import { claimJob } from "./job-lease.mts";
+import { createJobLog } from "./job-log.mts";
 import { enqueueJob, jobStages, type ChainedJobType } from "./job-queue.mts";
 import { callJsonModel } from "./openrouter.mts";
 
@@ -103,11 +104,12 @@ export async function runLeasedJob<TState>(
 ): Promise<void> {
   const stage = jobStages[definition.type];
   const jobRef = db.doc(`books/${bookId}/jobs/${jobId}`);
-  const log = (message: string) => console.log(`[${definition.version}] ${message}`);
+  const jobLog = createJobLog(definition.version);
+  const log = jobLog.log;
   // A single model call on a long book can outlast the lease, so the lease is
   // renewed on a timer rather than only between units of work.
   const heartbeat = setInterval(() => {
-    jobRef.update({ heartbeatAt: FieldValue.serverTimestamp(), leaseOwner: workerId }).catch(() => undefined);
+    jobRef.update({ ...jobLog.patch(), heartbeatAt: FieldValue.serverTimestamp(), leaseOwner: workerId }).catch(() => undefined);
   }, 30_000);
   let costUsd = 0;
 
@@ -136,6 +138,7 @@ export async function runLeasedJob<TState>(
       onActivity: async (next) => {
         activity = next;
         await jobRef.update({
+          ...jobLog.patch(),
           activity,
           progress: { done: next.done, total: next.total },
           costUsd,
@@ -176,6 +179,7 @@ export async function runLeasedJob<TState>(
       const storagePath = `${prefix}${String(counter).padStart(6, "0")}-${label.replace(/[^a-zA-Z0-9_-]+/g, "_")}.json`;
       await saveJsonCheckpoint(bucket, storagePath, state);
       await jobRef.update({
+        ...jobLog.patch(),
         phase: label,
         checkpoint: { storagePath, unit: counter },
         checkpointCounter: counter,
@@ -190,6 +194,7 @@ export async function runLeasedJob<TState>(
     if (result === null) return;
     log(`completed: ${result}, $${costUsd.toFixed(4)}.`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "completed",
       phase: "done",
       activity: null,
@@ -205,11 +210,13 @@ export async function runLeasedJob<TState>(
     if (definition.next && options.chain !== false) {
       const nextJobId = await enqueueJob(bookId, definition.next, chained.sourceId, chained.canonicalHash);
       log(`queued ${definition.next} job ${nextJobId}`);
+      await jobRef.update({ ...jobLog.patch(), updatedAt: FieldValue.serverTimestamp() });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown worker failure.";
     log(`job ${jobId} failed: ${message}`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "failed",
       error: message.slice(0, 4_000),
       costUsd,

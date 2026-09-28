@@ -210,7 +210,8 @@ export type Beat = {
     focusEntityId: string | null;
     rationale: string;
   };
-  transitionIn: { type: 'cut' | 'fade' | 'slide' | 'zoomThrough' | 'parallaxShift'; durationMs: number };
+  /** `tear`: the outgoing picture rips away like a torn sheet of paper, revealing the next. */
+  transitionIn: { type: 'cut' | 'fade' | 'tear' | 'slide' | 'zoomThrough' | 'parallaxShift'; durationMs: number };
   inspectables: { entityId: string; hotspot: { x: number; y: number; w: number; h: number } | null }[];
   /** Undefined means the reader advances; subtitles never auto-advance on their own. */
   autoAdvanceMs: number | null;

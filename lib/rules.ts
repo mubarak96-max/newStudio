@@ -10,7 +10,7 @@
 
 export const ruleVersions = {
   /** Line rejoining, per-change scan repair, page furniture, section breaks. */
-  cleaning: 'clean-v2',
+  cleaning: 'clean-v3',
   /** Narrator, author, place types, duplicates, grounding. */
   bookModel: 'integrity-v2',
   /** Chapter-aligned episodes, every word read as Beat text, commentary that only explains. */
@@ -18,7 +18,7 @@ export const ruleVersions = {
   /** Shot location, cast agreement, shot grammar. */
   shots: 'shot-rules-v2',
   /** Written image prompts and the contract they must satisfy. */
-  prompts: 'prompt-author-v2',
+  prompts: 'prompt-author-v3',
   /** Master-first compositions and the layers derived from them. */
   composition: 'master-first-v2',
   /** Automatic checks on generated images. */

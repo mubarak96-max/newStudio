@@ -12,10 +12,10 @@
 import type { CompositionPlan, LayerPlan, VisualProfile } from "../../lib/story-types.ts";
 import { asString, records } from "../coerce.mts";
 import type { JobContext } from "../job-runner.mts";
-import { styleLine } from "./compositions.mts";
+import { sceneStyle } from "./compositions.mts";
 import { promptAuthoringSystemPrompt } from "./prompts.mts";
 
-export const promptAuthoringVersion = "prompt-author-v2";
+export const promptAuthoringVersion = "prompt-author-v3";
 
 export type PromptContract = {
   /** Names that must appear, because this layer draws them. */
@@ -111,7 +111,7 @@ export async function authorCompositionPrompts(
     composition.layers.flatMap((layer) => drawnIds(layer).map((entityId) => nameOf(entityId)).filter((name): name is string => Boolean(name))),
   );
   const reply = await context.callModel(`prompt authoring ${composition.compositionId}`, promptAuthoringSystemPrompt, {
-    style: styleLine(profile),
+    style: sceneStyle(profile),
     avoid: profile.negativeRules,
     shot: {
       description: composition.shotSnapshot.description,
@@ -147,7 +147,7 @@ export async function authorCompositionPrompts(
       forbiddenNames: [...castNames].filter((name) => !drawn.includes(name)),
       anchors: anchorsFor(layer, composition, nameOf),
       minChars: 120,
-      maxChars: 1_200,
+      maxChars: 1_400,
     });
     if (verdict.ok) {
       layer.authoredPrompt = authored;

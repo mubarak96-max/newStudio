@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { getPdfDownloadUrl, type Book } from '@/lib/books';
+import { JobLog } from '@/components/books/pipeline/JobLog';
 import {
   countWords,
   downloadTextFile,
@@ -72,6 +73,9 @@ export function BookExtraction({ book }: { book: Book }) {
   const [saving, setSaving] = useState(false);
   const [jobId, setJobId] = useState<string | null>(book.pipeline?.lastJobId ?? null);
   const [job, setJob] = useState<PipelineJob | null>(null);
+  // Cleaning chains into understanding; its log stays visible after the switch.
+  const [cleaningJobId, setCleaningJobId] = useState<string | null>(book.pipelineJobs?.cleaning ?? null);
+  const [cleaningJob, setCleaningJob] = useState<PipelineJob | null>(null);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -107,6 +111,11 @@ export function BookExtraction({ book }: { book: Book }) {
       (err) => setPipelineError(err instanceof Error ? err.message : 'Could not read job status.')
     );
   }, [book.id, jobId]);
+
+  useEffect(() => {
+    if (!cleaningJobId || cleaningJobId === jobId) return;
+    return subscribePipelineJob(book.id, cleaningJobId, setCleaningJob, () => undefined);
+  }, [book.id, cleaningJobId, jobId]);
 
   // Cleaning chains understanding onto the cleaned source; follow that job on.
   useEffect(() => {
@@ -179,6 +188,8 @@ export function BookExtraction({ book }: { book: Book }) {
     setPipelineError(null);
     try {
       const nextJobId = await enqueueCleaningJob(book.id, source);
+      setCleaningJobId(nextJobId);
+      setCleaningJob(null);
       setJobId(nextJobId);
       setJob({
         jobId: nextJobId,
@@ -191,6 +202,7 @@ export function BookExtraction({ book }: { book: Book }) {
         activity: null,
         checkpoint: null,
         attempts: 0,
+        log: [],
         costUsd: 0,
       });
     } catch (err) {
@@ -495,6 +507,9 @@ export function BookExtraction({ book }: { book: Book }) {
             </div>
           )}
 
+          {cleaningJob && job?.type !== 'clean' && <JobLog job={cleaningJob} title='Cleaning' />}
+          {job && <JobLog job={job} title={job.type === 'clean' ? 'Cleaning' : 'Book Model'} />}
+
           {job?.status === 'completed' && (
             <div className='mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm'>
               <span>
@@ -517,7 +532,7 @@ export function BookExtraction({ book }: { book: Book }) {
 
           {job?.status === 'failed' && (
             <div className='mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm'>
-              <p className='font-medium'>Book Model job failed.</p>
+              <p className='font-medium'>{job.type === 'clean' ? 'Cleaning' : 'Book Model'} job failed.</p>
               <p className='mt-1 text-muted-foreground'>{job.error}</p>
               {job.workerVersion && (
                 <p className='mt-2 text-[11px] text-muted-foreground'>

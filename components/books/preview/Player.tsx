@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import Lenis from 'lenis';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { continuesVisual } from '@/lib/camera-timeline';
 import type { CameraPose, CompositionPlan } from '@/lib/story-types';
 import type { PreviewBeat } from '@/lib/compose';
 import { Layers, Subtitles } from './Stage';
+import { TEAR_MASK_STYLE } from './tear';
 
 function subscribeReducedMotion(onChange: () => void) {
   const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -98,7 +100,9 @@ export function Player({
   const [previous, setPrevious] = useState<{ index: number; pose: CameraPose } | null>(null);
   const actualPose = useRef<CameraPose | null>(null);
   const viewport = useRef<HTMLDivElement>(null);
-  const touchY = useRef<number | null>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const lenis = useRef<Lenis | null>(null);
+  const syncing = useRef(false);
   const [scrub, setScrub] = useState<number | undefined>(undefined);
   const [paused, setPaused] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -132,16 +136,37 @@ export function Player({
     setPlaying(false);
   }, [beats, go]);
 
+  // Wheel, trackpad and touch all scrub through one inertial scroll: the track is
+  // one frame tall per Beat, so scroll ÷ frame height is `index + scrub`.
+  const seekRef = useRef(seek);
+  useEffect(() => { seekRef.current = seek; }, [seek]);
   useEffect(() => {
-    const element = viewport.current;
-    if (!element) return;
-    const wheel = (event: WheelEvent) => {
-      event.preventDefault();
-      seek(index + (scrub ?? 0) + event.deltaY * (event.deltaMode === 1 ? 0.025 : 0.002));
+    const wrapper = viewport.current;
+    const content = track.current;
+    if (!wrapper || !content) return;
+    const instance = new Lenis({ wrapper, content, lerp: reducedMotion ? 1 : 0.1, smoothWheel: true, syncTouch: true, autoRaf: true });
+    // Lenis also emits on resize (including its first measure); only real scrolling scrubs.
+    instance.on('scroll', ({ animatedScroll, isScrolling }) => {
+      if (isScrolling && !syncing.current) seekRef.current(animatedScroll / wrapper.clientHeight);
+    });
+    lenis.current = instance;
+    return () => {
+      instance.destroy();
+      lenis.current = null;
     };
-    element.addEventListener('wheel', wheel, { passive: false });
-    return () => element.removeEventListener('wheel', wheel);
-  }, [index, scrub, seek]);
+  }, [reducedMotion]);
+
+  // Arrows, keys, the slider and Play move the Beat; keep the scroll position with them.
+  useEffect(() => {
+    const instance = lenis.current;
+    const height = viewport.current?.clientHeight;
+    if (!instance || !height) return;
+    const target = (index + (scrub ?? 0)) * height;
+    if (Math.abs(instance.animatedScroll - target) < 1) return;
+    syncing.current = true;
+    instance.scrollTo(target, { immediate: true, force: true });
+    syncing.current = false;
+  }, [index, scrub]);
 
   useEffect(() => {
     const upcoming = new Set(beats.slice(index, index + 4).map((beat) => beat.compositionId));
@@ -198,47 +223,52 @@ export function Player({
 
   return (
     <div className='flex flex-col items-center gap-3'>
+      {/* 9:16 portrait: full width on a phone, capped by the room left under the controls on a desktop. */}
       <div
-        className='relative w-full max-w-[min(420px,calc(80vh*9/16))] overflow-hidden rounded-2xl bg-black shadow-xl'
+        className='relative aspect-[9/16] w-full max-w-[calc((100dvh-12rem)*9/16)] overflow-hidden bg-black shadow-xl sm:rounded-2xl'
         ref={viewport}
-        style={{ aspectRatio: '9 / 16', touchAction: 'none' }}
-        onTouchStart={(event) => { touchY.current = event.touches[0]?.clientY ?? null; }}
-        onTouchMove={(event) => {
-          const y = event.touches[0]?.clientY;
-          if (y !== undefined && touchY.current !== null) seek(index + (scrub ?? 0) + (touchY.current - y) * 0.006);
-          touchY.current = y ?? null;
-        }}
-        onTouchEnd={() => { touchY.current = null; }}
+        style={{ touchAction: 'none' }}
       >
-        <div key={beat.compositionId ?? beat.id} className='absolute inset-0'>
-          <Frame beat={beat} composition={beat.compositionId ? compositions.get(beat.compositionId) : undefined} reducedMotion={reducedMotion} nameOf={nameOf} paused={paused} progress={scrub} onPose={(pose) => { actualPose.current = pose; }} />
-        </div>
-        {animated && outgoing && (
-          <div
-            key={`out-${outgoing.id}`}
-            className='pointer-events-none absolute inset-0'
-            style={{
-              animation: `preview-fade-out ${transition.durationMs}ms ease-in-out forwards`,
-            }}
-          >
-            <Frame beat={outgoing} composition={outgoing.compositionId ? compositions.get(outgoing.compositionId) : undefined} reducedMotion nameOf={nameOf} frozenPose={previous!.pose} />
+        <div ref={track} style={{ height: `${beats.length * 100}%` }}>
+          <div className='sticky top-0' style={{ height: `${100 / beats.length}%` }}>
+            <div key={beat.compositionId ?? beat.id} className='absolute inset-0'>
+              <Frame beat={beat} composition={beat.compositionId ? compositions.get(beat.compositionId) : undefined} reducedMotion={reducedMotion} nameOf={nameOf} paused={paused} progress={scrub} onPose={(pose) => { actualPose.current = pose; }} />
+            </div>
+            {animated && outgoing && (
+              <div
+                key={`out-${outgoing.id}`}
+                className='pointer-events-none absolute inset-0'
+                style={
+                  transition.type === 'tear'
+                    ? { ...TEAR_MASK_STYLE, animation: `preview-tear-out ${transition.durationMs}ms cubic-bezier(0.7, 0, 0.3, 1) forwards` }
+                    : { animation: `preview-fade-out ${transition.durationMs}ms ease-in-out forwards` }
+                }
+              >
+                <div
+                  className='absolute inset-0'
+                  style={transition.type === 'tear' ? { animation: `preview-tear-hold ${transition.durationMs}ms cubic-bezier(0.7, 0, 0.3, 1) forwards` } : undefined}
+                >
+                  <Frame beat={outgoing} composition={outgoing.compositionId ? compositions.get(outgoing.compositionId) : undefined} reducedMotion nameOf={nameOf} frozenPose={previous!.pose} />
+                </div>
+              </div>
+            )}
+            <button
+              type='button'
+              aria-label='Next beat'
+              onClick={() => go(index + 1)}
+              className='absolute inset-y-0 right-0 w-1/4'
+            />
+            <button
+              type='button'
+              aria-label='Previous beat'
+              onClick={() => go(index - 1)}
+              className='absolute inset-y-0 left-0 w-1/4'
+            />
           </div>
-        )}
-        <button
-          type='button'
-          aria-label='Next beat'
-          onClick={() => go(index + 1)}
-          className='absolute inset-y-0 right-0 w-1/4'
-        />
-        <button
-          type='button'
-          aria-label='Previous beat'
-          onClick={() => go(index - 1)}
-          className='absolute inset-y-0 left-0 w-1/4'
-        />
+        </div>
       </div>
 
-      <input type='range' min={0} max={Math.max(0, beats.length - 0.001)} step={0.001} value={index + (scrub ?? 0)} aria-label='Explore the story' className='w-full max-w-[420px]' onChange={(event) => seek(Number(event.target.value))} />
+      <input type='range' min={0} max={Math.max(0, beats.length - 0.001)} step={0.001} value={index + (scrub ?? 0)} aria-label='Explore the story' className='w-full max-w-[calc((100dvh-12rem)*9/16)]' onChange={(event) => seek(Number(event.target.value))} />
       <div className='flex items-center gap-2'>
         <button type='button' onClick={() => go(index - 1)} disabled={index === 0} className='rounded-full border border-border p-2 disabled:opacity-40' aria-label='Previous'>
           <ChevronLeft className='h-4 w-4' aria-hidden='true' />

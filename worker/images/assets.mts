@@ -144,7 +144,10 @@ export async function saveVersion(
     createdAt: new Date().toISOString(),
   };
   const currentPlan = await loadImagePlan(bookId, item.target, null);
-  if (version.planKey !== imagePlanKey(currentPlan.planned, currentPlan.profile.version)) version.check = { ...version.check!, ok: false, issues: [...(version.check?.issues ?? []), "Visual plan changed during generation."], checkedAt: new Date().toISOString() };
+  // Pixel-check warnings never hold an image back; only an image made from
+  // outdated inputs is kept out of use.
+  let stale = version.planKey !== imagePlanKey(currentPlan.planned, currentPlan.profile.version);
+  if (stale) version.check = { ...version.check!, ok: false, issues: [...(version.check?.issues ?? []), "Visual plan changed during generation."], checkedAt: new Date().toISOString() };
   const assetRef = db.doc(`books/${bookId}/visualAssets/${assetTargetId(item.target)}`);
   await db.runTransaction(async (transaction) => {
     const existing = (await transaction.get(assetRef)).data() as VisualAsset | undefined;
@@ -158,12 +161,13 @@ export async function saveVersion(
       const dependency = (await transaction.get(db.doc(`books/${bookId}/visualAssets/${pin.targetId}`))).data();
       if (dependency?.approvedVersionId !== pin.versionId) current = false;
     }
+    stale ||= !current;
     if (!current) version.check = { ...version.check!, ok: false, issues: [...(version.check?.issues ?? []), "A conditioning reference changed during generation."], checkedAt: new Date().toISOString() };
     transaction.set(assetRef, {
       ...lineage, ...item.target, targetId: assetTargetId(item.target), episodeId: item.episodeId,
-      versions: FieldValue.arrayUnion(version), status: version.check?.ok ? "approved" : "generated",
-      ...(version.check?.ok ? { approvedVersionId: versionId } : {}),
-      error: version.check?.ok ? null : version.check?.issues.join(" ").slice(0, 1000) ?? "Unchecked image.",
+      versions: FieldValue.arrayUnion(version), status: stale ? "generated" : "approved",
+      ...(stale ? {} : { approvedVersionId: versionId }),
+      error: version.check?.ok ? null : version.check?.issues.join(" ").slice(0, 1000) ?? null,
       batchId: null, updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });

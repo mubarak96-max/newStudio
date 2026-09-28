@@ -123,7 +123,8 @@ export async function buildMomentBeats(
     const words = [segment.text, ...commentary.map((note) => note.text)].map(wordCount).reduce((sum, value) => sum + value, 0);
     // Transition grammar: nothing at all while the camera keeps moving on one
     // picture, a short dissolve when the place is the same, a cut when it is
-    // not, and a fade at the seams of a Moment or an Episode.
+    // not, a fade at the seam of a Moment in the same place, and a paper tear
+    // when a Moment or an Episode opens somewhere new.
     const shotPlace = shot?.locationId ?? moment.locationId;
     const previousPlace = previousShotPlace;
     previousShotPlace = shotPlace;
@@ -136,7 +137,7 @@ export async function buildMomentBeats(
             : { type: "cut", durationMs: 250 }
         : previousMoment && previousMoment.locationId && previousMoment.locationId === moment.locationId
           ? { type: "fade", durationMs: 600 }
-          : { type: "fade", durationMs: previousMoment ? 800 : 1200 };
+          : { type: "tear", durationMs: previousMoment ? 900 : 1200 };
     return {
       id: `${moment.momentId}_b${String(index + 1).padStart(2, "0")}`,
       order: index + 1,

@@ -7,8 +7,7 @@ import { db, imageModel } from "../config.mts";
 import type { JobContext, JobDefinition } from "../job-runner.mts";
 import { generateImage } from "../providers/images.mts";
 import { markAsset, prepareImage, saveVersion, loadImagePlan } from "./assets.mts";
-import { type ImageExpectation } from "./checks.mts";
-import { reviewImage } from "./review.mts";
+import { recordChecks, type ImageExpectation } from "./checks.mts";
 import { enqueueJob } from "../job-queue.mts";
 import { imageStageReport } from "./status.mts";
 
@@ -81,52 +80,33 @@ async function generateCheckedImage(context: JobContext, target: AssetTarget, no
   const lineage = { sourceId: context.sourceId, canonicalHash: context.canonicalHash };
     try {
       const expectation = await expectationFor(bookId, target);
-      let correction = note;
-      let attempt = 0;
-      // One automatic retry: a failed check comes back as a correction note, so
-      // the model is told what was wrong rather than asked again blindly.
-      for (;;) {
-        attempt += 1;
-        const prepared = await prepareImage(bookId, target, correction, lineage);
-        await context.onActivity({
-          label: `Generating ${prepared.targetId}`,
-          detail: attempt > 1 ? `retry after failed checks: ${imageModel}` : imageModel,
-          done: 0,
-          total: 1,
-          unit: "images",
-        });
-        await markAsset(bookId, lineage, target, { status: "generating", error: null, lastJobId: jobId, episodeId: prepared.planned.episodeId });
-        if (prepared.planned.referenceTargets.length > 0 && prepared.references.length === 0) {
-          context.log(`${prepared.targetId}: no approved reference yet; generating from the text description alone.`);
-        }
-        const image = await generateImage({
-          model: imageModel,
-          prompt: prepared.planned.prompt,
-          aspectRatio: prepared.planned.aspectRatio,
-          references: prepared.references,
-          label: prepared.targetId,
-        });
-        context.addCost(image.costUsd);
-
-        const check = await reviewImage(image, prepared.planned.prompt, expectation, prepared.references, context.addCost);
-        const version = await saveVersion(
-          bookId,
-          lineage,
-          { ...prepared.planned, target, note: correction, references: prepared.pinned, check, planKey: prepared.planKey, visualProfileVersion: prepared.visualProfileVersion, expectedJobId: jobId },
-          { ...image, costExact: true, provider: "openrouter" },
-        );
-        const issues = version.check?.issues ?? ["Image was not validated."];
-        if (issues.some((issue) => issue.startsWith("Visual review unavailable"))) throw new Error(issues.join(" "));
-        if (issues.length === 0 || attempt > 1) {
-          if (issues.length > 0) throw new Error(`Image validation failed after repair: ${issues.join(" ")}`);
-          return (
-            `${prepared.targetId} version ${version.versionId} (${version.width ?? "?"}x${version.height ?? "?"}, ` +
-            `${prepared.pinned.length} reference(s))${issues.length > 0 ? `, ${issues.length} issue(s) for review` : ""}`
-          );
-        }
-        context.log(`${prepared.targetId}: ${issues.join(" ")} Regenerating once with the failure as a correction.`);
-        correction = [note, `The previous attempt was rejected: ${issues.join(" ")} Fix exactly these problems.`].filter(Boolean).join(" ");
+      const prepared = await prepareImage(bookId, target, note, lineage);
+      await context.onActivity({ label: `Generating ${prepared.targetId}`, detail: imageModel, done: 0, total: 1, unit: "images" });
+      await markAsset(bookId, lineage, target, { status: "generating", error: null, lastJobId: jobId, episodeId: prepared.planned.episodeId });
+      if (prepared.planned.referenceTargets.length > 0 && prepared.references.length === 0) {
+        context.log(`${prepared.targetId}: no approved reference yet; generating from the text description alone.`);
       }
+      const image = await generateImage({
+        model: imageModel,
+        prompt: prepared.planned.prompt,
+        aspectRatio: prepared.planned.aspectRatio,
+        references: prepared.references,
+        label: prepared.targetId,
+      });
+      context.addCost(image.costUsd);
+
+      const check = await recordChecks(image.bytes, expectation);
+      const version = await saveVersion(
+        bookId,
+        lineage,
+        { ...prepared.planned, target, note, references: prepared.pinned, check, planKey: prepared.planKey, visualProfileVersion: prepared.visualProfileVersion, expectedJobId: jobId },
+        { ...image, costExact: true, provider: "openrouter" },
+      );
+      const issues = version.check?.issues ?? [];
+      return (
+        `${prepared.targetId} version ${version.versionId} (${version.width ?? "?"}x${version.height ?? "?"}, ` +
+        `${prepared.pinned.length} reference(s))${issues.length > 0 ? `, ${issues.length} warning(s)` : ""}`
+      );
     } catch (error) {
       await markAsset(bookId, lineage, target, {
         status: "failed",

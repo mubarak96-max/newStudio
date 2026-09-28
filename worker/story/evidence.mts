@@ -9,6 +9,13 @@ export function paragraphLines(inputs: StoryInputs, span: Span): string[] {
     .map((paragraph) => `[${paragraph.id}${paragraph.isStory ? "" : ` ${paragraph.kind}`}] ${paragraph.text}`);
 }
 
+/** Only story paragraphs carry an id, so a moment can cite nothing it is not allowed to. */
+export function momentParagraphLines(inputs: StoryInputs, span: Span): string[] {
+  return inputs.paragraphs
+    .slice(span.seqStart, span.seqEnd + 1)
+    .map((paragraph) => (paragraph.isStory ? `[${paragraph.id}] ${paragraph.text}` : `(${paragraph.kind}, not story) ${paragraph.text}`));
+}
+
 /** Entities in a range by how often the annotations show them, most frequent first. */
 export function entitiesInRange(inputs: StoryInputs, span: Span, limit: number): Entity[] {
   const counts = new Map<string, number>();

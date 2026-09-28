@@ -9,7 +9,9 @@ export function readDirection(row: Record<string, unknown>, allowed: Set<string>
   const presentation = asString(row.presentation);
   const purpose = asString(row.purpose).trim();
   const changeReason = asString(row.changeReason).trim();
-  if (!sourceParagraphIds.length || sourceParagraphIds.some((id) => !allowed.has(id))) throw new Error("Shot must cite its supporting paragraphs inside this moment.");
+  const outside = sourceParagraphIds.filter((id) => !allowed.has(id));
+  // The repair call only sees this message, so it names what was wrong and what is allowed.
+  if (!sourceParagraphIds.length || outside.length) throw new Error(`Shot must cite its supporting paragraphs inside this moment${outside.length ? `; ${outside.join(", ")} is not one of them` : ""}. Allowed: ${[...allowed].join(", ")}.`);
   if (!presentations.has(presentation) || !purpose || !changeReason) throw new Error("Shot needs its presentation, purpose and source-motivated change reason.");
   const focusRegions = records(row.focusRegions).map((region) => {
     const { x, y, w, h } = region;

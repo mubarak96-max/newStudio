@@ -5,7 +5,7 @@ import type { Entity } from "../types.mts";
 import type { StoryInputs } from "../story/inputs.mts";
 import { entityVisualSystemPrompt, visualProfileSystemPrompt } from "./prompts.mts";
 
-const alwaysNegative = ["text", "letters", "captions", "watermarks", "signatures", "painting", "brushwork", "cartoon", "illustration", "plastic CGI skin"];
+const alwaysNegative = ["text", "letters", "captions", "watermarks", "signatures", "painting", "brushwork", "cartoon", "illustration", "plastic CGI skin", "flat even lighting", "stock photo look", "snapshot"];
 
 export async function planVisualProfile(
   context: JobContext,
@@ -22,11 +22,11 @@ export async function planVisualProfile(
   const negativeRules = Array.from(new Set([...strings(data?.negativeRules).map((rule) => rule.trim()), ...alwaysNegative]));
   return {
     version: previousVersion + 1,
-    artStyle: "Photorealistic cinematic imagery, consistent identity and physically plausible materials",
+    artStyle: "Photorealistic cinematic film still, consistent identity and physically plausible materials",
     medium: "live-action photographic realism",
     palette: strings(data?.palette).slice(0, 8),
-    lens: asString(data?.lens).trim() || "Natural 35-50mm framing, eye-level unless the scene calls otherwise",
-    lighting: asString(data?.lighting).trim() || "Motivated natural light matching time of day",
+    lens: asString(data?.lens).trim() || "Cinema prime lenses, 35mm for wide shots and 50-85mm for close work, shallow depth of field holding the subject in focus, camera at eye level unless the scene calls otherwise",
+    lighting: asString(data?.lighting).trim() || "Motivated directional light with real contrast: one dominant source matching the time of day, shadows deep but readable, warm practicals against cooler ambient light",
     texture: "Natural skin, fabric, wood and stone detail; realistic surface response, no painted brushwork",
     eraDetails: asString(data?.eraDetails).trim() || inputs.world?.era || "",
     negativeRules,
@@ -47,8 +47,17 @@ function entityPayload(entity: Entity) {
   };
 }
 
+// A sheet only carries identity into later images, so everything but a place is
+// shot isolated in the studio; the scene lens and light are appended later at
+// generation and would otherwise pull the model back into a single scene.
+const studioSheet =
+  "Show the subject alone with nothing else in frame — no scenery, props or extra people, even where the description mentions surroundings — on a seamless plain light-grey studio backdrop with even soft light. Do not label the views: no view names, captions or any other writing on the canvas. This studio framing overrides any scene lens or lighting direction that follows.";
+
 function referencePrompt(entity: Entity, views: string[], spec: string, profile: VisualProfile): string {
-  return `Reference sheet of ${entity.canonicalName}: ${views.join(", ")} views on a neutral background. ${spec} Style: ${profile.artStyle}, ${profile.medium}.`;
+  const layout = views.length > 1 ? `${views.join(", ")}, as separate views side by side on one canvas` : (views[0] ?? "hero view");
+  const style = `Style: ${profile.artStyle}, ${profile.medium}.`;
+  if (entity.type === "location") return `Location reference of ${entity.canonicalName}: ${layout}, the place empty of people. ${spec} ${style}`;
+  return `Reference sheet of ${entity.canonicalName}: ${layout}. ${studioSheet} ${spec} ${style}`;
 }
 
 export async function planEntityVisuals(context: JobContext, entities: Entity[], profile: VisualProfile, label: string): Promise<EntityVisualPlan[]> {

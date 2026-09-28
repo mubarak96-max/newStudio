@@ -7,6 +7,7 @@
  */
 
 import sharp from "sharp";
+import { ruleVersions } from "../../lib/rules.ts";
 
 export type ImageExpectation = {
   /** True for a cut-out on a green screen, which is judged differently. */
@@ -97,4 +98,10 @@ export async function checkImage(bytes: Buffer, expectation: ImageExpectation): 
     if (greenShare > 0.97) issues.push("The frame is almost entirely green; the subject is missing.");
   }
   return { ok: issues.length === 0, issues, checkedAt: new Date().toISOString() };
+}
+
+/** Recorded on each version as warnings for the owner; never decides approval. */
+export async function recordChecks(bytes: Buffer, expectation: ImageExpectation | null): Promise<ImageCheck & { version: string }> {
+  const check = expectation ? await checkImage(bytes, expectation) : { ok: true, issues: [], checkedAt: new Date().toISOString() };
+  return { ...check, version: ruleVersions.imageChecks };
 }
