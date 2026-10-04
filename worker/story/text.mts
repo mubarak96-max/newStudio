@@ -83,3 +83,9 @@ export function quotedSpans(text: string): QuotedSpan[] {
   }
   return spans;
 }
+
+export function wordCount(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { ruleVersions } from "../../lib/rules.ts";
 import {
   assetTargetId,
   type AssetTarget,
@@ -5,7 +7,8 @@ import {
   type EntityVisualPlan,
   type VisualProfile,
 } from "../../lib/story-types.ts";
-import { styleLine } from "../visuals/compositions.mts";
+import { unique } from "../evidence.mts";
+import { sceneStyle, styleLine } from "../visuals/compositions.mts";
 
 export type EntityForImage = {
   entityId: string;
@@ -35,6 +38,12 @@ const mobileFraming =
 const cutOutFraming = "The canvas is a vertical 9:16 phone frame; keep the figures at the stated size.";
 export const sceneReference =
   "The first reference image is the scene the figures will stand in: match its perspective, scale, eye level and lighting, but do not draw any part of that scene. The other reference images show each figure, in the order named.";
+/** A cut-out taken out of the approved master, so it cannot disagree with it. */
+const figureFromMaster =
+  "The first reference image is the finished scene this figure already stands in. Copy that figure exactly as it appears there — same size within the frame, same position, same pose, same clothing, same light and shadow — and draw nothing else from it. Later reference images show the same character for likeness only.";
+/** The same scene with nobody in it, so the cut-outs can move across it. */
+const plateFromMaster =
+  "The first reference image is the finished scene. Redraw it exactly — same camera, same perspective, same light, same furniture in the same places — with every listed moving subject (including animals and groups) removed and the floor, furniture and walls behind them reconstructed completely.";
 const greenScreen =
   "Place the subject alone on a completely flat, uniform pure green (#00FF00) background with no shadows, floor, props or gradients, so the background can be keyed out.";
 
@@ -103,19 +112,36 @@ export function planImage(
   // A background only needs the place. A cut-out needs its own subject and the
   // approved background it will stand in, so it matches that scene's scale,
   // perspective and light; no other character's look can bleed into it.
-  const backgroundTarget = assetTargetId({ kind: "layer", entityId: null, stateId: null, compositionId: composition.compositionId, layerId: "background" });
+  const layerTarget = (layerId: string) =>
+    assetTargetId({ kind: "layer", entityId: null, stateId: null, compositionId: composition.compositionId, layerId });
   // A cast layer is conditioned on every figure it draws, in the order the prompt names them.
   const drawn = layer.entityIds?.length ? layer.entityIds : layer.entityId ? [layer.entityId] : [];
-  const referenceTargets = foreground
-    ? [[backgroundTarget], ...drawn.map((entityId) => entityReference(entityId, stateOf(entityId)))]
-    : composition.locationId
-      ? [entityReference(composition.locationId, null)]
-      : [];
+  // Master first: the plate and the cut-outs are taken from the approved master
+  // scene, so they inherit its scale, perspective and light instead of guessing.
+  const entityRefs = [
+    ...(composition.locationId ? [composition.locationId] : []),
+    ...drawn,
+    ...(layer.kind === "master" ? composition.entityStatesUsed.map((state) => state.entityId) : []),
+  ];
+  const referenceTargets = layer.derivedFrom
+    ? [[layerTarget(layer.derivedFrom)], ...unique(drawn).map((entityId) => entityReference(entityId, stateOf(entityId)))]
+    : foreground
+      ? // A cut-out planned without a master still stands in the approved background.
+        [[layerTarget("background")], ...unique(drawn).map((entityId) => entityReference(entityId, stateOf(entityId)))]
+      : unique(entityRefs).map((entityId) =>
+          entityReference(entityId, entityId === composition.locationId ? null : stateOf(entityId)),
+        );
+  // The authored prompt is art direction that already passed the prompt
+  // contract; the mechanical one is the fallback when authoring was refused.
+  const written = layer.authoredPrompt?.trim()
+    ? `${sceneStyle(profile)} ${layer.authoredPrompt.trim()}${foreground ? ` ${greenScreen}` : ""}`
+    : layer.prompt;
+  const derived = Boolean(layer.derivedFrom);
   const prompt = foreground
-    ? `${layer.prompt.replace(/Isolated on a transparent background[^.]*\./, greenScreen)} ${sceneReference} ${cutOutFraming}`
-    : `${layer.prompt} ${mobileFraming}`;
+    ? `${written.replace(/Isolated on a transparent background[^.]*\./, greenScreen)} ${derived ? figureFromMaster : sceneReference} ${cutOutFraming}`
+    : `${written} ${derived ? plateFromMaster : ""} ${mobileFraming}`;
   return {
-    prompt: withNote(`${prompt} ${avoid(profile)}`, note),
+    prompt: withNote(`${prompt} ${avoid(profile)} ${composition.shotSnapshot.direction ? `Non-negotiable contract: ${JSON.stringify({ layerKind: layer.kind, originalCompleteScene: composition.shotSnapshot.description, framing: composition.shotSnapshot.framing, visibleSubjects: drawn, direction: composition.shotSnapshot.direction })}. A plate removes the moving subjects from that complete scene; a figure extracts only its assigned subjects; a master retains the complete scene. This contract takes priority over any conflicting rewrite. These are staging instructions, never text to render.` : ""}`, note),
     aspectRatio: mobileAspect,
     referenceTargets,
     alpha: foreground ? "chroma-green" : "none",
@@ -123,3 +149,8 @@ export function planImage(
     episodeId: composition.originEpisodeId,
   };
 }
+
+export function imagePlanKey(planned: PlannedImage, profileVersion: number): string {
+  return createHash("sha256").update(JSON.stringify([planned.prompt, planned.referenceTargets, profileVersion, ruleVersions.prompts, ruleVersions.composition])).digest("hex");
+}
+

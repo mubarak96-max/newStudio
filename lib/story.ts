@@ -63,6 +63,7 @@ export const pipelineStages = {
   beats: 'beats',
   visuals: 'visual_plan',
   compose: 'compose_25d',
+  publish: 'publication',
 } as const;
 
 export type PipelineJobType = keyof typeof pipelineStages;

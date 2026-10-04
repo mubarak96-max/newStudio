@@ -3,6 +3,9 @@ import { db } from "./config.mts";
 
 /** Pipeline order: each finished job queues the next one. Understanding queues story. Images are queued only by Studio. */
 export const jobStages = {
+  /** Repairs scan damage and page furniture, then writes the cleaned canonical source. */
+  clean: "cleaning",
+  understand: "book_model",
   story: "story_plan",
   beats: "beats",
   visuals: "visual_plan",
@@ -12,6 +15,8 @@ export const jobStages = {
   imageBatch: "images",
   /** Owner-triggered per Episode: keys cut-outs, measures layers and fits Beat cameras. */
   compose: "compose_25d",
+  /** Owner-triggered: writes immutable Episode packages for reading apps. */
+  publish: "publication",
 } as const;
 
 export type ChainedJobType = keyof typeof jobStages;

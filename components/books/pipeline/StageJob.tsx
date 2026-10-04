@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Book } from '@/lib/books';
 import { retryPipelineJob, subscribePipelineJob, type PipelineJob } from '@/lib/book-pipeline';
 import { enqueuePipelineJob, pipelineStages, type PipelineJobType } from '@/lib/story';
+import { JobLog } from './JobLog';
 
 /**
  * Follows the latest job of one pipeline stage. `onStep` fires whenever the
@@ -75,6 +76,15 @@ export function useStageJob(bookId: string, book: Book | null, type: PipelineJob
 
 export function StageJobPanel({ job, name }: { job: PipelineJob | null; name: string }) {
   if (!job) return null;
+  return (
+    <div>
+      <StageJobStatus job={job} name={name} />
+      <JobLog job={job} title={name} />
+    </div>
+  );
+}
+
+function StageJobStatus({ job, name }: { job: PipelineJob; name: string }) {
   if (job.status === 'queued' || job.status === 'running') {
     const activity = job.activity;
     return (

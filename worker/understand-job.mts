@@ -13,23 +13,19 @@ import {
 } from "./config.mts";
 import { runConsolidation } from "./consolidate.mts";
 import { claimJob } from "./job-lease.mts";
+import { createJobLog } from "./job-log.mts";
 import { enqueueJob } from "./job-queue.mts";
 import { computeCoverage, stubMissingAnnotations } from "./coverage.mts";
 import { unique } from "./evidence.mts";
+import { ruleVersions } from "../lib/rules.ts";
+import { applyNarratorResolution, isNarrator, narratorPrompt } from "./narrator.mts";
+import { enforceIntegrity, firstPersonRatio } from "./integrity.mts";
 import { advanceProgress, mergeDelta } from "./merge.mts";
 import { callJsonModel, isContentFilterError, isLengthTruncation } from "./openrouter.mts";
 import { ledgerSummary, loadParagraphs, persistBookModel, saveCheckpoint } from "./persist.mts";
 import { extractionSystemPrompt, extractionUserPayload } from "./prompts.mts";
 import { emptyLedger, upgradeLedger, type Chapter, type Ledger, type Paragraph, type Window } from "./types.mts";
 import { buildProcessingUnits, buildRepairWindows, buildWindows, splitWindow } from "./windows.mts";
-
-function log(message: string): void {
-  console.log(`[${workerVersion}] ${message}`);
-}
-
-function warn(message: string): void {
-  console.warn(`[${workerVersion}] ${message}`);
-}
 
 function ownedChars(window: Window): number {
   return window.owned.reduce((total, paragraph) => total + paragraph.text.length, 0);
@@ -73,6 +69,8 @@ export async function processUnderstandingJob(
 ): Promise<void> {
   const jobRef = db.doc(`books/${bookId}/jobs/${jobId}`);
   if (!(await claimJob(jobRef, staleLeaseMs))) return;
+  const jobLog = createJobLog(workerVersion);
+  const { log, warn } = jobLog;
   log(`claimed books/${bookId}/jobs/${jobId}`);
 
   try {
@@ -119,6 +117,7 @@ export async function processUnderstandingJob(
     const reportActivity = async (nextActivity: JobActivity) => {
       activity = nextActivity;
       await jobRef.update({
+        ...jobLog.patch(),
         activity,
         heartbeatAt: FieldValue.serverTimestamp(),
         leaseOwner: workerId,
@@ -132,6 +131,7 @@ export async function processUnderstandingJob(
       const done =
         ledger.phase === "extract" ? ledger.coveredParagraphIds.length : paragraphs.length;
       await jobRef.update({
+        ...jobLog.patch(),
         progress: { done, total: paragraphs.length },
         phase: ledger.phase,
         checkpoint: { storagePath, windowIndex: ledger.processedWindow },
@@ -275,6 +275,43 @@ export async function processUnderstandingJob(
     if (currentBook?.activeSourceId !== sourceId || currentBook?.canonical?.hash !== canonicalHash) {
       throw new Error("Canonical source changed before Book Model promotion.");
     }
+
+    // Integrity gate: repair what is mechanical, refuse to promote a model whose
+    // protagonist or places are missing. Everything downstream spends money on this.
+    if (firstPersonRatio(paragraphs) >= 0.15 && !ledger.entities.some(isNarrator)) {
+      const story = paragraphs.filter((paragraph) => paragraph.isStory);
+      const stride = Math.max(1, Math.floor(story.length / 60));
+      const result = await callJsonModel({ system: narratorPrompt, models: openRouterModels, label: "resolve narrator identity", user: JSON.stringify({
+        characters: ledger.entities.filter((entity) => entity.type === "character").map(({ entityId, canonicalName, description }) => ({ entityId, canonicalName, description })),
+        paragraphs: story.filter((_, index) => index % stride === 0).slice(0, 60).map(({ id, text }) => ({ paragraphId: id, text })),
+      }) });
+      costUsd += result.cost;
+      applyNarratorResolution(ledger, paragraphs, result.parsed as Record<string, unknown>);
+    }
+    const integrity = enforceIntegrity(ledger, paragraphs, {
+      title: asString(currentBook?.metaData?.title) || asString(currentBook?.title),
+      author: asString(currentBook?.metaData?.author),
+    });
+    log(
+      `integrity: removed ${integrity.removedEntityIds.length}, merged ${integrity.merges.length}, ` +
+        `retyped ${integrity.retypedLocationIds.length} places, stripped ${integrity.strippedClaims} ungrounded claims` +
+        `${integrity.narratorEntityId ? `, narrator ${integrity.narratorEntityId}` : ""}`,
+    );
+    if (integrity.failures.length > 0) throw new Error(integrity.failures.join(" "));
+    await bookRef.update({
+      "model.narratorEntityId": integrity.narratorEntityId,
+      "model.integrity": {
+        removedEntityIds: integrity.removedEntityIds,
+        retypedLocationIds: integrity.retypedLocationIds,
+        mergedEntityIds: integrity.merges.flatMap((merge) => merge.mergedEntityIds),
+        strippedClaims: integrity.strippedClaims,
+        rulesVersion: ruleVersions.bookModel,
+      },
+      "ruleVersions.bookModel": ruleVersions.bookModel,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    await saveProgress("integrity");
+
     ledger.coverage ??= computeCoverage(ledger, paragraphs);
     await persistBookModel(bookId, ledger, paragraphs);
     const coverage = ledger.coverage;
@@ -291,11 +328,12 @@ export async function processUnderstandingJob(
     }
     const warning = warnings.length > 0 ? warnings.join(" ") : null;
     if (warning) warn(warning);
-    log(
-      `completed: ${ledger.entities.length} entities, ${ledger.events.length} events, ${coverage.annotatedByModel}/${coverage.storyParagraphs} paragraphs annotated by model, ${ledger.sceneRanges.length} scenes, ${ledger.diagnostics.modelCalls} model calls, $${costUsd.toFixed(4)}.`,
-    );
+    const result = `${ledger.entities.length} entities, ${ledger.events.length} events, ${coverage.annotatedByModel}/${coverage.storyParagraphs} paragraphs annotated by model, ${ledger.sceneRanges.length} scenes, ${ledger.diagnostics.modelCalls} model calls`;
+    log(`completed: ${result}, $${costUsd.toFixed(4)}.`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "completed",
+      result,
       phase: "done",
       progress: { done: paragraphs.length, total: paragraphs.length },
       costUsd,
@@ -320,10 +358,12 @@ export async function processUnderstandingJob(
     });
     const storyJobId = await enqueueJob(bookId, "story", sourceId, canonicalHash);
     log(`queued story planning job ${storyJobId}`);
+    await jobRef.update({ ...jobLog.patch(), updatedAt: FieldValue.serverTimestamp() });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown worker failure.";
     warn(`job ${jobId} failed: ${message}`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "failed",
       error: message.slice(0, 4_000),
       finishedAt: FieldValue.serverTimestamp(),

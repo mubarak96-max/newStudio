@@ -1,10 +1,13 @@
 import { FieldValue, type WriteBatch } from "firebase-admin/firestore";
+import { ruleVersions } from "../../lib/rules.ts";
 import type { EntityVisualPlan, VisualPlanSummary, VisualProfile } from "../../lib/story-types.ts";
 import { db, imageCostUsd, storyConcurrency } from "../config.mts";
 import { pool, type JobDefinition } from "../job-runner.mts";
+import { repairDirection } from "../story/context.mts";
 import { loadStoryInputs } from "../story/inputs.mts";
 import { loadEpisodes, loadMoments } from "../story/persist.mts";
 import type { Entity } from "../types.mts";
+import { authorCompositionPrompts, promptAuthoringVersion } from "./authoring.mts";
 import { planEntityVisuals, planVisualProfile } from "./bible.mts";
 import { buildCompositionPlans, forecastOf, type PlannedMoment } from "./compositions.mts";
 
@@ -28,7 +31,7 @@ async function writeInBatches(writes: ((batch: WriteBatch) => void)[]): Promise<
 
 export const visualsJob: JobDefinition<VisualsState> = {
   type: "visuals",
-  version: "visuals-v1",
+  version: "visuals-v2",
   initialState: () => ({ phase: "profile", profile: null, plans: {}, summary: "" }),
   run: async (context, state, checkpoint) => {
     const { bookId } = context;
@@ -48,6 +51,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
     const job = (await db.doc(`books/${bookId}/jobs/${context.jobId}`).get()).data();
     if (job?.onlyCompositions && state.phase === "profile") {
       const book = (await db.doc(`books/${bookId}`).get()).data();
+      if (book?.ruleVersions?.prompts !== ruleVersions.prompts) throw new Error("Full visual planning is required to replace the previous style and bible.");
       if (!book?.visualProfile) throw new Error("No visual profile exists yet; run full visual planning first.");
       state.profile = book.visualProfile as VisualProfile;
       for (const entity of inputs.entities) {
@@ -74,7 +78,11 @@ export const visualsJob: JobDefinition<VisualsState> = {
       for (const { moment } of planned) {
         if (moment.locationId) shown.add(moment.locationId);
         for (const character of moment.characters) shown.add(character.entityId);
-        for (const shot of moment.visualPlan.shots) for (const entityState of shot.entityStates) shown.add(entityState.entityId);
+        for (const shot of moment.visualPlan.shots) {
+          if (!shot.direction) throw new Error("Rebuild source-grounded moment direction before visual planning.");
+          if (shot.locationId) shown.add(shot.locationId);
+          for (const entityState of shot.entityStates) shown.add(entityState.entityId);
+        }
       }
       const pending = Array.from(shown)
         .map((id) => inputs.entityById.get(id))
@@ -86,7 +94,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
       for (let offset = 0; offset < batches.length; offset += storyConcurrency) {
         if (await context.cancelled()) return null;
         const results = await pool(batches.slice(offset, offset + storyConcurrency), storyConcurrency, (batch, index) =>
-          planEntityVisuals(context, batch, profile, `entity visuals ${offset + index + 1}`),
+          repairDirection({ ...context, inputs }, (retry) => planEntityVisuals(retry, batch, profile, `entity visuals ${offset + index + 1}`)),
         );
         for (const plan of results.flat()) state.plans[plan.entityId] = plan;
         await context.onActivity({
@@ -116,6 +124,30 @@ export const visualsJob: JobDefinition<VisualsState> = {
         return entity ? { name: entity.canonicalName, type: entity.type } : undefined;
       };
       const compositions = buildCompositionPlans(planned, plans, entityOf, profile, lineage);
+
+      // Every layer prompt is rewritten as art direction and checked before it
+      // is used; a refused rewrite leaves the mechanical prompt in place.
+      const authoring = { authored: 0, refused: 0 };
+      for (let offset = 0; offset < compositions.length; offset += storyConcurrency) {
+        if (await context.cancelled()) return null;
+        const batch = compositions.slice(offset, offset + storyConcurrency);
+        const results = await pool(batch, storyConcurrency, (composition) =>
+          authorCompositionPrompts(context, composition, profile, (id) => inputs.entityById.get(id)?.canonicalName),
+        );
+        for (const result of results) {
+          authoring.authored += result.authored;
+          authoring.refused += result.refused;
+          for (const reason of result.reasons.slice(0, 2)) context.log(`prompt refused — ${reason}`);
+        }
+        await context.onActivity({
+          label: "Writing image prompts",
+          detail: `${authoring.authored} written, ${authoring.refused} kept mechanical`,
+          done: Math.min(offset + storyConcurrency, compositions.length),
+          total: compositions.length,
+          unit: "compositions",
+        });
+      }
+
       const forecast = forecastOf(compositions, Object.values(state.plans), imageCostUsd);
       const keep = new Set(compositions.map((composition) => composition.compositionId));
       const existing = await db.collection(`books/${bookId}/compositions`).get();
@@ -140,6 +172,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
         notes: [
           `${forecast.compositions} compositions cover ${forecast.shotsPlanned} Beats (${Math.round(forecast.reuseRate * 100)}% reuse).`,
           `${forecast.referenceSheets} reference sheets and ${forecast.stateVariants} state variants precede scene generation.`,
+          `${authoring.authored} layer prompts written as art direction (${promptAuthoringVersion}); ${authoring.refused} kept their mechanical prompt.`,
         ],
       };
       await db.doc(`books/${bookId}/derived/visualPlan`).set({ ...summary, updatedAt: FieldValue.serverTimestamp() });
@@ -147,6 +180,7 @@ export const visualsJob: JobDefinition<VisualsState> = {
       state.phase = "done";
       await checkpoint("done");
     }
+    await db.doc(`books/${bookId}`).update({ "ruleVersions.prompts": ruleVersions.prompts });
     return state.summary;
   },
 };

@@ -1,5 +1,9 @@
+import { versionIssues } from "../../lib/asset-validation.ts";
+import { FieldValue } from "firebase-admin/firestore";
+import { recordChecks } from "./checks.mts";
+import { dependencyWave, type ImageWork } from "./dependencies.mts";
 import { randomUUID } from "node:crypto";
-import type { ImageBatch, ImageBatchItem, Lineage, VisualAsset } from "../../lib/story-types.ts";
+import { assetTargetId, type ImageBatch, type ImageBatchItem, type Lineage, type VisualAsset } from "../../lib/story-types.ts";
 import { nullableString, records } from "../coerce.mts";
 import {
   db,
@@ -10,7 +14,8 @@ import {
 } from "../config.mts";
 import type { JobDefinition } from "../job-runner.mts";
 import { downloadResults, getBatch, readBatchResult, submitBatch, type BatchRequest } from "../providers/gemini-batch.mts";
-import { markAsset, prepareImage, saveVersion } from "./assets.mts";
+import { markAsset, prepareImage, saveVersion, loadImagePlan } from "./assets.mts";
+import { imagePlanKey } from "./request.mts";
 import { readTarget } from "./job.mts";
 
 /** Half of the list price: the Gemini Batch API discount. */
@@ -23,7 +28,8 @@ const batchDiscount = 0.5;
  */
 export const imageBatchJob: JobDefinition<Record<string, never>> = {
   type: "imageBatch",
-  version: "images-batch-v1",
+  version: "images-batch-v2",
+  bookStatus: async () => "pending",
   initialState: () => ({}),
   run: async (context) => {
     const { bookId, jobId } = context;
@@ -40,11 +46,25 @@ export const imageBatchJob: JobDefinition<Record<string, never>> = {
       });
     if (wanted.length === 0) throw new Error("The batch has no images.");
 
+    const assets = new Map((await db.collection(`books/${bookId}/visualAssets`).get()).docs.map((doc) => [doc.id, doc.data() as VisualAsset]));
+    const wave = job.readyItems ? { ready: job.readyItems as ImageWork[], pending: job.pendingItems as ImageWork[] } : await dependencyWave(wanted, async (target) => (await loadImagePlan(bookId, target, null)).planned, async (id) => {
+      const asset = assets.get(id);
+      const version = asset?.versions?.find((item) => item.versionId === asset.approvedVersionId);
+      if (!asset || !version) return false;
+      const { planned, profile } = await loadImagePlan(bookId, asset, null);
+      return versionIssues(asset, version, lineage, assets, imagePlanKey(planned, profile.version)).length === 0;
+    });
     const submitted: string[] = [];
-    let failed = 0;
-    for (let offset = 0; offset < wanted.length; offset += geminiBatchSize) {
+    const batchIds: string[] = job.submittedBatchIds ?? [];
+    if (job.submissionsComplete) return "Image dependency wave already submitted.";
+    const existingBatches = await Promise.all(batchIds.map((id) => db.doc(`books/${bookId}/imageBatches/${id}`).get()));
+    const alreadySubmitted = new Set(existingBatches.flatMap((snapshot) => (snapshot.data()?.items ?? []).map((item: ImageBatchItem) => item.targetId)));
+    const remaining = wave.ready.filter((item) => !alreadySubmitted.has(assetTargetId(item.target)));
+    await db.doc(`books/${bookId}/jobs/${jobId}`).update({ readyItems: wave.ready, pendingItems: wave.pending, submittedBatchIds: batchIds, submissionsComplete: false });
+    let failed = Number(job.preparationFailed ?? 0);
+    for (let offset = 0; offset < remaining.length; offset += geminiBatchSize) {
       if (await context.cancelled()) return null;
-      const chunk = wanted.slice(offset, offset + geminiBatchSize);
+      const chunk = remaining.slice(offset, offset + geminiBatchSize);
       const items: ImageBatchItem[] = [];
       const requests: BatchRequest[] = [];
       for (const [index, { target, note }] of chunk.entries()) {
@@ -56,7 +76,7 @@ export const imageBatchJob: JobDefinition<Record<string, never>> = {
           unit: "images",
         });
         try {
-          const prepared = await prepareImage(bookId, target, note);
+          const prepared = await prepareImage(bookId, target, note, lineage);
           items.push({
             key: prepared.targetId,
             targetId: prepared.targetId,
@@ -67,6 +87,9 @@ export const imageBatchJob: JobDefinition<Record<string, never>> = {
             alpha: prepared.planned.alpha,
             episodeId: prepared.planned.episodeId,
             references: prepared.pinned,
+            planKey: prepared.planKey,
+            visualProfileVersion: prepared.visualProfileVersion,
+            expectation: prepared.expectation,
           });
           requests.push({
             key: prepared.targetId,
@@ -119,9 +142,12 @@ export const imageBatchJob: JobDefinition<Record<string, never>> = {
         await markAsset(bookId, lineage, item.target, { status: "batched", batchId, error: null, lastJobId: jobId, episodeId: item.episodeId });
       }
       submitted.push(`${providerName} (${items.length})`);
+      batchIds.push(batchId);
+      await db.doc(`books/${bookId}/jobs/${jobId}`).update({ submittedBatchIds: batchIds });
       context.log(`submitted ${providerName} with ${items.length} image(s)`);
     }
-    if (submitted.length === 0) throw new Error(`None of the ${wanted.length} images could be prepared.`);
+    await db.doc(`books/${bookId}/jobs/${jobId}`).update({ submissionsComplete: true, preparationFailed: failed });
+    if (batchIds.length === 0) throw new Error(`None of the ${wanted.length} images could be prepared.`);
     return `submitted ${submitted.join(", ")}${failed > 0 ? `; ${failed} could not be prepared` : ""}`;
   },
 };
@@ -168,11 +194,22 @@ async function collectBatch(bookId: string, batch: ImageBatch, log: (message: st
   let failed = 0;
   let costUsd = 0;
   for (const item of batch.items) {
+    await ref.update({ pollLeaseUntil: Date.now() + 10 * 60_000 });
     const result = results.get(item.key);
+    if (!await stillWaiting(item.targetId)) {
+      const asset = (await db.doc(`books/${bookId}/visualAssets/${item.targetId}`).get()).data() as VisualAsset | undefined;
+      const stored = asset?.versions?.find((version) => version.versionId === `${batch.batchId}-${item.key}`);
+      if (stored) {
+        saved += 1;
+        costUsd += stored.costUsd;
+      } else failed += 1;
+      continue;
+    }
     if (result?.ok) {
       const cost = (result.promptTokens * geminiInputUsdPerToken + result.outputTokens * geminiOutputUsdPerToken) * batchDiscount;
       costUsd += cost;
-      await saveVersion(bookId, lineage, item, {
+      const check = await recordChecks(result.bytes, item.expectation ?? (item.target.kind === "layer" ? { cutOut: item.alpha === "chroma-green" } : null));
+      await saveVersion(bookId, lineage, { ...item, check, expectedBatchId: batch.batchId, versionId: `${batch.batchId}-${item.key}` }, {
         bytes: result.bytes,
         contentType: result.contentType,
         model: batch.model,
@@ -200,13 +237,46 @@ async function collectBatch(bookId: string, batch: ImageBatch, log: (message: st
     completedAt: new Date().toISOString(),
     pollLeaseUntil: 0,
   });
+  await advanceBatchJob(bookId, batch.jobId);
   log(`batch ${batch.providerName} collected: ${saved} saved, ${failed} failed, ~$${costUsd.toFixed(4)}`);
+}
+
+async function advanceBatchJob(bookId: string, jobId: string): Promise<void> {
+  const jobRef = db.doc(`books/${bookId}/jobs/${jobId}`);
+  await db.runTransaction(async (transaction) => {
+    const job = (await transaction.get(jobRef)).data();
+    if (!job?.submissionsComplete || job.continuationQueued || job.status === "cancelled") return;
+    const batches = await Promise.all((job.submittedBatchIds as string[]).map((id) => transaction.get(db.doc(`books/${bookId}/imageBatches/${id}`))));
+    if (!batches.length || batches.some((batch) => !["completed", "failed"].includes(batch.data()?.status))) return;
+    const blocked = job.preparationFailed > 0 || batches.some((batch) => batch.data()?.status === "failed" || batch.data()?.counts?.failed > 0);
+    const pendingItems = (job.pendingItems ?? []) as ImageWork[];
+    const pendingDocs = await Promise.all(pendingItems.map((item) => transaction.get(db.doc(`books/${bookId}/visualAssets/${assetTargetId(item.target)}`))));
+    const items = pendingItems.filter((_, index) => { const owner = pendingDocs[index]!.data()?.lastJobId; return !owner || owner === (job.rootJobId ?? jobId); });
+    const book = (await transaction.get(db.doc(`books/${bookId}`))).data();
+    if (book?.activeSourceId !== job.sourceId || book?.canonical?.hash !== job.canonicalHash) return;
+    if (!items.length && !blocked) {
+      transaction.set(db.doc(`books/${bookId}/jobs/${jobId}_compose`), { type: "compose", stage: "compose_25d", status: "queued_v3", sourceId: job.sourceId, canonicalHash: job.canonicalHash, attempts: 0, costUsd: 0, createdAt: FieldValue.serverTimestamp(), progress: { done: 0, total: 0 } });
+    }
+    if (items.length && !blocked) {
+      transaction.set(db.doc(`books/${bookId}/jobs/${jobId}_next`), {
+        type: "imageBatch", stage: "images", status: "queued_v3", items, rootJobId: job.rootJobId ?? jobId,
+        sourceId: job.sourceId, canonicalHash: job.canonicalHash, attempts: 0, costUsd: 0,
+        createdAt: FieldValue.serverTimestamp(), progress: { done: 0, total: items.length },
+      });
+    }
+    if (blocked) {
+      for (const item of items) transaction.set(db.doc(`books/${bookId}/visualAssets/${assetTargetId(item.target)}`), { status: "failed", error: "A required image failed to generate; dependent generation was withheld.", batchId: null }, { merge: true });
+    }
+    transaction.update(jobRef, { continuationQueued: true, ...(blocked ? { status: "failed", error: "An image failed to generate; dependent images were withheld." } : {}) });
+  });
 }
 
 /** Checks every open batch once; called by the worker between jobs. */
 export async function pollImageBatches(log: (message: string) => void): Promise<void> {
   const books = await db.collection("books").select().get();
   for (const book of books.docs) {
+    const completedJobs = await book.ref.collection("jobs").where("type", "==", "imageBatch").get();
+    for (const job of completedJobs.docs) if (job.data().submissionsComplete && !job.data().continuationQueued) await advanceBatchJob(book.id, job.id);
     const open = await book.ref.collection("imageBatches").where("status", "in", ["submitted", "running"]).get();
     for (const doc of open.docs) {
       if (!(await leaseBatch(book.id, doc.id))) continue;

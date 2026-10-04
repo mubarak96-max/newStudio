@@ -3,6 +3,7 @@ import { loadLatestValidCheckpoint, saveJsonCheckpoint } from "./checkpoint-stor
 import { asNumber, asString } from "./coerce.mts";
 import { bucket, db, openRouterModels, workerId } from "./config.mts";
 import { claimJob } from "./job-lease.mts";
+import { createJobLog } from "./job-log.mts";
 import { enqueueJob, jobStages, type ChainedJobType } from "./job-queue.mts";
 import { callJsonModel } from "./openrouter.mts";
 
@@ -34,6 +35,11 @@ export type JobContext = {
   cancelled: () => Promise<boolean>;
   /** Records spend from calls made outside `callModel`, such as image generation. */
   addCost: (usd: number) => void;
+  /**
+   * Points the chained next job at a different source. Cleaning writes a new
+   * canonical source, and everything after it must run on that one.
+   */
+  chainSource: (sourceId: string, canonicalHash: string) => void;
 };
 
 export type JobDefinition<TState> = {
@@ -42,6 +48,13 @@ export type JobDefinition<TState> = {
   initialState: () => TState;
   /** Returns a one-line result for the log, or null when the job was cancelled. */
   run: (context: JobContext, state: TState, checkpoint: (label: string) => Promise<void>) => Promise<string | null>;
+  /**
+   * The stage status to record for the whole book once the job succeeded.
+   * A job that only did part of the work (one Episode) reports "failed" while
+   * the rest is outstanding, so the book never claims a stage it has not
+   * finished. Defaults to "done".
+   */
+  bookStatus?: (context: JobContext) => Promise<"done" | "failed" | "pending">;
   next?: ChainedJobType;
 };
 
@@ -91,11 +104,12 @@ export async function runLeasedJob<TState>(
 ): Promise<void> {
   const stage = jobStages[definition.type];
   const jobRef = db.doc(`books/${bookId}/jobs/${jobId}`);
-  const log = (message: string) => console.log(`[${definition.version}] ${message}`);
+  const jobLog = createJobLog(definition.version);
+  const log = jobLog.log;
   // A single model call on a long book can outlast the lease, so the lease is
   // renewed on a timer rather than only between units of work.
   const heartbeat = setInterval(() => {
-    jobRef.update({ heartbeatAt: FieldValue.serverTimestamp(), leaseOwner: workerId }).catch(() => undefined);
+    jobRef.update({ ...jobLog.patch(), heartbeatAt: FieldValue.serverTimestamp(), leaseOwner: workerId }).catch(() => undefined);
   }, 30_000);
   let costUsd = 0;
 
@@ -107,12 +121,13 @@ export async function runLeasedJob<TState>(
     const canonicalHash = asString(job.canonicalHash);
     await setPipeline(bookId, stage, "running", jobId);
 
-    const prefix = `books/${bookId}/sources/${sourceId}/${stage}/${jobId}/`;
+    const prefix = `books/${bookId}/sources/${sourceId}/${stage}/${jobId}/${definition.version}/`;
     const saved = await loadLatestValidCheckpoint<TState>(bucket, prefix);
     const state = saved?.value ?? definition.initialState();
     let counter = asNumber(job.checkpointCounter);
     let activity: JobActivity | null = null;
     const warnings: string[] = [];
+    let chained = { sourceId, canonicalHash };
 
     const context: JobContext = {
       bookId,
@@ -123,6 +138,7 @@ export async function runLeasedJob<TState>(
       onActivity: async (next) => {
         activity = next;
         await jobRef.update({
+          ...jobLog.patch(),
           activity,
           progress: { done: next.done, total: next.total },
           costUsd,
@@ -133,6 +149,9 @@ export async function runLeasedJob<TState>(
       cancelled: async () => (await jobRef.get()).data()?.status === "cancelled",
       addCost: (usd) => {
         costUsd += usd;
+      },
+      chainSource: (nextSourceId, nextCanonicalHash) => {
+        chained = { sourceId: nextSourceId, canonicalHash: nextCanonicalHash };
       },
       callModel: async (label, system, payload, options = {}) => {
         try {
@@ -149,7 +168,7 @@ export async function runLeasedJob<TState>(
           return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          log(`${label} failed, using the deterministic fallback: ${message}`);
+          log(`${label} failed: ${message}`);
           warnings.push(`${label}: ${message.slice(0, 200)}`);
           return null;
         }
@@ -160,6 +179,7 @@ export async function runLeasedJob<TState>(
       const storagePath = `${prefix}${String(counter).padStart(6, "0")}-${label.replace(/[^a-zA-Z0-9_-]+/g, "_")}.json`;
       await saveJsonCheckpoint(bucket, storagePath, state);
       await jobRef.update({
+        ...jobLog.patch(),
         phase: label,
         checkpoint: { storagePath, unit: counter },
         checkpointCounter: counter,
@@ -174,6 +194,7 @@ export async function runLeasedJob<TState>(
     if (result === null) return;
     log(`completed: ${result}, $${costUsd.toFixed(4)}.`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "completed",
       phase: "done",
       activity: null,
@@ -184,15 +205,18 @@ export async function runLeasedJob<TState>(
       finishedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    await setPipeline(bookId, stage, "done", jobId);
+    const bookStatus = definition.bookStatus ? await definition.bookStatus(context) : "done";
+    await setPipeline(bookId, stage, bookStatus, jobId);
     if (definition.next && options.chain !== false) {
-      const nextJobId = await enqueueJob(bookId, definition.next, sourceId, canonicalHash);
+      const nextJobId = await enqueueJob(bookId, definition.next, chained.sourceId, chained.canonicalHash);
       log(`queued ${definition.next} job ${nextJobId}`);
+      await jobRef.update({ ...jobLog.patch(), updatedAt: FieldValue.serverTimestamp() });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown worker failure.";
     log(`job ${jobId} failed: ${message}`);
     await jobRef.update({
+      ...jobLog.patch(),
       status: "failed",
       error: message.slice(0, 4_000),
       costUsd,

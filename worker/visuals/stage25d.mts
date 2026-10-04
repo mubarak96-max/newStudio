@@ -30,29 +30,31 @@ export function widenEnvelope(envelope: Envelope, camera: Beat["camera"]): void 
  * mesh because distant scenery carries real relief; close shots give their
  * nearest subject a mesh for facial and body relief. Flat planes elsewhere.
  */
-export function assignDepth(layers: LayerPlan[], framing: string): LayerPlan[] {
+export function assignDepth(layers: LayerPlan[], _framing: string): LayerPlan[] {
+  void _framing;
   const foregrounds = layers.filter((layer) => layer.role !== "background").length;
   let index = 0;
   return layers.map((layer) => {
+    // The master is the whole scene in one image; it plays alone, flat.
+    if (layer.kind === "master") {
+      return { ...layer, depthRange: [0, 0.35] as [number, number], renderMode: "plane" as const, mesh: null };
+    }
     if (layer.role === "background") {
-      const mesh = framing === "wide";
       return {
         ...layer,
         depthRange: [0, 0.35] as [number, number],
-        renderMode: mesh ? "depthMesh" : "plane",
-        mesh: mesh ? { segmentsX: 64, segmentsY: 96, displacementScale: 0.06 } : null,
+        renderMode: "plane",
+        mesh: null,
       };
     }
     const far = 0.5 + (0.45 * index) / foregrounds;
     const near = 0.5 + (0.45 * (index + 1)) / foregrounds;
-    const nearest = index === foregrounds - 1;
     index += 1;
-    const mesh = nearest && (framing === "close" || framing === "over-shoulder");
     return {
       ...layer,
       depthRange: [round(far), round(near)] as [number, number],
-      renderMode: mesh ? "depthMesh" : "plane",
-      mesh: mesh ? { segmentsX: 48, segmentsY: 64, displacementScale: 0.03 } : null,
+      renderMode: "plane",
+      mesh: null,
     };
   });
 }
@@ -64,7 +66,9 @@ export function assignDepth(layers: LayerPlan[], framing: string): LayerPlan[] {
  */
 export function planStage25d(envelope: Envelope, layers: LayerPlan[]): Stage25dPlan {
   const factor = (layer: LayerPlan) => round(0.4 + 0.6 * layer.depthRange[1]);
-  const background = layers.find((layer) => layer.role === "background");
+  // The plate is what the camera travels across in layered mode; the master
+  // is a whole scene and never the thing parallax is measured against.
+  const background = layers.find((layer) => layer.kind === "plate") ?? layers.find((layer) => layer.role === "background" && layer.kind !== "master");
   const backgroundFactor = background ? factor(background) : 1;
   const plannedSafeCamera = {
     maxPanX: round(Math.max(envelope.maxPanX, minimumPan) + safetyMargin),

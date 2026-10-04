@@ -137,7 +137,7 @@ export function AssetCard({
           {dependencies.map((dependency, index) => (
             <span key={dependency.label} className={dependency.approved ? '' : 'text-amber-600'}>
               {index > 0 ? ', ' : ''}
-              {dependency.label} {dependency.approved ? '✓' : '(not approved yet, text only)'}
+              {dependency.label} {dependency.approved ? '✓' : '(generated first)'}
             </span>
           ))}
         </p>
@@ -187,6 +187,7 @@ export function AssetCard({
           You can still generate it now with OpenRouter.
         </p>
       )}
+      {selected?.check && !selected.check.ok && <p className='text-xs text-destructive'>{selected.check.issues.join(' ')}</p>}
       {asset?.status === 'failed' && asset.error && <p className='text-xs text-destructive'>{asset.error}</p>}
       {error && <p className='text-xs text-destructive'>{error}</p>}
 

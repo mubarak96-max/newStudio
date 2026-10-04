@@ -5,7 +5,7 @@ import type { Entity } from "../types.mts";
 import type { StoryInputs } from "../story/inputs.mts";
 import { entityVisualSystemPrompt, visualProfileSystemPrompt } from "./prompts.mts";
 
-const alwaysNegative = ["text", "letters", "captions", "watermarks", "signatures"];
+const alwaysNegative = ["text", "letters", "captions", "watermarks", "signatures", "painting", "brushwork", "cartoon", "illustration", "plastic CGI skin", "flat even lighting", "stock photo look", "snapshot"];
 
 export async function planVisualProfile(
   context: JobContext,
@@ -22,12 +22,12 @@ export async function planVisualProfile(
   const negativeRules = Array.from(new Set([...strings(data?.negativeRules).map((rule) => rule.trim()), ...alwaysNegative]));
   return {
     version: previousVersion + 1,
-    artStyle: asString(data?.artStyle).trim() || "Painterly storybook illustration with consistent characters",
-    medium: asString(data?.medium).trim() || "digital painting",
+    artStyle: "Photorealistic cinematic film still, consistent identity and physically plausible materials",
+    medium: "live-action photographic realism",
     palette: strings(data?.palette).slice(0, 8),
-    lens: asString(data?.lens).trim() || "Natural 35-50mm framing, eye-level unless the scene calls otherwise",
-    lighting: asString(data?.lighting).trim() || "Motivated natural light matching time of day",
-    texture: asString(data?.texture).trim(),
+    lens: asString(data?.lens).trim() || "Cinema prime lenses, 35mm for wide shots and 50-85mm for close work, shallow depth of field holding the subject in focus, camera at eye level unless the scene calls otherwise",
+    lighting: asString(data?.lighting).trim() || "Motivated directional light with real contrast: one dominant source matching the time of day, shadows deep but readable, warm practicals against cooler ambient light",
+    texture: "Natural skin, fabric, wood and stone detail; realistic surface response, no painted brushwork",
     eraDetails: asString(data?.eraDetails).trim() || inputs.world?.era || "",
     negativeRules,
   };
@@ -47,26 +47,17 @@ function entityPayload(entity: Entity) {
   };
 }
 
-function referencePrompt(entity: Entity, views: string[], spec: string, profile: VisualProfile): string {
-  return `Reference sheet of ${entity.canonicalName}: ${views.join(", ")} views on a neutral background. ${spec} Style: ${profile.artStyle}, ${profile.medium}.`;
-}
+// A sheet only carries identity into later images, so everything but a place is
+// shot isolated in the studio; the scene lens and light are appended later at
+// generation and would otherwise pull the model back into a single scene.
+const studioSheet =
+  "Show the subject alone with nothing else in frame — no scenery, props or extra people, even where the description mentions surroundings — on a seamless plain light-grey studio backdrop with even soft light. Do not label the views: no view names, captions or any other writing on the canvas. This studio framing overrides any scene lens or lighting direction that follows.";
 
-/** The deterministic plan used when the model gives nothing back: source facts only, no fills. */
-function factsOnlyPlan(entity: Entity, profile: VisualProfile): EntityVisualPlan {
-  const facts = entity.facts.slice(0, 8);
-  const appearance = entity.profile?.appearance && entity.profile.appearance !== "unknown" ? entity.profile.appearance : entity.description;
-  const spec = [entity.canonicalName, appearance, ...facts.map((fact) => `${fact.key}: ${fact.value}`)].filter(Boolean).join("; ");
-  const views = entity.type === "location" ? ["establishing wide"] : ["front", "three-quarter", "profile"];
-  return {
-    entityId: entity.entityId,
-    spec,
-    sourceFacts: facts.map((fact) => ({ key: fact.key, value: fact.value, paragraphIds: fact.paragraphIds })),
-    fills: [],
-    referenceSheet: { views, prompt: referencePrompt(entity, views, spec, profile), approved: false },
-    stateVariants: {},
-    preRevealSpec: null,
-    layout: null,
-  };
+function referencePrompt(entity: Entity, views: string[], spec: string, profile: VisualProfile): string {
+  const layout = views.length > 1 ? `${views.join(", ")}, as separate views side by side on one canvas` : (views[0] ?? "hero view");
+  const style = `Style: ${profile.artStyle}, ${profile.medium}.`;
+  if (entity.type === "location") return `Location reference of ${entity.canonicalName}: ${layout}, the place empty of people. ${spec} ${style}`;
+  return `Reference sheet of ${entity.canonicalName}: ${layout}. ${studioSheet} ${spec} ${style}`;
 }
 
 export async function planEntityVisuals(context: JobContext, entities: Entity[], profile: VisualProfile, label: string): Promise<EntityVisualPlan[]> {
@@ -78,7 +69,8 @@ export async function planEntityVisuals(context: JobContext, entities: Entity[],
   return entities.map((entity) => {
     const row = rows.get(entity.entityId);
     const spec = asString(row?.spec).trim();
-    if (!row || !spec) return factsOnlyPlan(entity, profile);
+    if (!row || !spec) throw new Error(`Visual bible is incomplete for ${entity.entityId}.`);
+    if (entity.type === "location" && !asString(row.layout).trim()) throw new Error(`Location ${entity.entityId} needs a stable layout before scene generation.`);
     const facts = strings(row.sourceFactIds)
       .map((id) => entity.facts[Number(id.replace(/\D/g, "")) - 1])
       .filter((fact) => fact !== undefined);
@@ -101,11 +93,12 @@ export async function planEntityVisuals(context: JobContext, entities: Entity[],
         .filter((fill) => fill.key && fill.value),
       referenceSheet: {
         views,
-        prompt: referencePrompt(entity, views, spec, profile),
+        prompt: referencePrompt(entity, views, spec, profile) + (entity.type === "location" ? ` Fixed layout: ${asString(row.layout)}.` : ""),
         approved: false,
       },
       stateVariants,
       preRevealSpec: nullableString(row.preRevealSpec),
+      hiddenUntilSeq: nullableString(row.preRevealSpec) && entity.reveals.length ? Math.min(...entity.reveals.map((reveal) => reveal.seq)) : null,
       layout: entity.type === "location" ? nullableString(row.layout) : null,
     };
   });

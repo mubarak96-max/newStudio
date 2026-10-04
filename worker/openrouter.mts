@@ -31,6 +31,7 @@ export type JsonCall = {
   models: string[];
   label: string;
   maxTokens?: number;
+  images?: string[];
   /**
    * Try the next model after a truncated answer. For callers that cannot split
    * their input, truncation is usually a model looping, not an input too large.
@@ -50,6 +51,18 @@ function filterError(model: string, label: string): ModelCallError {
   );
 }
 
+/**
+ * OpenAI-compatible providers refuse `json_object` unless a message contains
+ * the word "json", so a prompt that only shows the shape gets that word here.
+ */
+function systemPromptFor(call: JsonCall): string {
+  return /json/i.test(call.system) || /json/i.test(call.user)
+    ? call.system
+    : `${call.system}
+
+Respond with a single JSON object.`;
+}
+
 async function callOnce(call: JsonCall, model: string): Promise<JsonCallResult> {
   const maxTokens = call.maxTokens ?? openRouterMaxTokens;
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -65,8 +78,8 @@ async function callOnce(call: JsonCall, model: string): Promise<JsonCallResult> 
       response_format: { type: "json_object" },
       provider: { allow_fallbacks: true },
       messages: [
-        { role: "system", content: call.system },
-        { role: "user", content: call.user },
+        { role: "system", content: systemPromptFor(call) },
+        { role: "user", content: call.images?.length ? [{ type: "text", text: call.user }, ...call.images.map((url) => ({ type: "image_url", image_url: { url } }))] : call.user },
       ],
     }),
   });

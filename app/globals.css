@@ -248,6 +248,27 @@ body {
   }
 }
 
+/* The torn sheet: the mask (and its ragged bottom edge) slides up and off the
+   frame while the picture inside counter-slides, so the picture stays put and
+   only the paper leaves. 106% = frame height plus the 6% tear strip in the mask. */
+@keyframes preview-tear-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-106%);
+  }
+}
+
+@keyframes preview-tear-hold {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(106%);
+  }
+}
+
 @keyframes preview-slide-out {
   from {
     transform: translateX(0);

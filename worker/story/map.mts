@@ -9,7 +9,7 @@ import { wordCount, type StoryInputs } from "./inputs.mts";
 import { storyMapSystemPrompt } from "./prompts.mts";
 import {
   buildWeights,
-  rebalance,
+  chapterAlignedSpans,
   snapToNearest,
   tileFromStarts,
   weightOf,
@@ -114,17 +114,24 @@ export async function planStoryMap(
   const source: StoryMap["planning"]["source"] = proposed.length > 0 ? "model" : "fallback";
   if (source === "fallback") notes.push("No usable episode proposal came back; episodes start at chapter boundaries.");
 
-  const starts = source === "model" ? proposed.map((row) => row.seq) : [...chapterStarts];
-  const tiled = tileFromStarts(starts, 0, lastSeq);
-  const spans = rebalance(tiled, weights, {
+  // Chapters decide where episodes begin and end; the model's proposal supplies
+  // titles, and its start points are only used as seams inside a long chapter.
+  const chapterSpans = tileFromStarts([...chapterStarts], 0, lastSeq);
+  const spans = chapterAlignedSpans(chapterSpans, weights, {
     minWords: episodeMinWords,
     maxWords: episodeMaxWords,
     targetWords: episodeTargetWords,
     cutPoints,
-    preferred: chapterStarts,
+    preferred: new Set(proposed.map((row) => row.seq)),
   });
-  if (spans.length !== tiled.length) {
-    notes.push(`Sizing adjusted ${tiled.length} proposed episodes to ${spans.length} (target ${episodeTargetWords} words).`);
+  if (spans.length !== chapterSpans.length) {
+    notes.push(
+      `${chapterSpans.length} chapters became ${spans.length} episodes: short chapters merged, long ones split ` +
+        `(target ${episodeTargetWords} words, max ${episodeMaxWords}).`,
+    );
+  }
+  if (source === "model" && proposed.length !== spans.length) {
+    notes.push(`The model proposed ${proposed.length} episodes; chapter alignment produced ${spans.length}.`);
   }
   const proposalAt = new Map(proposed.map((row) => [row.seq, row]));
   const planned: PlannedEpisodeSpan[] = spans.map((span) => {
